@@ -514,7 +514,8 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
   content: ''; position: absolute; inset: -40% auto -40% -60%; width: 45%; transform: skewX(-20deg);
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent); animation: lightleak 3.6s 1s ease-in-out infinite;
 }
-@keyframes lightleak { 0% { left: -60%; } 55%, 100% { left: 130%; } }
+/* the sweep moves by transform (left -60% to 130% of the note = 422% of its own width): no layout per frame */
+@keyframes lightleak { 0% { transform: translateX(0) skewX(-20deg); } 55%, 100% { transform: translateX(422.3%) skewX(-20deg); } }
 [data-frame="teal"] > .glass-note, [data-frame="teal"] .glass-colors { opacity: 1; transform: none; }
 .glass-hero { max-width: 0; padding: 0; border-width: 0; transition: opacity .5s var(--ease), transform .5s var(--ease), max-width .5s var(--ease), padding .5s var(--ease); }
 .controls[data-frame="teal"] > .glass-hero { max-width: 200px; padding: 0 14px 0 10px; border-width: 1px; }
