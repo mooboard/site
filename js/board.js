@@ -45,7 +45,7 @@
 
   // draw str with its baseline at y. color: [r,g,b] or fn(x,y) -> [r,g,b,alpha?]
   // thresholded glyph masks are cached per string, font and position, so a line that stays put costs no raster work
-  var glyphMaskCache = new Map();
+  var glyphMaskCache = new Map(), glyphImg = sx.createImageData(W, H);
   function text(ctx, str, x, y, color, font, thr) {
     font = font || PIX; thr = thr == null ? 0.5 : thr;
     var key = str + '|' + font + '|' + Math.round(x) + '|' + Math.round(y) + '|' + thr, lit = glyphMaskCache.get(key);
@@ -59,7 +59,8 @@
       if (glyphMaskCache.size > 400) glyphMaskCache.delete(glyphMaskCache.keys().next().value);
       glyphMaskCache.set(key, lit);
     }
-    var img = sx.createImageData(W, H), d = img.data, fn = typeof color === 'function' ? color : null;
+    var img = glyphImg, d = img.data, fn = typeof color === 'function' ? color : null;
+    d.fill(0);
     var c = fn ? null : (color || C.white), x0 = W, x1 = -1;
     for (var j = 0; j < lit.length; j++) {
       var p = lit[j], i = p * 4, px = p % W, py = (p / W) | 0, k = fn ? fn(px, py) : c;
@@ -783,15 +784,20 @@
     };
   };
 
+  var lightsImg = null, fallY = new Float32Array(H);
+  for (var fy = 0; fy < H; fy++) fallY[fy] = .45 + .55 * Math.sin((fy / H) * Math.PI);
   S.lights = function () {
     return {
       label: 'Lights', dur: 7,
       draw: function (ctx, t) {
+        // the whole rainbow field as one ImageData (4096 fillRect calls a frame before)
+        var img = lightsImg || (lightsImg = ctx.createImageData(W, H)), d = img.data;
         for (var x = 0; x < W; x++) {
           var c = hsl(x * 2.2 - t * 70, .95, .55);
           var v = .55 + .45 * Math.sin(x * .12 - t * 3);
-          for (var y = 0; y < H; y++) { var fall = .45 + .55 * Math.sin((y / H) * Math.PI); px(ctx, x, y, mul(c, v * fall)); }
+          for (var y = 0; y < H; y++) { var k = v * fallY[y], i = (y * W + x) * 4; d[i] = (c[0] * k) | 0; d[i + 1] = (c[1] * k) | 0; d[i + 2] = (c[2] * k) | 0; d[i + 3] = 255; }
         }
+        ctx.putImageData(img, 0, 0);
         rect(ctx, 34, 9, 60, 15, [0, 0, 0], .88);
         ctext(ctx, 'IN SYNC', 64, 20, C.white);
       }
@@ -966,6 +972,7 @@
   };
   Board.prototype.render = function (t, dt) {
     var sc = this.scenes[this.cur], st = this.opts.at != null ? this.opts.at : Math.max(0, t - this.start);
+    this.last = t;
     if (!this.start) { this.start = t; st = 0; }
     var TR = REDUCED ? 0.01 : 0.7;
     var mooBack = this.cur === 'moo' && this.back;
@@ -1016,8 +1023,11 @@
     var minStep = REDUCED ? .5 : 0;
     if (acc >= minStep && !document.hidden) {
       for (var i = 0; i < boards.length; i++) {
-        if (!boards[i].visible || (boards[i].opts.when && !boards[i].opts.when())) continue;
-        try { boards[i].render(t, acc); } catch (e) { if (!boards[i].failed) { boards[i].failed = 1; setTimeout(function () { throw e; }); } }
+        var b = boards[i];
+        if (!b.visible || (b.opts.when && !b.opts.when())) continue;
+        // opts.fps caps a board (the tiles run at 30); a capped board gets the time since its own last frame
+        if (b.opts.fps && t - b.last < 1 / b.opts.fps - .003) continue;
+        try { b.render(t, b.opts.fps ? Math.min(t - b.last, .1) : acc); } catch (e) { if (!b.failed) { b.failed = 1; setTimeout(function () { throw e; }); } }
       }
       acc = 0;
     }

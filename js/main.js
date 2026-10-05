@@ -76,11 +76,28 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   boards.roomLive = new MB.Board($('#room-live'), { scenes: ['song', 'time', 'weather'], onGlow: tileGlow($('#room')) });
   boards.wl = new MB.Board($('#wl-board'), { scenes: ['moo', 'time', 'calendar'], onGlow: tileGlow($('#waitlist')) });
 
+  // the tiles and the app strip are far below the fold: their boards are built when they come within two
+  // viewports (or on tap), and run at 30 fps
+  var buildQueue = [];
+  function drainBuilds() { var f = buildQueue.shift(); if (f) { f(); if (buildQueue.length) requestAnimationFrame(drainBuilds); } }
+  function lazyBoard(led, opts, watch) {
+    var b = null, make = function () { return b || (b = new MB.Board(led, opts)); };
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (e) {
+        if (!e[0].isIntersecting) return;
+        io.disconnect();
+        // one board per frame: twenty at once would be a 100 ms task mid-scroll
+        buildQueue.push(make); if (buildQueue.length === 1) requestAnimationFrame(drainBuilds);
+      }, { rootMargin: '200% 0px' });
+      io.observe(watch || led);
+    } else make();
+    return { moo: function () { make().moo(); } };
+  }
   $$('.tile').forEach(function (t) {
     var bz = document.createElement('div'); bz.className = 'bezel'; bz.dataset.frame = t.dataset.frame;
     var led = document.createElement('div'); led.className = 'led'; bz.appendChild(led);
     t.insertBefore(bz, t.firstChild);
-    var b = new MB.Board(led, { scenes: [t.dataset.scene], auto: false, weather: 'snow', onGlow: tileGlow(t) });
+    var b = lazyBoard(led, { scenes: [t.dataset.scene], auto: false, weather: 'snow', fps: 30, onGlow: tileGlow(t) }, t);
     t.addEventListener('click', function () { b.moo(); });
   });
 
@@ -118,7 +135,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     var led = document.createElement('div'); led.className = 'led'; led.setAttribute('role', 'img'); led.setAttribute('aria-label', name + ' on MooBoard');
     bz.appendChild(led); li.appendChild(bz);
     li.insertAdjacentHTML('beforeend', '<div class="app-name">' + appIcon(li, n) + '<span>' + name + '</span></div>');
-    var b = new MB.Board(led, { scenes: [li.dataset.scene], auto: false });
+    var b = lazyBoard(led, { scenes: [li.dataset.scene], auto: false, fps: 30 }, $('#app-row'));
     bz.addEventListener('click', function () { b.moo(); });
   });
   $$('.an').forEach(function (btn) {
@@ -274,7 +291,6 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
 
   var player = $('#player'), plPlay = $('#pl-play'), plMute = $('#pl-mute'), np = $('#np');
   var heldByMusic = false, lastTrack = null;
-  function fmt(t) { t = Math.max(0, Math.floor(t)); return Math.floor(t / 60) + ':' + (t % 60 < 10 ? '0' : '') + (t % 60); }
   function musicUI(type) {
     var M = window.MooMusic; if (!M || !M.ready()) return;
     var tr = M.track(), playing = M.playing(), muted = M.muted(), audible = playing && !muted;
@@ -428,10 +444,15 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       // the live board takes over the rendered LED face once the camera settles
       var live = $('#story .seq-live');
       live.appendChild($('#story-board'));
+      var liveBox = '';
       storySeq.onDraw = function (j) {
-        var r = storySeq.rect, q = scr.rect;
-        live.style.left = (r.x + q[0] * r.w) + 'px'; live.style.top = (r.y + q[1] * r.h) + 'px';
-        live.style.width = ((q[2] - q[0]) * r.w) + 'px'; live.style.height = ((q[3] - q[1]) * r.h) + 'px';
+        var r = storySeq.rect, q = scr.rect, box = r.x + '|' + r.y + '|' + r.w + '|' + r.h;
+        if (box !== liveBox) {
+          // the box only moves on resize; writing it every frame would relayout the live board mid-scrub
+          liveBox = box;
+          live.style.left = (r.x + q[0] * r.w) + 'px'; live.style.top = (r.y + q[1] * r.h) + 'px';
+          live.style.width = ((q[2] - q[0]) * r.w) + 'px'; live.style.height = ((q[3] - q[1]) * r.h) + 'px';
+        }
         live.style.opacity = Math.max(0, Math.min(1, (j - scr.from + 4) / 8));
       };
       storySeq.redraw();
@@ -500,7 +521,8 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     });
 
     if (!REDUCED) {
-      gsap.fromTo('.color-stills', { scale: 1.1 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: '#colors', start: 'top top', end: '+=220%', scrub: true } });
+      // the stills are the no-frames fallback (display: none once frames exist): no point tweening them then
+      if (!colorSeq) gsap.fromTo('.color-stills', { scale: 1.1 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: '#colors', start: 'top top', end: '+=220%', scrub: true } });
       $$('.card img').forEach(function (im) {
         gsap.to(im, { scale: 1, yPercent: 4, ease: 'none', scrollTrigger: { trigger: im.parentNode, start: 'top bottom', end: 'bottom top', scrub: true } });
       });
