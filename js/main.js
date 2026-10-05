@@ -6,10 +6,38 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  function setRadioTabStop(selector, selected) {
+    $$(selector).forEach(function (item) {
+      item.tabIndex = item.dataset.frame === selected ? 0 : -1;
+    });
+  }
+  function bindRadioKeys(selector) {
+    var items = $$(selector);
+    items.forEach(function (item, index) {
+      item.tabIndex = item.getAttribute('aria-checked') === 'true' ? 0 : -1;
+      item.addEventListener('keydown', function (event) {
+        var next;
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % items.length;
+        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index + items.length - 1) % items.length;
+        else if (event.key === 'Home') next = 0;
+        else if (event.key === 'End') next = items.length - 1;
+        else return;
+        event.preventDefault();
+        items[next].focus();
+        items[next].click();
+      });
+    });
+  }
   var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var params = new URLSearchParams(location.search);
   var gsap = window.gsap, ST = window.ScrollTrigger;
-  var ANIM = !!(gsap && ST) && !params.has('static');
+  var ANIM = !!(gsap && ST) && !params.has('static') && !REDUCED;
+  if (ANIM) {
+    var heroPreload = document.createElement('link');
+    heroPreload.rel = 'preload'; heroPreload.as = 'image'; heroPreload.type = 'image/webp';
+    heroPreload.href = 'renders/seq-hero/0001.webp'; heroPreload.fetchPriority = 'low';
+    document.head.appendChild(heroPreload);
+  }
   if (!ANIM) document.documentElement.classList.add('no-anim');
   var root = document.documentElement;
   var MB = window.MooBoard;
@@ -110,10 +138,12 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     $('.hero .controls').dataset.frame = f;
     $$('.mark').forEach(function (m) { m.style.setProperty('--mark-frame', MARK_FRAME[f]); m.dataset.frame = f; });
     $$('.swatches .sw').forEach(function (s) { s.classList.toggle('on', s.dataset.frame === f); s.setAttribute('aria-checked', s.dataset.frame === f); });
+    setRadioTabStop('.swatches .sw', f);
   }
   $$('.swatches .sw').forEach(function (s) {
     s.addEventListener('click', function (e) { e.stopPropagation(); setHeroFrame(s.dataset.frame); pulse($('#hero-bezel')); });
   });
+  bindRadioKeys('.swatches .sw');
   var colorIdx = -1;
   function setColor(i, fromUser) {
     if (i === colorIdx) return; colorIdx = i;
@@ -122,10 +152,12 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     $('#colors').style.setProperty('--cbg', CBG[f]);
     $('#colors').dataset.frame = f;
     $$('.cp').forEach(function (c) { c.classList.toggle('on', c.dataset.frame === f); c.setAttribute('aria-checked', c.dataset.frame === f); });
+    setRadioTabStop('.color-pick .cp', f);
     $$('.color-stills img').forEach(function (c) { c.classList.toggle('on', c.dataset.frame === f); });
     if (fromUser) setHeroFrame(f);
     pulse($('#color-bezel'));
   }
+  bindRadioKeys('.color-pick .cp');
   function pulse(el) {
     if (!ANIM || REDUCED) return;
     gsap.fromTo(el, { scale: .97 }, { scale: 1, duration: .6, ease: 'elastic.out(1, .5)' });
@@ -316,7 +348,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   function pad(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
   function Seq(section, spec) {
     this.section = section; this.spec = spec; this.n = spec.frames;
-    this.cv = $('.seq-canvas', section); this.ctx = this.cv.getContext('2d');
+    this.cv = $('.seq-canvas', section); this.ctx = this.cv.getContext('2d'); this.shiftProgress = null;
     this.imgs = new Array(this.n); this.ok = new Uint8Array(this.n); this.want = 0; this.started = false;
   }
   Seq.prototype.url = function (i) { var s = this.spec; return 'renders/' + s.dir + '/' + pad(i + 1, s.pad || 4) + '.' + (s.ext || 'webp'); };
@@ -352,10 +384,13 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     for (var d = 0; d < this.n; d++) { if (this.ok[i - d]) { j = i - d; break; } if (this.ok[i + d]) { j = i + d; break; } }
     if (j < 0 || !this.cv.clientWidth) return;
     this.size();
-    if (j === this.drawn && this.cv.width === this.lastW) return;
-    this.drawn = j; this.lastW = this.cv.width;
     var img = this.imgs[j], cw = this.cv.width, ch = this.cv.height, ir = img.naturalWidth / img.naturalHeight;
     var iw = img.naturalWidth, ih = img.naturalHeight, portrait = cw / ch <= 1;
+    var sp = this.shiftProgress;
+    // Pan the crop from a right-side start toward center, with separate framing for phone and landscape views.
+    var shift = sp == null ? 0 : (portrait ? .295 - .386 * sp : .263 - .327 * sp) * cw;
+    if (j === this.drawn && cw === this.lastW && shift === this.lastShift) return;
+    this.drawn = j; this.lastW = cw; this.lastShift = shift;
     // landscape: cover. portrait: a little wider than the screen, with the frame's top and bottom rows stretched to fill
     var s = portrait ? cw * 1.55 / iw : Math.max(cw / iw, ch / ih);
     var w = iw * s, h = w / ir, x0 = (cw - w) / 2, y0 = (ch - h) / 2 + ch * (portrait ? 0 : this.spec.shiftY || 0);
@@ -367,10 +402,32 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       var fw = L(a.w, b.w), fx = L(a.x, b.x), fy = L(a.y, b.y), at = pf.at || .46;
       w = cw / fw; h = w / ir; x0 = cw / 2 - fx * w; y0 = ch * at - fy * h;
     }
+    x0 += shift;
     this.ctx.clearRect(0, 0, cw, ch);
     if (y0 > 0) this.ctx.drawImage(img, 0, 0, iw, 1, x0, 0, w, y0 + 1);
     if (y0 + h < ch) this.ctx.drawImage(img, 0, ih - 1, iw, 1, x0, y0 + h - 1, w, ch - y0 - h + 1);
     this.ctx.drawImage(img, x0, y0, w, h);
+    if (x0 > 0) {
+      // Extend a narrow strip of the scene beyond its left edge and soften the join.
+      var edgeW = Math.min(iw * .05, x0 / s);
+      this.ctx.save();
+      if ('filter' in this.ctx) this.ctx.filter = 'blur(4px)';
+      this.ctx.translate(x0, 0); this.ctx.scale(-1, 1);
+      this.ctx.drawImage(img, 0, 0, edgeW, ih, 0, 0, x0, ch); this.ctx.restore();
+    }
+    // The last black render has a clipped duplicate board at its right edge; cover that crop area cleanly.
+    if (this.section.id === 'colors' && !portrait && sp != null && sp > .8) {
+      // The black render has a second board at the far-right edge; extend only the clean wall before it.
+      var maskX = x0 + w * .96;
+      if (maskX < cw) {
+        var edgeWidth = cw - maskX;
+        this.ctx.save();
+        if ('filter' in this.ctx) this.ctx.filter = 'blur(4px)';
+        this.ctx.translate(maskX, 0); this.ctx.scale(-1, 1);
+        this.ctx.drawImage(img, iw * .93, 0, iw * .03, ih, -edgeWidth, 0, edgeWidth, ch);
+        this.ctx.restore();
+      }
+    }
     var k = this.cv.clientWidth / cw;
     this.rect = { x: (cw - w) / 2 * k, y: (ch - h) / 2 * k, w: w * k, h: h * k };
     if (this.onDraw) this.onDraw(j);
@@ -547,19 +604,24 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
 
     // colors
     var colorSeq = seqs.colors;
+    if (colorSeq) { colorSeq.shiftProgress = 0; colorSeq.set(1); }
     var colorST = ST.create({
       trigger: '#colors', start: 'top top', end: '+=220%', pin: '#colors .pin', scrub: .5,
       onUpdate: function (self) {
         // the section opens on Mint Glow: scrolling runs the color sequence backwards (teal, orange, white, black)
         var p = 1 - self.progress;
-        if (colorSeq) colorSeq.set(p);
+        if (colorSeq) {
+          // Reframe the render so the board travels right-to-left into the page center without changing swatch order.
+          colorSeq.shiftProgress = Math.round(self.progress * (colorSeq.n - 1)) / (colorSeq.n - 1);
+          colorSeq.set(p);
+        }
         else gsap.set('#colors .swing', { rotateY: -16 + p * 32, rotateX: 6 - p * 6 });
         setColor(rangeIndex(colorSeq, 'colors', FRAMES, p));
       }
     });
     setColor(3);
     $$('.cp').forEach(function (c, i) {
-      c.addEventListener('click', function () { setHeroFrame(FRAMES[i]); scrollTo(colorST.start + (colorST.end - colorST.start) * (1 - rangeProgress(colorSeq, 'colors', FRAMES[i], i, 4))); });
+      c.addEventListener('click', function () { setColor(i, true); scrollTo(colorST.start + (colorST.end - colorST.start) * (1 - rangeProgress(colorSeq, 'colors', FRAMES[i], i, 4))); });
     });
 
     if (!REDUCED) {
@@ -601,7 +663,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     new Promise(function (res) { if (document.readyState === 'complete') res(); else addEventListener('load', res); }),
     document.fonts ? document.fonts.ready : null
   ]));
-  var boot = busy(loadManifest().then(initSeqs));
+  var boot = busy(ANIM ? loadManifest().then(initSeqs) : Promise.resolve());
   boot.then(function () {
     if (ANIM) {
       try { initMotion(); } catch (e) { root.classList.add('no-anim'); wireStatic(); throw e; }

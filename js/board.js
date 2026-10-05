@@ -44,24 +44,33 @@
   function cx(str, font, c) { var m = measure(str, font); return Math.round(c - (m.r - m.l) / 2); }
 
   // draw str with its baseline at y. color: [r,g,b] or fn(x,y) -> [r,g,b,alpha?]
+  // thresholded glyph masks are cached per string, font and position, so a line that stays put costs no raster work
+  var glyphMaskCache = new Map();
   function text(ctx, str, x, y, color, font, thr) {
     font = font || PIX; thr = thr == null ? 0.5 : thr;
-    sx.clearRect(0, 0, W, H);
-    sx.font = font; sx.textBaseline = 'alphabetic'; sx.textAlign = 'left';
-    sx.fillStyle = '#fff'; sx.fillText(str, Math.round(x), Math.round(y));
-    var img = sx.getImageData(0, 0, W, H), d = img.data, fn = typeof color === 'function' ? color : null;
-    var c = fn ? null : (color || C.white), lim = thr * 255, x0 = W, x1 = -1;
-    for (var p = 0, i = 0; p < N; p++, i += 4) {
-      if (d[i + 3] > lim) {
-        var px = p % W, py = (p / W) | 0, k = fn ? fn(px, py) : c;
-        d[i] = k[0]; d[i + 1] = k[1]; d[i + 2] = k[2]; d[i + 3] = 255 * (k[3] == null ? 1 : k[3]);
-        if (px < x0) x0 = px; if (px > x1) x1 = px;
-      } else d[i + 3] = 0;
+    var key = str + '|' + font + '|' + Math.round(x) + '|' + Math.round(y) + '|' + thr, lit = glyphMaskCache.get(key);
+    if (!lit) {
+      sx.clearRect(0, 0, W, H);
+      sx.font = font; sx.textBaseline = 'alphabetic'; sx.textAlign = 'left';
+      sx.fillStyle = '#fff'; sx.fillText(str, Math.round(x), Math.round(y));
+      var src = sx.getImageData(0, 0, W, H).data, lim = thr * 255, list = [];
+      for (var q = 0; q < N; q++) if (src[q * 4 + 3] > lim) list.push(q);
+      lit = new Uint16Array(list);
+      if (glyphMaskCache.size > 400) glyphMaskCache.delete(glyphMaskCache.keys().next().value);
+      glyphMaskCache.set(key, lit);
+    }
+    var img = sx.createImageData(W, H), d = img.data, fn = typeof color === 'function' ? color : null;
+    var c = fn ? null : (color || C.white), x0 = W, x1 = -1;
+    for (var j = 0; j < lit.length; j++) {
+      var p = lit[j], i = p * 4, px = p % W, py = (p / W) | 0, k = fn ? fn(px, py) : c;
+      d[i] = k[0]; d[i + 1] = k[1]; d[i + 2] = k[2]; d[i + 3] = 255 * (k[3] == null ? 1 : k[3]);
+      if (px < x0) x0 = px; if (px > x1) x1 = px;
     }
     sx.putImageData(img, 0, 0);
     ctx.drawImage(sc, 0, 0);
     return { x0: x0, x1: x1 };
   }
+
   function ctext(ctx, str, c, y, color, font, thr) { return text(ctx, str, cx(str, font || PIX, c), y, color, font, thr); }
 
   function px(ctx, x, y, c, a) { ctx.fillStyle = rgb(c, a); ctx.fillRect(x | 0, y | 0, 1, 1); }
@@ -187,36 +196,24 @@
     ['we danced in', 'the kitchen light'],
     ['and the radio', 'sang all night']
   ];
+  // the demo lyrics (tiles and story): the same board layout, timed at a steady pace
+  var DEMO = (function () {
+    var lines = [], t = 1.2;
+    STANZAS.forEach(function (st) { st.forEach(function (txt) {
+      var ws = txt.split(' '), l = { words: [], t0: t };
+      ws.forEach(function (w) { l.words.push({ text: w, t0: t, t1: t + .42 }); t += .42; });
+      l.text = txt; lines.push(l); t += .5;
+    }); });
+    lines.forEach(function (l, i) { l.t1 = lines[i + 1] ? lines[i + 1].t0 : t; });
+    return { lines: lines, length: t + 1 };
+  })();
   S.lyrics = function () {
     return {
-      label: 'Lyrics', dur: 8,
-      draw: function (ctx, t, st) {
-        var per = 4, si = Math.floor(st / per) % STANZAS.length, lt = st % per;
-        var lines = STANZAS[si], font = '900 13px Nunito';
-        var wt = 0.42, cur = lt / wt, wi = 0;
-        lines.forEach(function (line, li) {
-          var y = li ? 28 : 13, x0 = cx(line, font, 64), parts = line.split(' '), spans = [], acc = '';
-          parts.forEach(function (w, k) {
-            acc += (k ? ' ' : '') + w;
-            spans.push([x0 + (k ? measure(acc.slice(0, acc.length - w.length), font).w : 0), x0 + measure(acc, font).w, wi++]);
-          });
-          var xe = x0 + measure(line, font).w;
-          text(ctx, line, x0, y, function (X) {
-            for (var q = 0; q < spans.length; q++) {
-              var sp = spans[q];
-              if (X >= sp[0] - 1 && X <= sp[1] + 1) {
-                var idx = sp[2], f = cur - idx;
-                if (f >= 1) return sweep(X, x0, xe);
-                if (f > 0 && X <= sp[0] + (sp[1] - sp[0]) * f) return sweep(X, x0, xe);
-                return mul(C.cream, .22);
-              }
-            }
-            return mul(C.cream, .22);
-          }, font);
-        });
-      }
+      label: 'Lyrics', dur: DEMO.length,
+      draw: function (ctx, t, st) { drawLyrics(ctx, DEMO, st % DEMO.length, null, FULL, FULL_FAINT); }
     };
   };
+
 
   // the playlist (js/music.js): the current line lights word by word in the track's color
   function bright(c) { var m = Math.max(c[0], c[1], c[2], 1); return mul(c, 255 / m); }
@@ -224,8 +221,9 @@
   // 1) the line fits by ink at 13 px, 2) or at 11 px, 3) or it wraps at a word into both rows,
   // 4) or the row scrolls smoothly so the word being sung stays in view; words not fully on the board are not drawn.
   // An area is where the lyrics may go: { l, r, sizes }. The full board uses 13 then 11 px.
-  var FULL = { l: 0, r: W, sizes: [13, 11], key: 'full' };
-  function lf(px2) { return '900 ' + px2 + 'px Nunito'; }
+  var FULL = { l: 0, r: W, sizes: [15, 13], key: 'full', big: 18 };
+  // lyrics are set in the MooBoard rounded face, Fredoka SemiBold, like the board
+  function lf(px2) { return '600 ' + px2 + 'px Fredoka'; }
   function join(ws) { return ws.map(function (w) { return w.text; }).join(' '); }
   function inkW(str, font) { var m = measure(str, font); return m.l + m.r; }
   function rowsFor(line, A) {
@@ -252,7 +250,12 @@
     var L = tm.lines, rows = L.map(function (l) { return rowsFor(l, A); }), pages = [], i = 0;
     while (i < L.length) {
       if (rows[i].length === 1 && !rows[i][0].scroll && L[i + 1] && rows[i + 1].length === 1 && !rows[i + 1][0].scroll) { pages.push({ from: i, to: i + 1, rows: [rows[i][0], rows[i + 1][0]] }); i += 2; }
-      else { pages.push({ from: i, to: i, rows: rows[i] }); i += 1; }
+      else {
+        // a line alone that fits one row gets the big size (cap height about 13 LEDs) when it can
+        var one = rows[i];
+        if (one.length === 1 && !one[0].scroll && A.big) { var bf = lf(A.big); if (inkW(join(one[0].words), bf) <= A.r - A.l - 4) one = [{ words: one[0].words, font: bf, big: true }]; }
+        pages.push({ from: i, to: i, rows: one }); i += 1;
+      }
     }
     return (tm._pages[A.key] = pages);
   }
@@ -388,37 +391,62 @@
         var p = M.pos(), L = tm.lines, li = 0;
         while (li < L.length - 1 && p >= L[li].t1) li++;
         var tint = tr && tr.tint ? hexc(tr.tint) : null;
-        var gp = gapAt(tm, p);
-        if (gp) { gapDots(ctx, FULL, 16, gp.k, M.pos(), tint); return; }
-        var pg = pageAt(tm, FULL, p);
-        if (pg.rows.length === 2) { lyricRow(ctx, pg.rows[0], 13, p, tint); lyricRow(ctx, pg.rows[1], 28, p, tint); }
-        else lyricRow(ctx, pg.rows[0], 21, p, tint);
+        drawLyrics(ctx, tm, p, tint, FULL, FULL_FAINT);
       }
     };
   };
 
   // Cover + lyrics with a small clock, like the firmware layout: art square left, lyrics right, time in the corner
-  var COMBO = { l: 34, r: W, sizes: [11, 9], key: 'combo', lift: 1 };
+  // All in One, like the board's "Cover + time" layout: art square top left, the local time under it in warm peach,
+  // lyrics on the right: the current line bright and sweeping, the previous and next lines faint above and below
+  var COMBO = { l: 30, r: W, sizes: [13, 11], key: 'combo', lift: 1 };
+  var FAINT = { l: 30, r: W, sizes: [9], key: 'faint' };
+  var artImgs = {};
+  function artFor(tr) {
+    var M = window.MooMusic, src = tr && M && M.cover ? M.cover(tr) : null;
+    if (!src) return null;
+    var im = artImgs[src];
+    if (!im) { im = artImgs[src] = new Image(); im.crossOrigin = 'anonymous'; im.onerror = function () { im.bad = true; }; im.src = src; }
+    return im.complete && im.naturalWidth && !im.bad ? im : null;
+  }
+  // board-style lyrics in an area: current line big and bright (wraps to two rows if it must), previous and next faint
+  function drawLyrics(ctx, tm, p, tint, A, F) {
+    var L = tm.lines, gp = gapAt(tm, p), mid = (A.l + A.r) / 2;
+    if (gp) { gapDots(ctx, A, 16, gp.k, p, tint); return; }
+    var li = 0;
+    while (li < L.length - 1 && p >= L[li + 1].t0) li++;
+    var cur = rowsFor(L[li], A);
+    if (cur.length === 2) { lyricRow(ctx, cur[0], 14, p, tint, A); lyricRow(ctx, cur[1], 28, p, tint, A); return; }
+    var e = REDUCED ? 1 : clamp((p - L[li].t0) / .25, 0, 1), sh = Math.round((1 - e) * 10);
+    var prev = li > 0 ? rowsFor(L[li - 1], F) : null, next = L[li + 1] ? rowsFor(L[li + 1], F) : null;
+    if (prev && prev.length === 1 && !prev[0].scroll && sh < 7) lyricRow(ctx, prev[0], 7 + sh, -1, tint, F);
+    lyricRow(ctx, cur[0], 21 + sh, p, tint, A);
+    if (next && next.length === 1 && !next[0].scroll && e >= 1) lyricRow(ctx, next[0], 30, -1, tint, F);
+    void mid;
+  }
+  var FULL_FAINT = { l: 0, r: W, sizes: [9], key: 'fullfaint' };
+
   S.combo = function () {
     return {
       label: 'All in One', dur: 12,
       draw: function (ctx, t) {
         var M = window.MooMusic, tm = M && M.timing(), tr = M && M.track(), tint = tr && tr.tint ? hexc(tr.tint) : C.marigold;
-        // the cover: the track's color as a soft square with a glowing disc
-        for (var y = 0; y < 32; y++) rect(ctx, 0, y, 32, 1, mix(mul(tint, .35), mix(tint, C.white, .35), y / 31));
-        disc(ctx, 16, 14, 8, mix(tint, C.white, .6), .9); disc(ctx, 16, 14, 5, mix(tint, C.white, .85));
-        for (var r = 0; r < 4; r++) rect(ctx, 4 + r * 2, 25 + r, 24 - r * 4, 1, mix(tint, C.white, .3), .7);
-        var d = new Date(), c = clockParts(d), tm2 = c.h + ':' + c.m;
-        text(ctx, tm2, W - 2 - measure(tm2, PIX).w, 8, mul(C.sky, .9));
+        var AX = 5, AY = 1, AS = 20, im = artFor(tr);
+        if (im) { try { ctx.imageSmoothingEnabled = true; ctx.drawImage(im, AX, AY, AS, AS); } catch (e) { im = null; } }
+        if (!im) {
+          for (var y = 0; y < AS; y++) rect(ctx, AX, AY + y, AS, 1, mix(mul(tint, .35), mix(tint, C.white, .35), y / (AS - 1)));
+          disc(ctx, AX + AS / 2, AY + 9, 5, mix(tint, C.white, .7));
+        }
+        // the visitor's local time, h:mm, centred under the art
+        var d = new Date(), c = clockParts(d), clk = c.h + ':' + c.m;
+        ctext(ctx, clk, AX + AS / 2, 30, [255, 206, 170]);
         if (!tm || !tm.lines || !tm.lines.length) return;
-        var p = M.pos(), gp = gapAt(tm, p);
-        if (gp) { gapDots(ctx, COMBO, 22, gp.k, p, tint); return; }
-        var pg = pageAt(tm, COMBO, p);
-        if (pg.rows.length === 2) { lyricRow(ctx, pg.rows[0], 20, p, tint, COMBO); lyricRow(ctx, pg.rows[1], 30, p, tint, COMBO); }
-        else lyricRow(ctx, pg.rows[0], 24, p, tint, COMBO);
+        var p = M.pos();
+        drawLyrics(ctx, tm, p, tint, COMBO, FAINT);
       }
     };
   };
+
 
   S.art = function () {
     return {
