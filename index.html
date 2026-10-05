@@ -22,10 +22,6 @@
 <link rel="icon" href="brand/mark-teal.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&family=Silkscreen&family=Noto+Sans+Devanagari:wght@600&display=swap">
 <link rel="stylesheet" href="css/site.css">
 <script>document.documentElement.classList.add('js');
 if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('error', function (e) { __err.push((e.message || 'load fail') + ' ' + (e.filename || (e.target && (e.target.src || e.target.href)) || '')); }, true); addEventListener('unhandledrejection', function (e) { __err.push('rejection ' + e.reason); }); setTimeout(function () { var o = {}; document.querySelectorAll('main > section, footer').forEach(function (s) { o[s.id || s.className] = Math.round(s.getBoundingClientRect().top + scrollY); }); document.body.setAttribute('data-debug', JSON.stringify({ err: __err, top: o, h: document.documentElement.scrollHeight, w: document.documentElement.scrollWidth })); }, 4000); }</script>
@@ -251,9 +247,9 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
 </div>
 <div class="np" id="np"><img class="np-cover" alt="" width="36" height="36"><span class="np-txt"><span class="np-t"></span><span class="np-a"></span></span><i class="np-eq" aria-hidden="true"><b></b><b></b><b></b></i></div>
 
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" defer></script>
+<script src="js/vendor/gsap.min.js" defer></script>
+<script src="js/vendor/ScrollTrigger.min.js" defer></script>
+<script src="js/vendor/lenis.min.js" defer></script>
 <script src="js/board.js" defer></script>
 <script src="js/seq.js" defer></script>
 <script src="js/music.js" defer></script>
