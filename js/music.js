@@ -195,7 +195,9 @@
   }
 
   /* ---------- transport ---------- */
-  // one <audio> per radio song, made up front so every preview is buffered before its turn
+  // one <audio> per radio song. The first is made up front so it is buffered when the radio starts; each next one
+  // is made when the song before it starts playing, which leaves a whole preview (30 s) to buffer before the crossfade
+  // instead of fetching all five (about 5 MB) at page load.
   function el(t) {
     var a = els[t.id];
     if (a) return a;
@@ -224,6 +226,8 @@
     loadTiming(t).then(function () { emit('timing'); });
     loadTiming(list[(idx + 1) % list.length]);
     playing = true; startAt = performance.now() - at * 1000;
+    var nx = list[(idx + 1) % list.length];
+    if (nx && nx.src && nx !== t) el(nx);
     if (t.src) {
       audioEl = el(t); audioEl.muted = muted;
       try { audioEl.currentTime = at; } catch (e) { /* not seekable yet */ }
@@ -284,7 +288,8 @@
   }).then(function (tracks) {
     list = tracks;
     if (!list.length) return;
-    list.forEach(function (t) { if (t.src) el(t); loadTiming(t); });
+    list.forEach(function (t) { loadTiming(t); });
+    if (list[0].src) el(list[0]);
     var first = list[0], audio = !first.src ? null : new Promise(function (res) {
       var a = el(first);
       if (a.readyState >= 3) res(); else { a.addEventListener('canplaythrough', res); a.addEventListener('error', res); }
