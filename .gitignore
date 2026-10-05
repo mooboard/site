@@ -1,3 +1,4 @@
 .DS_Store
 # owner-supplied local music: audio, lyrics and art never go in git
 local-music/
+__pycache__/
