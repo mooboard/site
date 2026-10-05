@@ -32,6 +32,8 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   var params = new URLSearchParams(location.search);
   var gsap = window.gsap, ST = window.ScrollTrigger;
   var ANIM = !!(gsap && ST) && !params.has('static') && !REDUCED;
+  // touch-only devices scroll natively under Lenis anyway (it smooths the wheel, not touch), so there it is only overhead
+  var TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
   if (!ANIM) document.documentElement.classList.add('no-anim');
   var root = document.documentElement;
   var MB = window.MooBoard;
@@ -366,7 +368,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   function initMotion() {
     gsap.registerPlugin(ST);
     var lenis = null;
-    if (window.Lenis && !REDUCED) {
+    if (window.Lenis && !REDUCED && !TOUCH) {
       lenis = new window.Lenis({ lerp: .1, smoothWheel: true });
       lenis.on('scroll', ST.update);
       gsap.ticker.add(function (t) { lenis.raf(t * 1000); });
