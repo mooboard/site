@@ -16,7 +16,12 @@
           0.7844,
           0.5822
         ]
-      }
+      },
+      "sizes": [
+        960,
+        1600
+      ],
+      "poster": "poster.webp"
     },
     "colors": {
       "dir": "seq-colors",
@@ -51,7 +56,12 @@
           "w": 0.7
         },
         "at": 0.42
-      }
+      },
+      "sizes": [
+        960,
+        1600
+      ],
+      "poster": "poster.webp"
     },
     "room": {
       "dir": "seq-room",
@@ -72,7 +82,12 @@
           "w": 0.9
         },
         "at": 0.45
-      }
+      },
+      "sizes": [
+        960,
+        1600
+      ],
+      "poster": "poster.webp"
     }
   }
 }

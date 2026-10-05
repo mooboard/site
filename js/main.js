@@ -32,12 +32,6 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   var params = new URLSearchParams(location.search);
   var gsap = window.gsap, ST = window.ScrollTrigger;
   var ANIM = !!(gsap && ST) && !params.has('static') && !REDUCED;
-  if (ANIM) {
-    var heroPreload = document.createElement('link');
-    heroPreload.rel = 'preload'; heroPreload.as = 'image'; heroPreload.type = 'image/webp';
-    heroPreload.href = 'renders/seq-hero/0001.webp'; heroPreload.fetchPriority = 'low';
-    document.head.appendChild(heroPreload);
-  }
   if (!ANIM) document.documentElement.classList.add('no-anim');
   var root = document.documentElement;
   var MB = window.MooBoard;
@@ -344,130 +338,9 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     if (first.complete && first.naturalWidth) ok(); else first.addEventListener('load', ok);
   });
 
-  /* ---------- scroll-scrubbed render sequences ---------- */
-  function pad(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
-  function Seq(section, spec) {
-    this.section = section; this.spec = spec; this.n = spec.frames;
-    this.cv = $('.seq-canvas', section); this.ctx = this.cv.getContext('2d'); this.shiftProgress = null;
-    this.imgs = new Array(this.n); this.ok = new Uint8Array(this.n); this.want = 0; this.started = false;
-  }
-  Seq.prototype.url = function (i) { var s = this.spec; return 'renders/' + s.dir + '/' + pad(i + 1, s.pad || 4) + '.' + (s.ext || 'webp'); };
-  Seq.prototype.load = function (i) {
-    var self = this;
-    if (this.imgs[i]) return this.imgs[i].p;
-    var img = new Image(); img.decoding = 'async';
-    img.p = new Promise(function (res) {
-      img.onload = function () { self.ok[i] = 1; res(true); if (Math.abs(i - self.want) < 3) self.draw(); };
-      img.onerror = function () {
-        if (img.retried) return res(false);
-        img.retried = true; setTimeout(function () { img.src = self.url(i) + '?r=1'; }, 400);
-      };
-    });
-    img.src = this.url(i); this.imgs[i] = img;
-    return img.p;
-  };
-  Seq.prototype.preload = function () {
-    if (this.started) return; this.started = true;
-    var fin = function () {};
-    var self = this, order = [], seen = {};
-    [16, 8, 4, 2, 1].forEach(function (st) { for (var i = 0; i < self.n; i += st) if (!seen[i]) { seen[i] = 1; order.push(i); } });
-    var k = 0;
-    (function next() { var batch = order.slice(k, k + 6); k += 6; if (!batch.length) return fin(); Promise.all(batch.map(function (i) { return self.load(i); })).then(next); })();
-  };
-  Seq.prototype.size = function () {
-    var dpr = Math.min(devicePixelRatio || 1, 2), w = this.cv.clientWidth, h = this.cv.clientHeight;
-    if (this.cv.width !== Math.round(w * dpr)) { this.cv.width = Math.round(w * dpr); this.cv.height = Math.round(h * dpr); }
-  };
-  Seq.prototype.set = function (p) { this.want = Math.round(Math.max(0, Math.min(1, p)) * (this.n - 1)); this.draw(); };
-  Seq.prototype.draw = function () {
-    var i = this.want, j = -1;
-    for (var d = 0; d < this.n; d++) { if (this.ok[i - d]) { j = i - d; break; } if (this.ok[i + d]) { j = i + d; break; } }
-    if (j < 0 || !this.cv.clientWidth) return;
-    this.size();
-    var img = this.imgs[j], cw = this.cv.width, ch = this.cv.height, ir = img.naturalWidth / img.naturalHeight;
-    var iw = img.naturalWidth, ih = img.naturalHeight, portrait = cw / ch <= 1;
-    var sp = this.shiftProgress;
-    // Pan the crop from a right-side start toward center, with separate framing for phone and landscape views.
-    var shift = sp == null ? 0 : (portrait ? .295 - .386 * sp : .263 - .327 * sp) * cw;
-    if (j === this.drawn && cw === this.lastW && shift === this.lastShift) return;
-    this.drawn = j; this.lastW = cw; this.lastShift = shift;
-    // landscape: cover. portrait: a little wider than the screen, with the frame's top and bottom rows stretched to fill
-    var s = portrait ? cw * 1.55 / iw : Math.max(cw / iw, ch / ih);
-    var w = iw * s, h = w / ir, x0 = (cw - w) / 2, y0 = (ch - h) / 2 + ch * (portrait ? 0 : this.spec.shiftY || 0);
-    var pf = portrait && this.spec.portrait;
-    if (pf) {
-      // phones: frame a focus point (x, y as fractions of the render) showing a set share of its width,
-      // eased from the first frame's framing to the last one's
-      var k = this.n > 1 ? j / (this.n - 1) : 0, a = pf.from, b = pf.to || pf.from, L = function (u, v) { return u + (v - u) * k; };
-      var fw = L(a.w, b.w), fx = L(a.x, b.x), fy = L(a.y, b.y), at = pf.at || .46;
-      w = cw / fw; h = w / ir; x0 = cw / 2 - fx * w; y0 = ch * at - fy * h;
-    }
-    x0 += shift;
-    this.ctx.clearRect(0, 0, cw, ch);
-    if (y0 > 0) this.ctx.drawImage(img, 0, 0, iw, 1, x0, 0, w, y0 + 1);
-    if (y0 + h < ch) this.ctx.drawImage(img, 0, ih - 1, iw, 1, x0, y0 + h - 1, w, ch - y0 - h + 1);
-    this.ctx.drawImage(img, x0, y0, w, h);
-    if (x0 > 0) {
-      // Extend a narrow strip of the scene beyond its left edge and soften the join.
-      var edgeW = Math.min(iw * .05, x0 / s);
-      this.ctx.save();
-      if ('filter' in this.ctx) this.ctx.filter = 'blur(4px)';
-      this.ctx.translate(x0, 0); this.ctx.scale(-1, 1);
-      this.ctx.drawImage(img, 0, 0, edgeW, ih, 0, 0, x0, ch); this.ctx.restore();
-    }
-    // The last black render has a clipped duplicate board at its right edge; cover that crop area cleanly.
-    if (this.section.id === 'colors' && !portrait && sp != null && sp > .8) {
-      // The black render has a second board at the far-right edge; extend only the clean wall before it.
-      var maskX = x0 + w * .96;
-      if (maskX < cw) {
-        var edgeWidth = cw - maskX;
-        this.ctx.save();
-        if ('filter' in this.ctx) this.ctx.filter = 'blur(4px)';
-        this.ctx.translate(maskX, 0); this.ctx.scale(-1, 1);
-        this.ctx.drawImage(img, iw * .93, 0, iw * .03, ih, -edgeWidth, 0, edgeWidth, ch);
-        this.ctx.restore();
-      }
-    }
-    var k = this.cv.clientWidth / cw;
-    this.rect = { x: (cw - w) / 2 * k, y: (ch - h) / 2 * k, w: w * k, h: h * k };
-    if (this.onDraw) this.onDraw(j);
-  };
-  function tint(section, img) {
-    try {
-      var c = document.createElement('canvas'); c.width = c.height = 1;
-      var x = c.getContext('2d'); x.drawImage(img, 2, 2, 1, 1, 0, 0, 1, 1);
-      var d = x.getImageData(0, 0, 1, 1).data;
-      section.style.background = 'rgb(' + d[0] + ',' + d[1] + ',' + d[2] + ')';
-      section.classList.toggle('on-light', d[0] * .3 + d[1] * .59 + d[2] * .11 > 150);
-    } catch (e) { /* keep css background */ }
-  }
-
-  function loadManifest() {
-    return fetch('renders/manifest.json', { cache: 'no-cache' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; });
-  }
-
+  /* ---------- scroll-scrubbed render sequences: js/seq.js ---------- */
   var seqs = {};
-  function initSeqs(man) {
-    var list = (man && man.sequences) || {};
-    return Promise.all($$('[data-seq]').map(function (sec) {
-      var name = sec.dataset.seq, spec = list[name];
-      if (!spec || !(spec.frames > 0)) return null;
-      var s = new Seq(sec, spec);
-      return s.load(0).then(function (ok) {
-        if (!ok) return;
-        seqs[name] = s; sec.classList.add('has-frames');
-        if (spec.tint !== false) tint(sec, s.imgs[0]);
-        s.set(0);
-        if ('IntersectionObserver' in window) {
-          var io = new IntersectionObserver(function (e) { if (e[0].isIntersecting) { s.preload(); io.disconnect(); } }, { rootMargin: '150% 0px' });
-          io.observe(sec);
-        } else s.preload();
-      });
-    }));
-  }
-  addEventListener('resize', function () { Object.keys(seqs).forEach(function (k) { seqs[k].drawn = -1; seqs[k].draw(); }); });
+  addEventListener('resize', function () { Object.keys(seqs).forEach(function (k) { seqs[k].redraw(); }); });
 
   /* ---------- static fallbacks (no GSAP) ---------- */
   function wireStatic() {
@@ -559,7 +432,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
         live.style.width = ((q[2] - q[0]) * r.w) + 'px'; live.style.height = ((q[3] - q[1]) * r.h) + 'px';
         live.style.opacity = Math.max(0, Math.min(1, (j - scr.from + 4) / 8));
       };
-      storySeq.drawn = -1; storySeq.draw();
+      storySeq.redraw();
     }
     if (!storySeq) gsap.set('#story .spin', { rotateX: 58, rotateZ: -10, scale: .8, y: 40 });
     var storyTl = gsap.timeline({
@@ -663,7 +536,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     new Promise(function (res) { if (document.readyState === 'complete') res(); else addEventListener('load', res); }),
     document.fonts ? document.fonts.ready : null
   ]));
-  var boot = busy(ANIM ? loadManifest().then(initSeqs) : Promise.resolve());
+  var boot = busy(ANIM && window.MooSeq ? window.MooSeq.load().then(function (s) { seqs = s; }) : Promise.resolve());
   boot.then(function () {
     if (ANIM) {
       try { initMotion(); } catch (e) { root.classList.add('no-anim'); wireStatic(); throw e; }
@@ -671,6 +544,6 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     } else wireStatic();
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (ST) ST.refresh(); });
     // draw each sequence's current frame once layout has settled
-    requestAnimationFrame(function () { Object.keys(seqs).forEach(function (k) { seqs[k].drawn = -1; seqs[k].draw(); }); });
+    requestAnimationFrame(function () { Object.keys(seqs).forEach(function (k) { seqs[k].redraw(); }); });
   });
 })();
