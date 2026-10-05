@@ -1,0 +1,291 @@
+<!doctype html>
+<!-- mooboard.co/hello and every unknown path (GitHub Pages serves 404.html): finds the MooBoard on this phone's
+     network through api.mooboard.co and opens its portal. 404.html and hello/index.html are the same file
+     (tools/hello.test.mjs checks): the script decides by the path. No assets but the api fetch. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0E1A22">
+<title>MooBoard</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:32px 20px;background:#0E1A22;color:#DDEBE7;text-align:center;font:17px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{width:100%;max-width:420px}
+.cow{display:block;width:128px;height:auto;margin:0 auto 24px}
+h1{margin:0 0 10px;font-size:1.6rem;line-height:1.2;font-weight:800;color:#fff;letter-spacing:-.01em;overflow-wrap:anywhere}
+p{margin:0 0 22px;color:#A9BDB8}
+a{color:#77EDD7}
+.btn{display:block;width:100%;padding:15px 20px;border:0;border-radius:16px;background:#77EDD7;color:#0E1A22;font:inherit;font-weight:700;text-decoration:none;cursor:pointer}
+.link{display:inline-block;margin-top:14px;padding:8px 12px;border:0;background:none;color:#77EDD7;font:inherit;text-decoration:underline;cursor:pointer}
+.quiet{margin:20px 0 0;font-size:.875rem;color:#7F9792}
+.foot{margin:24px 0 0;font-size:.9375rem}
+.cards{display:grid;gap:12px;margin:0 0 4px}
+.card{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border-radius:18px;background:#15262F;border:1px solid #23404A;color:#fff;font:inherit;text-align:left;cursor:pointer}
+.card:active{background:#1B313C}
+.mini svg{display:block;width:52px;height:auto}
+.who{min-width:0}
+.who b{display:block;font-size:1.35rem;line-height:1.2;font-weight:800;overflow-wrap:anywhere}
+.who small{display:block;margin-top:3px;color:#77EDD7;font-size:.85rem;letter-spacing:.14em}
+.code{margin:4px 0 14px;color:#77EDD7;font:800 3.6rem/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.14em}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="cow" viewBox="0 0 136 108"><rect x="41" y="4" width="11" height="24" rx="5.5" fill="#F5E9D6"/><rect x="84" y="4" width="11" height="24" rx="5.5" fill="#F5E9D6"/><ellipse cx="20" cy="45" rx="19" ry="10" fill="#77EDD7"/><ellipse cx="18" cy="45" rx="10" ry="4.6" fill="#FFB7C9"/><ellipse cx="116" cy="45" rx="19" ry="10" fill="#77EDD7"/><ellipse cx="118" cy="45" rx="10" ry="4.6" fill="#FFB7C9"/><rect x="18" y="20" width="100" height="84" rx="30" fill="#77EDD7"/><rect x="31" y="33" width="74" height="58" rx="17" fill="#0E1A22"/><g fill="#1F2E38"><circle cx="42" cy="36" r="1.2"/><circle cx="46" cy="36" r="1.2"/><circle cx="50" cy="36" r="1.2"/><circle cx="54" cy="36" r="1.2"/><circle cx="58" cy="36" r="1.2"/><circle cx="62" cy="36" r="1.2"/><circle cx="66" cy="36" r="1.2"/><circle cx="70" cy="36" r="1.2"/><circle cx="74" cy="36" r="1.2"/><circle cx="78" cy="36" r="1.2"/><circle cx="82" cy="36" r="1.2"/><circle cx="86" cy="36" r="1.2"/><circle cx="90" cy="36" r="1.2"/><circle cx="94" cy="36" r="1.2"/><circle cx="38" cy="40" r="1.2"/><circle cx="42" cy="40" r="1.2"/><circle cx="46" cy="40" r="1.2"/><circle cx="50" cy="40" r="1.2"/><circle cx="54" cy="40" r="1.2"/><circle cx="58" cy="40" r="1.2"/><circle cx="62" cy="40" r="1.2"/><circle cx="66" cy="40" r="1.2"/><circle cx="70" cy="40" r="1.2"/><circle cx="74" cy="40" r="1.2"/><circle cx="78" cy="40" r="1.2"/><circle cx="82" cy="40" r="1.2"/><circle cx="86" cy="40" r="1.2"/><circle cx="90" cy="40" r="1.2"/><circle cx="94" cy="40" r="1.2"/><circle cx="98" cy="40" r="1.2"/><circle cx="34" cy="44" r="1.2"/><circle cx="38" cy="44" r="1.2"/><circle cx="42" cy="44" r="1.2"/><circle cx="58" cy="44" r="1.2"/><circle cx="62" cy="44" r="1.2"/><circle cx="66" cy="44" r="1.2"/><circle cx="70" cy="44" r="1.2"/><circle cx="74" cy="44" r="1.2"/><circle cx="78" cy="44" r="1.2"/><circle cx="94" cy="44" r="1.2"/><circle cx="98" cy="44" r="1.2"/><circle cx="102" cy="44" r="1.2"/><circle cx="34" cy="48" r="1.2"/><circle cx="38" cy="48" r="1.2"/><circle cx="62" cy="48" r="1.2"/><circle cx="66" cy="48" r="1.2"/><circle cx="70" cy="48" r="1.2"/><circle cx="74" cy="48" r="1.2"/><circle cx="98" cy="48" r="1.2"/><circle cx="102" cy="48" r="1.2"/><circle cx="34" cy="52" r="1.2"/><circle cx="38" cy="52" r="1.2"/><circle cx="62" cy="52" r="1.2"/><circle cx="66" cy="52" r="1.2"/><circle cx="70" cy="52" r="1.2"/><circle cx="74" cy="52" r="1.2"/><circle cx="98" cy="52" r="1.2"/><circle cx="102" cy="52" r="1.2"/><circle cx="34" cy="56" r="1.2"/><circle cx="38" cy="56" r="1.2"/><circle cx="62" cy="56" r="1.2"/><circle cx="66" cy="56" r="1.2"/><circle cx="70" cy="56" r="1.2"/><circle cx="74" cy="56" r="1.2"/><circle cx="98" cy="56" r="1.2"/><circle cx="102" cy="56" r="1.2"/><circle cx="34" cy="60" r="1.2"/><circle cx="38" cy="60" r="1.2"/><circle cx="42" cy="60" r="1.2"/><circle cx="58" cy="60" r="1.2"/><circle cx="62" cy="60" r="1.2"/><circle cx="66" cy="60" r="1.2"/><circle cx="70" cy="60" r="1.2"/><circle cx="74" cy="60" r="1.2"/><circle cx="78" cy="60" r="1.2"/><circle cx="94" cy="60" r="1.2"/><circle cx="98" cy="60" r="1.2"/><circle cx="102" cy="60" r="1.2"/><circle cx="34" cy="64" r="1.2"/><circle cx="38" cy="64" r="1.2"/><circle cx="42" cy="64" r="1.2"/><circle cx="46" cy="64" r="1.2"/><circle cx="50" cy="64" r="1.2"/><circle cx="54" cy="64" r="1.2"/><circle cx="58" cy="64" r="1.2"/><circle cx="62" cy="64" r="1.2"/><circle cx="66" cy="64" r="1.2"/><circle cx="70" cy="64" r="1.2"/><circle cx="74" cy="64" r="1.2"/><circle cx="78" cy="64" r="1.2"/><circle cx="82" cy="64" r="1.2"/><circle cx="86" cy="64" r="1.2"/><circle cx="90" cy="64" r="1.2"/><circle cx="94" cy="64" r="1.2"/><circle cx="98" cy="64" r="1.2"/><circle cx="102" cy="64" r="1.2"/><circle cx="34" cy="68" r="1.2"/><circle cx="38" cy="68" r="1.2"/><circle cx="42" cy="68" r="1.2"/><circle cx="46" cy="68" r="1.2"/><circle cx="50" cy="68" r="1.2"/><circle cx="54" cy="68" r="1.2"/><circle cx="58" cy="68" r="1.2"/><circle cx="62" cy="68" r="1.2"/><circle cx="66" cy="68" r="1.2"/><circle cx="70" cy="68" r="1.2"/><circle cx="74" cy="68" r="1.2"/><circle cx="78" cy="68" r="1.2"/><circle cx="82" cy="68" r="1.2"/><circle cx="86" cy="68" r="1.2"/><circle cx="90" cy="68" r="1.2"/><circle cx="94" cy="68" r="1.2"/><circle cx="98" cy="68" r="1.2"/><circle cx="102" cy="68" r="1.2"/><circle cx="34" cy="72" r="1.2"/><circle cx="38" cy="72" r="1.2"/><circle cx="42" cy="72" r="1.2"/><circle cx="46" cy="72" r="1.2"/><circle cx="50" cy="72" r="1.2"/><circle cx="86" cy="72" r="1.2"/><circle cx="90" cy="72" r="1.2"/><circle cx="94" cy="72" r="1.2"/><circle cx="98" cy="72" r="1.2"/><circle cx="102" cy="72" r="1.2"/><circle cx="34" cy="76" r="1.2"/><circle cx="38" cy="76" r="1.2"/><circle cx="42" cy="76" r="1.2"/><circle cx="46" cy="76" r="1.2"/><circle cx="90" cy="76" r="1.2"/><circle cx="94" cy="76" r="1.2"/><circle cx="98" cy="76" r="1.2"/><circle cx="102" cy="76" r="1.2"/><circle cx="34" cy="80" r="1.2"/><circle cx="38" cy="80" r="1.2"/><circle cx="42" cy="80" r="1.2"/><circle cx="46" cy="80" r="1.2"/><circle cx="50" cy="80" r="1.2"/><circle cx="86" cy="80" r="1.2"/><circle cx="90" cy="80" r="1.2"/><circle cx="94" cy="80" r="1.2"/><circle cx="98" cy="80" r="1.2"/><circle cx="102" cy="80" r="1.2"/><circle cx="38" cy="84" r="1.2"/><circle cx="42" cy="84" r="1.2"/><circle cx="46" cy="84" r="1.2"/><circle cx="50" cy="84" r="1.2"/><circle cx="86" cy="84" r="1.2"/><circle cx="90" cy="84" r="1.2"/><circle cx="94" cy="84" r="1.2"/><circle cx="98" cy="84" r="1.2"/><circle cx="42" cy="88" r="1.2"/><circle cx="46" cy="88" r="1.2"/><circle cx="50" cy="88" r="1.2"/><circle cx="54" cy="88" r="1.2"/><circle cx="58" cy="88" r="1.2"/><circle cx="62" cy="88" r="1.2"/><circle cx="66" cy="88" r="1.2"/><circle cx="70" cy="88" r="1.2"/><circle cx="74" cy="88" r="1.2"/><circle cx="78" cy="88" r="1.2"/><circle cx="82" cy="88" r="1.2"/><circle cx="86" cy="88" r="1.2"/><circle cx="90" cy="88" r="1.2"/><circle cx="94" cy="88" r="1.2"/></g><g fill="#FFFFFF"><circle cx="46" cy="44" r="1.75"/><circle cx="50" cy="44" r="1.75"/><circle cx="54" cy="44" r="1.75"/><circle cx="82" cy="44" r="1.75"/><circle cx="86" cy="44" r="1.75"/><circle cx="90" cy="44" r="1.75"/><circle cx="42" cy="48" r="1.75"/><circle cx="46" cy="48" r="1.75"/><circle cx="50" cy="48" r="1.75"/><circle cx="54" cy="48" r="1.75"/><circle cx="58" cy="48" r="1.75"/><circle cx="78" cy="48" r="1.75"/><circle cx="82" cy="48" r="1.75"/><circle cx="86" cy="48" r="1.75"/><circle cx="90" cy="48" r="1.75"/><circle cx="94" cy="48" r="1.75"/><circle cx="42" cy="52" r="1.75"/><circle cx="46" cy="52" r="1.75"/><circle cx="54" cy="52" r="1.75"/><circle cx="58" cy="52" r="1.75"/><circle cx="78" cy="52" r="1.75"/><circle cx="82" cy="52" r="1.75"/><circle cx="90" cy="52" r="1.75"/><circle cx="94" cy="52" r="1.75"/><circle cx="42" cy="56" r="1.75"/><circle cx="46" cy="56" r="1.75"/><circle cx="50" cy="56" r="1.75"/><circle cx="54" cy="56" r="1.75"/><circle cx="58" cy="56" r="1.75"/><circle cx="78" cy="56" r="1.75"/><circle cx="82" cy="56" r="1.75"/><circle cx="86" cy="56" r="1.75"/><circle cx="90" cy="56" r="1.75"/><circle cx="94" cy="56" r="1.75"/><circle cx="46" cy="60" r="1.75"/><circle cx="50" cy="60" r="1.75"/><circle cx="54" cy="60" r="1.75"/><circle cx="82" cy="60" r="1.75"/><circle cx="86" cy="60" r="1.75"/><circle cx="90" cy="60" r="1.75"/></g><g fill="#FFB7C9"><circle cx="54" cy="72" r="1.75"/><circle cx="58" cy="72" r="1.75"/><circle cx="62" cy="72" r="1.75"/><circle cx="66" cy="72" r="1.75"/><circle cx="70" cy="72" r="1.75"/><circle cx="74" cy="72" r="1.75"/><circle cx="78" cy="72" r="1.75"/><circle cx="82" cy="72" r="1.75"/><circle cx="50" cy="76" r="1.75"/><circle cx="54" cy="76" r="1.75"/><circle cx="62" cy="76" r="1.75"/><circle cx="66" cy="76" r="1.75"/><circle cx="70" cy="76" r="1.75"/><circle cx="74" cy="76" r="1.75"/><circle cx="82" cy="76" r="1.75"/><circle cx="86" cy="76" r="1.75"/><circle cx="54" cy="80" r="1.75"/><circle cx="58" cy="80" r="1.75"/><circle cx="62" cy="80" r="1.75"/><circle cx="66" cy="80" r="1.75"/><circle cx="70" cy="80" r="1.75"/><circle cx="74" cy="80" r="1.75"/><circle cx="78" cy="80" r="1.75"/><circle cx="82" cy="80" r="1.75"/><circle cx="54" cy="84" r="1.75"/><circle cx="58" cy="84" r="1.75"/><circle cx="62" cy="84" r="1.75"/><circle cx="66" cy="84" r="1.75"/><circle cx="70" cy="84" r="1.75"/><circle cx="74" cy="84" r="1.75"/><circle cx="78" cy="84" r="1.75"/><circle cx="82" cy="84" r="1.75"/></g><g fill="#0E1A22"><circle cx="58" cy="76" r="1.75"/><circle cx="78" cy="76" r="1.75"/></g><circle id="pl" cx="50" cy="52" r="1.75" fill="#0E1A22"/><circle id="pr" cx="86" cy="52" r="1.75" fill="#0E1A22"/></symbol></svg>
+<main>
+<svg class="cow" viewBox="0 0 136 108" role="img" aria-label="MooBoard"><use href="#cow"/></svg>
+<div id="view" aria-live="polite"><noscript><h1>Open mooboard.local</h1><p>This page needs JavaScript. On your home Wi-Fi, <a href="http://mooboard.local">mooboard.local</a> opens your MooBoard too.</p></noscript></div>
+</main>
+<script>
+(function () {
+  'use strict';
+  var API = 'https://api.mooboard.co';
+  var ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // the label's: no 0/O, no 1/I/L
+  var INK = '#0E1A22';
+  var TIMEOUT_MS = 6000;
+  var AUTO_GO_MS = 1500;
+  var TICK_MS = 100;   // the panel's startup card gives the pupils a new colour every 100 ms
+  var view = document.getElementById('view');
+  var pupils = [document.getElementById('pl'), document.getElementById('pr')];
+  var rainbow = null;
+  var autoGo = null;
+
+  function validCode(c) {
+    if (typeof c !== 'string' || c.length !== 4) return false;
+    for (var i = 0; i < 4; i++) if (ALPHABET.indexOf(c.charAt(i)) < 0) return false;
+    return true;
+  }
+
+  // 10/8, 172.16/12 or 192.168/16, written plainly: the only kind of address this page will send anyone to.
+  function privateIPv4(s) {
+    var m = typeof s === 'string' && /^(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})$/.exec(s);
+    if (!m) return false;
+    var o = [+m[1], +m[2], +m[3], +m[4]];
+    if (o[0] > 255 || o[1] > 255 || o[2] > 255 || o[3] > 255) return false;
+    return o[0] === 10 || (o[0] === 172 && o[1] >= 16 && o[1] <= 31) || (o[0] === 192 && o[1] === 168);
+  }
+
+  // A board's code (/5KAS, /wall/5kas/ ...), the nearby list (/hello), a path word to send there, or nothing.
+  function route(pathname) {
+    var path = String(pathname).replace(/\/index\.html$/, '/');
+    var m = /^\/(?:(?:hello|wall|my|moo|go|open)\/)?([A-Za-z0-9]{4})\/?$/i.exec(path);
+    if (m && validCode(m[1].toUpperCase())) return { kind: 'code', code: m[1].toUpperCase() };
+    var w = /^\/(hello|wall|my|moo|go|open)\/?$/i.exec(path);
+    if (w) return w[1].toLowerCase() === 'hello' ? { kind: 'nearby' } : { kind: 'hello' };
+    return { kind: 'missing' };
+  }
+
+  // The loading cow: a random full hue in each pupil every tick, as on the panel, and black again once settled.
+  function tick() {
+    for (var i = 0; i < pupils.length; i++) {
+      if (pupils[i]) pupils[i].setAttribute('fill', 'hsl(' + Math.floor(Math.random() * 360) + ',100%,50%)');
+    }
+  }
+  function spin(on) {
+    if (rainbow !== null) clearInterval(rainbow);
+    rainbow = null;
+    if (on) {
+      tick();
+      rainbow = setInterval(tick, TICK_MS);
+      return;
+    }
+    for (var i = 0; i < pupils.length; i++) if (pupils[i]) pupils[i].setAttribute('fill', INK);
+  }
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function link(cls, text, href) {
+    var a = el('a', cls, text);
+    a.setAttribute('href', href);
+    return a;
+  }
+  function button(cls, text, onClick) {
+    var b = el('button', cls, text);
+    b.setAttribute('type', 'button');
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  function show(nodes) {
+    if (autoGo !== null) clearTimeout(autoGo);
+    autoGo = null;
+    view.textContent = '';
+    for (var i = 0; i < nodes.length; i++) view.appendChild(nodes[i]);
+  }
+  function guide() {
+    var p = el('p', 'foot');
+    p.appendChild(link('', 'Setup guide', 'https://mooboard.co/guide'));
+    return p;
+  }
+  // One board: a mini cow, its name big and its code small. Names go in as text, never as markup.
+  function card(board, onClick) {
+    var c = button('card', undefined, onClick);
+    var mini = el('span', 'mini');
+    mini.innerHTML = '<svg viewBox="0 0 136 108" aria-hidden="true"><use href="#cow"/></svg>';
+    c.appendChild(mini);
+    var who = el('span', 'who');
+    who.appendChild(el('b', '', board.name));
+    if (validCode(board.code)) who.appendChild(el('small', '', board.code));
+    c.appendChild(who);
+    return c;
+  }
+  function cards(boards, onPick) {
+    var list = el('div', 'cards');
+    boards.forEach(function (b) {
+      list.appendChild(card(b, function () { onPick(b); }));
+    });
+    return list;
+  }
+
+  function getJSON(path) {
+    var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, TIMEOUT_MS);
+    var opts = { cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer' };
+    if (ctrl) opts.signal = ctrl.signal;
+    return fetch(API + path, opts)
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        clearTimeout(timer);
+        return data;
+      }, function (err) {
+        clearTimeout(timer);
+        throw err;
+      });
+  }
+
+  function go(ip, name) {
+    if (!privateIPv4(ip)) return showNone();
+    show([el('h1', '', 'Opening ' + (name || 'your MooBoard') + '…')]);
+    spin(false);
+    location.replace('http://' + ip + '/');
+  }
+
+  function showLoading(title) {
+    show([el('h1', '', title), el('p', '', 'One moment.')]);
+    spin(true);
+  }
+
+  function showNone() {
+    spin(false);
+    show([
+      el('h1', '', 'Open this on the same Wi-Fi as your MooBoard'),
+      el('p', '', 'Connect this phone to your home Wi-Fi, then open the link again.'),
+      link('btn', 'Try mooboard.local', 'http://mooboard.local'),
+      el('p', 'quiet', 'A VPN or iCloud Private Relay can hide that you are home. Turn it off for your home Wi-Fi, or tap the button above.'),
+      guide()
+    ]);
+  }
+
+  function showMissing() {
+    spin(false);
+    show([el('h1', '', 'Page not found'), el('p', '', 'There is nothing at this address.'), link('btn', 'Go to mooboard.co', '/')]);
+  }
+
+  // Exactly one board: say so, and open it after a moment unless "Stay here" is tapped.
+  function showOne(board) {
+    spin(false);
+    show([
+      el('h1', '', 'Opening ' + board.name + '…'),
+      cards([board], function (b) { go(b.localIp, b.name); }),
+      button('link', 'Stay here', function () { showPicked(board); })
+    ]);
+    autoGo = setTimeout(function () {
+      autoGo = null;
+      go(board.localIp, board.name);
+    }, AUTO_GO_MS);
+  }
+
+  function showPicked(board) {
+    show([
+      el('h1', '', 'Your MooBoard'),
+      el('p', '', 'Tap it to open it.'),
+      cards([board], function (b) { go(b.localIp, b.name); }),
+      guide()
+    ]);
+  }
+
+  function showList(boards) {
+    spin(false);
+    show([
+      el('h1', '', 'Pick your MooBoard'),
+      el('p', '', 'Tap a board to open it.'),
+      cards(boards, function (b) { go(b.localIp, b.name); }),
+      guide()
+    ]);
+  }
+
+  // A shared internet connection (apartments, dorms): the list has no addresses. A tap asks for that board by the
+  // code on its label and opens it only once the owner says the code matches.
+  function showShared(boards) {
+    spin(false);
+    show([
+      el('h1', '', 'Pick your MooBoard'),
+      el('p', '', 'This internet connection is shared. Pick your board, then check its code.'),
+      cards(boards, function (b) { confirmBoard(b, boards); }),
+      guide()
+    ]);
+  }
+
+  function confirmBoard(board, boards) {
+    showLoading('Finding ' + board.name);
+    getJSON('/lookup/' + board.code).then(function (data) {
+      if (!data || data.found !== true || !privateIPv4(data.localIp)) return showNone();
+      var name = typeof data.name === 'string' && data.name !== '' ? data.name : board.name;
+      spin(false);
+      show([
+        el('h1', '', 'Is this yours?'),
+        el('p', '', 'Check the code on the label'),
+        el('div', 'code', board.code),
+        el('p', '', name),
+        button('btn', 'Yes, open it', function () { go(data.localIp, name); }),
+        button('link', 'Back', function () { showShared(boards); })
+      ]);
+    }, showNone);
+  }
+
+  function nearby() {
+    showLoading('Looking for your MooBoard');
+    getJSON('/nearby').then(function (data) {
+      var list = data && Array.isArray(data.boards) ? data.boards : [];
+      var named = list.filter(function (b) { return b && typeof b.name === 'string' && b.name !== ''; });
+      if (data && data.shared === true) {
+        var shared = named.filter(function (b) { return validCode(b.code); });
+        return shared.length ? showShared(shared) : showNone();
+      }
+      var boards = named.filter(function (b) { return privateIPv4(b.localIp); });
+      if (boards.length === 0) return showNone();
+      if (boards.length === 1) return showOne(boards[0]);
+      showList(boards);
+    }, showNone);
+  }
+
+  // A printed link: straight to that board when this phone is on its network.
+  function direct(code) {
+    showLoading('Finding your MooBoard');
+    getJSON('/lookup/' + code).then(function (data) {
+      if (data && data.found === true && privateIPv4(data.localIp)) {
+        return go(data.localIp, typeof data.name === 'string' && data.name !== '' ? data.name : '');
+      }
+      showNone();
+    }, showNone);
+  }
+
+  var r = route(location.pathname);
+  if (r.kind === 'code') direct(r.code);
+  else if (r.kind === 'nearby') nearby();
+  else if (r.kind === 'hello') location.replace('/hello');
+  else showMissing();
+})();
+</script>
+</body>
+</html>
