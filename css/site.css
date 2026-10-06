@@ -266,7 +266,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .waitlist { position: relative; padding: clamp(110px, 14vw, 180px) var(--gut) clamp(90px, 12vw, 150px); text-align: center; background: radial-gradient(80% 60% at 50% 30%, #123c37, var(--ink) 70%); overflow: hidden; }
 .wl-board { width: min(640px, 100%); margin: 0 auto; }
 .wl-price { margin-top: 56px; }
-.tag { display: inline-block; padding: 6px 14px; border-radius: 999px; background: var(--pink); color: var(--ink); font-weight: 900; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; transform: rotate(-3deg); }
+.tag { display: inline-block; padding: 6px 14px; border-radius: 999px; background: var(--pink); color: var(--ink); font-weight: 900; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
 .price.xl { justify-content: center; margin-top: 10px; }
 .price.xl .now { font-size: clamp(88px, 16vw, 180px); line-height: .9; }
 .price.xl s { font-size: clamp(28px, 4vw, 48px); }
