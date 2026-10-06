@@ -143,9 +143,10 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   });
 
   /* ---------- frame colors ---------- */
-  var FRAMES = ['black', 'white', 'orange', 'teal'];
-  var CBG = { black: '#E9FBF7', white: '#E3F2EE', orange: '#FFE7D6', teal: '#D5F8EF' };
-  var MARK_FRAME = { black: '#17191C', white: '#FFFFFF', orange: '#FF7A21', teal: '#77EDD7' };
+  // the frame colors, in the order they are shown everywhere: Mint Glow, Sunset, Midnight, Moonlight
+  var FRAMES = ['teal', 'orange', 'black', 'white'];
+  var CBG = { teal: '#D5F8EF', orange: '#FFE7D6', black: '#E9FBF7', white: '#E3F2EE' };
+  var MARK_FRAME = { teal: '#77EDD7', orange: '#FF7A21', black: '#17191C', white: '#FFFFFF' };
   function setHeroFrame(f) {
     $('#hero-bezel').dataset.frame = f;
     $('.hero .controls').dataset.frame = f;
@@ -363,7 +364,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   /* ---------- static fallbacks (no GSAP) ---------- */
   function wireStatic() {
     $$('.cp').forEach(function (c, i) { c.addEventListener('click', function () { setColor(i, true); }); });
-    setColor(3);
+    setColor(0);
   }
   // room: loads zoomed out (the whole room); the toggle zooms into the wall board and back out
   var roomZoomed = false, roomTween = null, roomState = { p: 0 };
@@ -515,7 +516,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
         setColor(rangeIndex(colorSeq, 'colors', FRAMES, p));
       }
     });
-    setColor(3);
+    setColor(0);
     $$('.cp').forEach(function (c, i) {
       c.addEventListener('click', function () { setColor(i, true); scrollTo(colorST.start + (colorST.end - colorST.start) * (1 - rangeProgress(colorSeq, 'colors', FRAMES[i], i, 4))); });
     });

@@ -36,14 +36,14 @@ excitement). Everything sits on the centre line.
 | Cream | `#F5E9D6` | Warm light ground, the horns |
 | Muzzle Pink | `#FFB7C9` | Tiny accents only (the muzzle, a sale tag) |
 
-The four launch frame colours (the product itself):
+The four launch frame colours (the product itself), in the order the site shows them:
 
 | Frame | Name | Hex | Note |
 |---|---|---|---|
+| Translucent Teal | Mint Glow (Special Edition) | `#77EDD7` at ~55% opacity | Bambu PETG Translucent Teal (32501), the filament the owner bought; frosted, glows where light reaches it |
+| Orange | Sunset | `#FF7A21` | bright, not rust |
 | Black | Midnight | `#17191C` | matte |
 | White | Moonlight | `#F5F3EF` | matte, slightly warm |
-| Orange | Sunset | `#FF7A21` | bright, not rust |
-| Translucent Teal | Mint Glow (Special Edition) | `#77EDD7` at ~55% opacity | Bambu PETG Translucent Teal (32501), the filament the owner bought; frosted, glows where light reaches it |
 
 ## Type
 
