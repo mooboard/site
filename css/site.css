@@ -197,14 +197,21 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
   .t-wide .bezel { width: 74%; margin: 0 auto; }
 }
 
-/* ---------- colors ---------- */
-.colors { background: var(--cbg, #EEF3F4); color: var(--ink); transition: background .8s var(--ease); }
-.colors .pin { grid-template-rows: auto 1fr auto; align-content: center; padding: 90px var(--gut) 44px; gap: 0; }
-.colors .big { margin: 0; text-align: center; font-size: clamp(44px, 8vw, 120px); }
-.colors .seq-canvas { z-index: 0; }
-.color-stage { width: 100%; display: grid; place-items: center; perspective: 1600px; }
-.color-stage .swing { width: min(1100px, 92vw); transform-style: preserve-3d; }
-.color-pick { position: relative; z-index: 2; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+/* ---------- colors: the four frames side by side ---------- */
+.colors { background: var(--cbg, #D5F8EF); color: var(--ink); transition: background .8s var(--ease); overflow: hidden;
+  padding: clamp(96px, 11vw, 150px) 0 clamp(64px, 8vw, 110px); }
+.colors .big { margin: 0 auto; padding: 0 var(--gut); text-align: center; font-size: clamp(44px, 8vw, 120px); }
+/* --fw: one frame's width; the row starts with the first frame centred and slides one frame plus a gap per step.
+   The top padding is the room the Special Edition tag floats in, so the tag never moves anything */
+.frames { --fw: min(820px, 58vw); --fg: clamp(18px, 2.8vw, 44px); margin-top: clamp(14px, 2.6vw, 40px); padding: 56px 0 clamp(40px, 5vw, 64px); touch-action: pan-y; }
+.frames-track { display: flex; align-items: center; gap: var(--fg); width: max-content; margin-left: calc(50% - var(--fw) / 2);
+  transform: translateX(calc(var(--i, 0) * -1 * (var(--fw) + var(--fg)))); transition: transform .9s var(--ease); }
+.fslide { position: relative; flex: none; width: var(--fw); cursor: pointer; transform: scale(.86); opacity: .55; transition: transform .9s var(--ease), opacity .9s var(--ease); }
+.fslide.on { transform: none; opacity: 1; cursor: default; }
+.frames .glass-colors { position: absolute; left: 50%; bottom: calc(100% + 14px); transform: translate(-50%, 6px) scale(.96); }
+.colors[data-frame="teal"] .frames .glass-colors { opacity: 1; transform: translate(-50%, 0); }
+@media (max-width: 700px) { .frames { --fw: 74vw; --fg: 12px; padding-top: 48px; } .fslide { transform: scale(.92); } .frames .glass-colors { bottom: calc(100% + 10px); } }
+.color-pick { position: relative; z-index: 2; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 0 var(--gut); }
 .cp { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 18px 0 8px; border-radius: 999px; background: rgba(255, 255, 255, .7); font-weight: 800; font-size: 15px; transition: transform .3s var(--ease), background .3s, box-shadow .3s; box-shadow: 0 0 0 1px rgba(14, 26, 34, .08); }
 .cp i { width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, .12) inset; }
 .cp:hover { transform: translateY(-3px); }
@@ -310,14 +317,9 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 /* ---------- render stills ---------- */
 .stills { position: absolute; inset: 0; overflow: hidden; opacity: 0; transition: opacity .8s var(--ease); }
 .has-stills .stills { opacity: 1; }
-.has-stills .color-stage, .has-stills .scene { visibility: hidden; }
+.has-stills .scene { visibility: hidden; }
 .stills img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .7s var(--ease); }
 .stills img.on { opacity: 1; }
-.colors.has-stills { background: #BCE3F1; }
-.colors.has-stills .color-stills { top: 12vh; -webkit-mask-image: linear-gradient(transparent, #000 14%); mask-image: linear-gradient(transparent, #000 14%); }
-.colors.has-stills .big { position: relative; z-index: 2; }
-.colors.has-stills .color-pick { z-index: 3; }
-.color-stills img { object-position: 50% 58%; }
 .f169 { position: absolute; left: 50%; top: 50%; width: max(100%, calc(100svh * 16 / 9)); aspect-ratio: 16 / 9; transform: translate(-50%, -50%); }
 .f169 img { object-fit: fill; }
 .live-over { position: absolute; left: 39.5%; top: 31.5%; width: 20.7%; transform: translateY(-50%); transition: opacity .6s var(--ease); box-shadow: 0 0 40px -6px rgba(var(--glow), .45); }
@@ -325,9 +327,6 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .room-stills[data-place="desk"] .live-over { opacity: 0; }
 .room.has-stills { background: #ECEBE7; }
 @media (max-aspect-ratio: 1 / 1) {
-  .colors.has-stills .color-stills { top: 0; -webkit-mask-image: none; mask-image: none; }
-  .color-stills img { inset: auto; left: 52%; top: 52%; width: 150vw; height: auto; object-fit: contain; transform: translate(-50%, -50%);
-    -webkit-mask-image: linear-gradient(transparent, #000 15%, #000 85%, transparent); mask-image: linear-gradient(transparent, #000 15%, #000 85%, transparent); }
   .f169 { transition: width 1s var(--ease); }
   .room-stills[data-place="desk"] .f169 { width: 205vw; -webkit-mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent); }
 }
@@ -418,7 +417,6 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
   .room-tabs { bottom: 76px; }
   .progress { bottom: 80px; }
   .captions { bottom: 18vh; }
-  .colors .pin { padding-bottom: 84px; }
   .foot { padding-bottom: 100px; }
 }
 
@@ -447,11 +445,6 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .an svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 @media (max-width: 700px) { .app-row li { width: 78vw; } .app-nav { display: none; } }
 
-.colors .big, .colors .color-pick { position: relative; z-index: 2; }
-.colors.has-frames .big { text-shadow: 0 2px 30px rgba(255, 255, 255, .6); }
-.colors.has-frames .big { position: absolute; left: 0; right: 0; top: max(84px, 9vh); }
-.colors.has-frames .color-pick { position: absolute; left: var(--gut); right: var(--gut); bottom: max(40px, 7vh); }
-@media (max-width: 700px) { .colors.has-frames .color-pick { bottom: 90px; } }
 
 /* the nav and footer marks wear the chosen frame color */
 .mark .mf { fill: var(--mark-frame, #77EDD7); transition: fill .5s var(--ease); }
@@ -478,8 +471,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
   .chip, .sw, .cp, .rt { position: relative; }
   .chip::before, .sw::before { content: ''; position: absolute; inset: -7px -3px; }
   .swatches { gap: 14px; }
-  .room-tabs, .colors.has-frames .color-pick { bottom: calc(var(--bar) + 14px); }
-  .colors.has-frames .color-pick { flex-wrap: nowrap; gap: 6px; }
+  .room-tabs { bottom: calc(var(--bar) + 14px); }
   .cp { height: 44px; padding: 0 10px 0 5px; gap: 6px; font-size: 12px; }
   .cp i { width: 32px; height: 32px; }
   .progress { bottom: calc(var(--bar) + 16px); }
@@ -524,7 +516,6 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 }
 /* the sweep moves by transform (left -60% to 130% of the note = 422% of its own width): no layout per frame */
 @keyframes lightleak { 0% { transform: translateX(0) skewX(-20deg); } 55%, 100% { transform: translateX(422.3%) skewX(-20deg); } }
-[data-frame="teal"] > .glass-note, [data-frame="teal"] .glass-colors { opacity: 1; transform: none; }
 /* hero: the badge is a tag on top of the board's top-left corner, in the gap under the kicker (.stage keeps at least
    40px there). It is absolutely placed, so it takes no space and nothing moves when it fades in or out */
 .stage-par { position: relative; }
@@ -545,12 +536,8 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .sw.on[data-frame="teal"]::before, .cp.on[data-frame="teal"] i::before { animation: ringGlint 3.6s 1s ease-in-out infinite; }
 @keyframes ringGlint { 0% { transform: rotate(-60deg); opacity: 0; } 10%, 45% { opacity: 1; } 55%, 100% { transform: rotate(300deg); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .sw[data-frame="teal"]::before, .cp[data-frame="teal"] i::before { animation: none !important; opacity: 0; } }
-.color-pick-wrap { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.colors.has-frames .color-pick-wrap { position: absolute; left: var(--gut); right: var(--gut); bottom: max(40px, 7vh); }
-.colors.has-frames .color-pick-wrap .color-pick { position: static; width: 100%; }
 .glass-colors { color: var(--deep); text-shadow: 0 1px 0 rgba(255, 255, 255, .6); background: linear-gradient(160deg, rgba(255, 255, 255, .38), rgba(119, 237, 215, .2) 55%, rgba(119, 237, 215, .1)); border-color: rgba(119, 237, 215, .95); box-shadow: 0 0 26px rgba(119, 237, 215, .55), inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 0 14px rgba(119, 237, 215, .35); }
 @media (max-width: 700px) {
-  .colors.has-frames .color-pick-wrap { bottom: calc(var(--bar) + 14px); }
   .glass-note { font-size: 13px; height: 28px; }
 }
 @media (prefers-reduced-motion: reduce) { .glass-note::after { display: none; } }

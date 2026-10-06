@@ -71,7 +71,6 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   var boards = { hero: hero };
   var story = new MB.Board($('#story-board'), { scenes: ['time', 'lyrics', 'weather'], auto: false, minScale: 10, onGlow: tileGlow($('#story')) });
   boards.story = story;
-  boards.color = new MB.Board($('#color-board'), { scenes: ['time', 'lyrics', 'art'], onGlow: tileGlow($('#colors')), when: function () { return !$('#colors').classList.contains('has-stills'); } });
   boards.room = new MB.Board($('#room-board'), { scenes: ['time', 'art', 'weather'], when: function () { return !$('#room').classList.contains('has-stills'); } });
   boards.roomLive = new MB.Board($('#room-live'), { scenes: ['song', 'time', 'weather'], onGlow: tileGlow($('#room')) });
   boards.wl = new MB.Board($('#wl-board'), { scenes: ['moo', 'time', 'calendar'], onGlow: tileGlow($('#waitlist')) });
@@ -158,20 +157,42 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     s.addEventListener('click', function (e) { e.stopPropagation(); setHeroFrame(s.dataset.frame); pulse($('#hero-bezel')); });
   });
   bindRadioKeys('.swatches .sw');
-  var colorIdx = -1;
+
+  // Pick your frame: the four frames in a row, Mint Glow first. Picking a color (button, arrow keys, a tap on a frame
+  // or a sideways swipe) slides the row straight to that frame; no scroll scrubbing. Each frame's live board is built
+  // when the section comes near and runs at 30 fps (only the frames on screen draw)
+  var colorsSec = $('#colors'), frameRow = $('.frames', colorsSec), track = $('.frames-track', colorsSec), slides = $$('.fslide', colorsSec);
+  var colorIdx = -1, swiped = false;
+  slides.forEach(function (sl) {
+    var led = $('.led', sl);
+    lazyBoard(led, { scenes: [led.dataset.scene], auto: false, fps: 30, weather: led.dataset.weather, onGlow: tileGlow(sl) }, colorsSec);
+    sl.addEventListener('click', function () { if (!swiped) setColor(FRAMES.indexOf(sl.dataset.frame), true); });
+  });
   function setColor(i, fromUser) {
-    if (i === colorIdx) return; colorIdx = i;
+    if (i < 0 || i === colorIdx) return; colorIdx = i;
     var f = FRAMES[i];
-    $('#color-bezel').dataset.frame = f;
-    $('#colors').style.setProperty('--cbg', CBG[f]);
-    $('#colors').dataset.frame = f;
+    colorsSec.style.setProperty('--cbg', CBG[f]);
+    colorsSec.dataset.frame = f;
+    track.style.setProperty('--i', i);
+    slides.forEach(function (sl) { sl.classList.toggle('on', sl.dataset.frame === f); });
     $$('.cp').forEach(function (c) { c.classList.toggle('on', c.dataset.frame === f); c.setAttribute('aria-checked', c.dataset.frame === f); });
     setRadioTabStop('.color-pick .cp', f);
-    $$('.color-stills img').forEach(function (c) { c.classList.toggle('on', c.dataset.frame === f); });
     if (fromUser) setHeroFrame(f);
-    pulse($('#color-bezel'));
   }
+  $$('.cp').forEach(function (c) { c.addEventListener('click', function () { setColor(FRAMES.indexOf(c.dataset.frame), true); }); });
   bindRadioKeys('.color-pick .cp');
+  setColor(0);
+  // a sideways swipe or drag steps one frame (the row is touch-action: pan-y, so vertical drags still scroll the page)
+  var swipeAt = null;
+  frameRow.addEventListener('pointerdown', function (e) { swipeAt = [e.clientX, e.clientY]; swiped = false; });
+  frameRow.addEventListener('pointercancel', function () { swipeAt = null; });
+  frameRow.addEventListener('pointerup', function (e) {
+    if (!swipeAt) return;
+    var dx = e.clientX - swipeAt[0], dy = e.clientY - swipeAt[1]; swipeAt = null;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    swiped = true; setTimeout(function () { swiped = false; }, 0);
+    setColor(Math.max(0, Math.min(FRAMES.length - 1, colorIdx + (dx < 0 ? 1 : -1))), true);
+  });
   function pulse(el) {
     if (!ANIM || REDUCED) return;
     gsap.fromTo(el, { scale: .97 }, { scale: 1, duration: .6, ease: 'elastic.out(1, .5)' });
@@ -390,11 +411,6 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   var seqs = {};
   addEventListener('resize', function () { Object.keys(seqs).forEach(function (k) { seqs[k].redraw(); }); });
 
-  /* ---------- static fallbacks (no GSAP) ---------- */
-  function wireStatic() {
-    $$('.cp').forEach(function (c, i) { c.addEventListener('click', function () { setColor(i, true); }); });
-    setColor(0);
-  }
   // room: loads zoomed out (the whole room); the toggle zooms into the wall board and back out
   var roomZoomed = false, roomTween = null, roomState = { p: 0 };
   function roomZoom(on) {
@@ -513,46 +529,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       .fromTo(caps[2], { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: .08 }, .72)
       .to({}, { duration: .2 }, .8);
 
-    // which color (or place) a scroll position shows. A sequence can say which frames show what:
-    // "colors": { "black": [1, 30], ... } or "places": { "wall": [1, 60], "desk": [61, 120] } (1-based frames)
-    function rangeIndex(sq, key, names, p) {
-      var r = sq && sq.spec[key];
-      if (r) {
-        var f = Math.round(p * (sq.n - 1)) + 1;
-        for (var i = 0; i < names.length; i++) { var a = r[names[i]]; if (a && f >= a[0] && f <= a[1]) return i; }
-      }
-      return Math.min(names.length - 1, Math.floor(p * names.length));
-    }
-    function rangeProgress(sq, key, name, i, count) {
-      var a = sq && sq.spec[key] && sq.spec[key][name];
-      return a ? ((a[0] + a[1]) / 2 - 1) / (sq.n - 1) : (i + .5) / count;
-    }
-
-    // colors
-    var colorSeq = seqs.colors;
-    if (colorSeq) { colorSeq.shiftProgress = 0; colorSeq.set(1); }
-    var colorST = ST.create({
-      trigger: '#colors', start: 'top top', end: '+=220%', pin: '#colors .pin', scrub: .5,
-      onUpdate: function (self) {
-        // the section opens on Mint Glow: scrolling runs the color sequence backwards (teal, orange, white, black)
-        var p = 1 - self.progress;
-        if (colorSeq) {
-          // Reframe the render so the board travels right-to-left into the page center without changing swatch order.
-          colorSeq.shiftProgress = Math.round(self.progress * (colorSeq.n - 1)) / (colorSeq.n - 1);
-          colorSeq.set(p);
-        }
-        else gsap.set('#colors .swing', { rotateY: -16 + p * 32, rotateX: 6 - p * 6 });
-        setColor(rangeIndex(colorSeq, 'colors', FRAMES, p));
-      }
-    });
-    setColor(0);
-    $$('.cp').forEach(function (c, i) {
-      c.addEventListener('click', function () { setColor(i, true); scrollTo(colorST.start + (colorST.end - colorST.start) * (1 - rangeProgress(colorSeq, 'colors', FRAMES[i], i, 4))); });
-    });
-
     if (!REDUCED) {
-      // the stills are the no-frames fallback (display: none once frames exist): no point tweening them then
-      if (!colorSeq) gsap.fromTo('.color-stills', { scale: 1.1 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: '#colors', start: 'top top', end: '+=220%', scrub: true } });
       $$('.card img').forEach(function (im) {
         gsap.to(im, { scale: 1, yPercent: 4, ease: 'none', scrollTrigger: { trigger: im.parentNode, start: 'top bottom', end: 'bottom top', scrub: true } });
       });
@@ -593,9 +570,9 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   var boot = busy(ANIM && window.MooSeq ? window.MooSeq.load().then(function (s) { seqs = s; }) : Promise.resolve());
   boot.then(function () {
     if (ANIM) {
-      try { initMotion(); } catch (e) { root.classList.add('no-anim'); wireStatic(); throw e; }
+      try { initMotion(); } catch (e) { root.classList.add('no-anim'); throw e; }
       if (params.has('y')) setTimeout(function () { window.scrollTo(0, +params.get('y')); ST.update(); }, 300);
-    } else wireStatic();
+    }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (ST) ST.refresh(); });
     // draw each sequence's current frame once layout has settled
     requestAnimationFrame(function () { Object.keys(seqs).forEach(function (k) { seqs[k].redraw(); }); });

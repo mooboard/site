@@ -392,14 +392,14 @@ def checks(url, out):
                 form:(function(){var f=q('#wl-form'),i=q('#wl-email');i.value='nope';f.dispatchEvent(new Event('submit',{cancelable:true}));var m=q('#wl-msg').textContent;i.value='';return m})(),
                 errors:__perf.errors.slice()};
             })()''')
-            # colours pan direction: the drawn board should move from right of centre toward centre as the section scrubs
+            # colours carousel: opens on Mint Glow, centred and fully in view; picking Midnight slides the row right to
+            # left until Midnight is the centred frame, and the section keeps its height (no layout shift)
             top = pg.js('(function(){var e=document.querySelector("#colors");return Math.round(e.getBoundingClientRect().top+scrollY)})()')
-            def centre():
-                # horizontal centre of the dark (board) pixels across the middle band of the colours canvas
-                return pg.js(r'''(function(){var c=document.querySelector('#colors .seq-canvas');if(!c||!c.width)return null;var x=c.getContext('2d'),w=c.width,h=c.height,s=0,n=0;for(var row=Math.round(h*.3);row<h*.7;row+=Math.max(1,Math.round(h/40))){var d=x.getImageData(0,row,w,1).data;for(var i=0;i<w;i++){var l=d[i*4]+d[i*4+1]+d[i*4+2];if(l<150){s+=i;n++}}}return n>50?+(s/n/w).toFixed(3):null})()''')
-            pg.scroll_to(top); cdp.pump(1.2); c0 = centre()
-            pg.scroll_to(top + int(h * 2.2)); cdp.pump(1.5); c1 = centre()
-            r['colorsPan'] = [c0, c1]
+            def centred():
+                return pg.js(r'''(function(){var s=document.querySelector('.fslide.on'),r=s.getBoundingClientRect(),c=document.querySelector('#colors').getBoundingClientRect();return [s.dataset.frame,Math.round(r.left),Math.round(r.right),innerWidth,Math.round(c.height)]})()''')
+            pg.scroll_to(top); cdp.pump(1.2); c0 = centred()
+            pg.js('document.querySelector(".cp[data-frame=black]").click()'); cdp.pump(1.5); c1 = centred()
+            r['colorsCarousel'] = [c0, c1]
             # reduced motion: no sequence frames
             pg2 = Page(cdp, prof, media=[{'name': 'prefers-reduced-motion', 'value': 'reduce'}])
             pg2.goto(url)

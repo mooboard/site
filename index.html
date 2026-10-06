@@ -130,30 +130,33 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
   </div>
 </section>
 
-<section class="colors seq" data-seq="colors" id="colors">
-  <div class="pin">
-    <h2 class="big light" data-reveal>Pick your<br><em>frame.</em></h2>
-    <canvas class="seq-canvas" aria-hidden="true"></canvas>
-    <div class="fallback stills color-stills" aria-hidden="true">
-      <img class="on" data-frame="teal" src="renders/stills/studio-hero-teal.webp" alt="" loading="lazy" decoding="async" width="2400" height="1350">
-      <img data-frame="orange" src="renders/stills/studio-hero-orange.webp" alt="" loading="lazy" decoding="async" width="2400" height="1350">
-      <img data-frame="black" src="renders/stills/studio-hero-black.webp" alt="" loading="lazy" decoding="async" width="2400" height="1350">
-      <img data-frame="white" src="renders/stills/studio-hero-white.webp" alt="" loading="lazy" decoding="async" width="2400" height="1350">
-    </div>
-    <div class="fallback color-stage" aria-hidden="true">
-      <div class="swing">
-        <div class="bezel" id="color-bezel" data-frame="black"><div class="led" id="color-board"></div></div>
+<section class="colors" id="colors" data-frame="teal">
+  <h2 class="big light" data-reveal>Pick your<br><em>frame.</em></h2>
+  <!-- the four frames side by side, in the swatch order. Picking a color slides the row to that frame (right to left
+       as you go right). Each board's face is a live scene (data-scene) drawn by js/board.js -->
+  <div class="frames" aria-hidden="true">
+    <div class="frames-track">
+      <div class="fslide on" data-frame="teal">
+        <span class="glass-note glass-colors"><i></i><span>Special Edition</span></span>
+        <div class="bezel" data-frame="teal"><div class="led" data-scene="moo"></div></div>
+      </div>
+      <div class="fslide" data-frame="orange">
+        <div class="bezel" data-frame="orange"><div class="led" data-scene="weather" data-weather="clear"></div></div>
+      </div>
+      <div class="fslide" data-frame="black">
+        <div class="bezel" data-frame="black"><div class="led" data-scene="faces"></div></div>
+      </div>
+      <!-- Moonlight: the album-art lyric view of the song that's playing ('All in One' in board.js) -->
+      <div class="fslide" data-frame="white">
+        <div class="bezel" data-frame="white"><div class="led" data-scene="combo"></div></div>
       </div>
     </div>
-    <div class="color-pick-wrap">
-    <span class="glass-note glass-colors" aria-live="polite"><i aria-hidden="true"></i><span>Special Edition</span></span>
-    <div class="color-pick" role="radiogroup" aria-label="Frame color">
-      <button class="cp on" role="radio" aria-checked="true" data-frame="teal"><i></i><span>Mint Glow</span></button>
-      <button class="cp" role="radio" aria-checked="false" data-frame="orange"><i></i><span>Sunset</span></button>
-      <button class="cp" role="radio" aria-checked="false" data-frame="black"><i></i><span>Midnight</span></button>
-      <button class="cp" role="radio" aria-checked="false" data-frame="white"><i></i><span>Moonlight</span></button>
-    </div>
-    </div>
+  </div>
+  <div class="color-pick" role="radiogroup" aria-label="Frame color">
+    <button class="cp on" role="radio" aria-checked="true" data-frame="teal"><i></i><span>Mint Glow</span></button>
+    <button class="cp" role="radio" aria-checked="false" data-frame="orange"><i></i><span>Sunset</span></button>
+    <button class="cp" role="radio" aria-checked="false" data-frame="black"><i></i><span>Midnight</span></button>
+    <button class="cp" role="radio" aria-checked="false" data-frame="white"><i></i><span>Moonlight</span></button>
   </div>
 </section>
 
