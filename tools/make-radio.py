@@ -62,6 +62,8 @@ def main():
              'art': art['artworkUrl100'].replace('100x100bb', '600x600bb'), 'link': it['trackViewUrl'],
              'lrclib': lrc, 'at': round(at - nudge, 3), 'onsets': onsets}
         if tint2: t['tint2'] = tint2
+        # the whole song's length, for the boards' progress bar on the song's own timeline (Album art)
+        if it.get('trackTimeMillis'): t['dur'] = round(it['trackTimeMillis'] / 1000, 3)
         out.append(t)
         print(sid, 'starts at', at, 'words', len(onsets))
     with open(os.path.join(ROOT, 'music', 'radio.json'), 'w') as f:
