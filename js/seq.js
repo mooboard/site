@@ -89,9 +89,12 @@
     pump();
     if (!this.fill) settled.then(function () { self.fill = true; pump(); });
   };
+  // The canvas backing: the screen's pixels, but never much past the frames' own (a 1600 px frame on a 1440 px window
+  // at 2x drew 2880 px of canvas, twice the pixels to fill on every scrub step for no detail the frame has)
   Seq.prototype.size = function () {
-    var w = this.cv.clientWidth, h = this.cv.clientHeight;
-    if (this.cv.width !== Math.round(w * DPR)) { this.cv.width = Math.round(w * DPR); this.cv.height = Math.round(h * DPR); }
+    var w = this.cv.clientWidth, h = this.cv.clientHeight, k = Math.min(DPR, Math.max(1, this.tier * 1.25 / Math.max(1, w)));
+    var bw = Math.round(w * k), bh = Math.round(h * k);
+    if (this.cv.width !== bw || this.cv.height !== bh) { this.cv.width = bw; this.cv.height = bh; this.drawn = -1; }
   };
   Seq.prototype.set = function (p) { this.want = Math.round(Math.max(0, Math.min(1, p)) * (this.n - 1)); this.draw(); this.warm(); };
   // decode the next few frames either side off the main thread
@@ -157,7 +160,7 @@
       }
     }
     var q = this.cv.clientWidth / cw;
-    this.rect = { x: (cw - w) / 2 * q, y: (ch - h) / 2 * q, w: w * q, h: h * q };
+    this.rect = { x: x0 * q, y: y0 * q, w: w * q, h: h * q };
     if (this.onDraw) this.onDraw(fi);
   };
   Seq.prototype.redraw = function () { this.drawn = -1; this.draw(); };
