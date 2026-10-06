@@ -258,7 +258,6 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .viewer.v-live .v-hint { opacity: 1; }
 .viewer.v-touched .v-hint { opacity: 0; }
 .v-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 18px; padding: 0 var(--gut); margin-top: clamp(8px, 1.6vw, 20px); }
-.v-pick { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .v-acts { display: flex; gap: 8px; }
 .v-btn { display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 20px 0 16px; border-radius: 999px; background: var(--ink); color: #fff;
   font-weight: 800; font-size: 15px; white-space: nowrap; transition: transform .3s var(--ease), background .3s, color .3s, box-shadow .3s; }

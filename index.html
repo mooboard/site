@@ -176,8 +176,7 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
   </div>
 </section>
 
-<!-- the board in 3D: drag to turn it, pick a frame. js/viewer.mjs (three.js, lazy) draws assets/3d/board.glb with a
-     live board.js face; the poster stands in until it has drawn, and wherever WebGL is missing -->
+<!-- the board in 3d in the frame picked in the hero + js/viewer.mjs draws it + the poster stands in until then -->
 <section class="viewer" id="viewer" aria-labelledby="viewer-h">
   <h2 class="big" id="viewer-h" data-reveal>Take it for a<br><em>spin.</em></h2>
   <div class="v-stage">
@@ -186,15 +185,9 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
     <p class="v-hint" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4"/></svg><span>Drag to turn it</span></p>
   </div>
   <div class="v-bar">
-    <div class="v-pick" role="radiogroup" aria-label="Frame color">
-      <button class="cp on" role="radio" aria-checked="true" data-frame="teal"><i></i><span>Mint Glow</span></button>
-      <button class="cp" role="radio" aria-checked="false" data-frame="orange"><i></i><span>Sunset</span></button>
-      <button class="cp" role="radio" aria-checked="false" data-frame="black"><i></i><span>Midnight</span></button>
-      <button class="cp" role="radio" aria-checked="false" data-frame="white"><i></i><span>Moonlight</span></button>
-    </div>
     <div class="v-acts">
       <button class="v-btn v-spin" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="v-pause" d="M9 6v12M15 6v12"/><path class="v-play" d="M8 5.5v13l10.5-6.5z"/></svg><span>Pause</span></button>
-      <button class="v-btn v-close" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><path d="M8 10.5h5"/><path class="zv" d="M10.5 8v5"/></svg><span>Close up</span></button>
+      <button class="v-btn v-close" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><path d="M8 10.5h5"/><path class="zv" d="M10.5 8v5"/></svg><span>See up close</span></button>
     </div>
   </div>
 </section>

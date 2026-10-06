@@ -288,13 +288,11 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     slides.forEach(function (sl) { sl.classList.toggle('on', sl.dataset.frame === f); });
     $$('.cp').forEach(function (c) { c.classList.toggle('on', c.dataset.frame === f); c.setAttribute('aria-checked', c.dataset.frame === f); });
     setRadioTabStop('.color-pick .cp', f);
-    setRadioTabStop('.v-pick .cp', f);
     if (viewer) viewer.setFrame(f);
   }
   var viewer = null;
   $$('.cp').forEach(function (c) { c.addEventListener('click', function () { setColor(FRAMES.indexOf(c.dataset.frame), true); }); });
   bindRadioKeys('.color-pick .cp');
-  bindRadioKeys('.v-pick .cp');
   setColor(0);
   // a sideways swipe or drag steps one frame (the row is touch-action: pan-y, so vertical drags still scroll the page)
   var swipeAt = null;
