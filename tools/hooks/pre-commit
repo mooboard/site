@@ -5,7 +5,7 @@ cd "$top" || exit 1
 sh tools/check-no-music.sh || exit 1
 out=$(python3 tools/check-lyrics.py) || { echo "$out"; exit 1; }
 if command -v node > /dev/null; then
-  node --test tools/hi.test.mjs > /dev/null 2>&1 || { echo "tools/hi.test.mjs fails: node --test tools/hi.test.mjs"; exit 1; }
+  node --test tools/hi.test.mjs tools/portal.test.mjs > /dev/null 2>&1 || { echo "the finder tests fail: node --test tools/hi.test.mjs tools/portal.test.mjs"; exit 1; }
 else
-  echo "no node here: tools/hi.test.mjs skipped"
+  echo "no node here: tools/hi.test.mjs and tools/portal.test.mjs skipped"
 fi

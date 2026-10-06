@@ -3,8 +3,9 @@
 The website for mooboard. It is plain static files with no build step: `index.html`, `css/`, `js/` (plain scripts,
 plus the ES module `js/viewer.mjs` for the 3D viewer), `fonts/`, `renders/`, `assets/` and `music/`, and the
 `privacy/` and `support/` pages. `hi/index.html` and `404.html` are the same page, served at `/hi` and at every
-unknown path: it finds the boards on the phone's network and opens one. GitHub Pages serves the repository as it is,
-at the domain in `CNAME`.
+unknown path: it finds the boards on the phone's network and opens one. `portal/` is the everyday way in: it opens the
+board it opened last and installs as an app. Both run `js/finder.js` and `css/finder.css`. GitHub Pages serves the
+repository as it is, at the domain in `CNAME`.
 
 ## Preview
 
@@ -19,7 +20,7 @@ previews and lyrics and the weather come from other services, so those parts nee
 
     sh tools/check-no-music.sh       # no audio, video, lyric or subtitle file, and nothing from local-music/, is in git
     python3 tools/check-lyrics.py    # every line of the archived songs lights up on the board, music/radio.json adds up
-    node --test tools/hi.test.mjs    # the /hi and 404 routing (node 18 or later)
+    node --test tools/hi.test.mjs tools/portal.test.mjs    # /hi, 404 and /portal (node 18 or later)
 
 To have git run all three before every commit, once per clone:
 
@@ -43,6 +44,7 @@ the top of its file.
 - `og.html`: the social card. Serve the repo, open `/tools/og.html` in Chrome at 1200x630, let the board settle and
   save a screenshot as `og.png`
 - `icon.html`: the mark at the touch icon size, and at the favicon size with `#fav`
+- `portal-icons.py`: the portal's app icons, the LED cow from `js/board.js` (Pillow)
 
 ## Publishing
 
