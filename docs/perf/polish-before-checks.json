@@ -1,0 +1,106 @@
+[
+ {
+  "overflow": false,
+  "overflowers": [
+   "DIV.dotfield",
+   "DIV.hero-glow",
+   "LI",
+   "DIV.bezel",
+   "DIV.led"
+  ],
+  "badge": true,
+  "badgeText": "Special Edition",
+  "hasFrames": true,
+  "chips": 7,
+  "syllables": "kit-chen",
+  "hero": true,
+  "colorsFirst": "teal",
+  "form": "That email looks off.",
+  "errors": [],
+  "colorsPan": [
+   0.523,
+   0.345
+  ],
+  "reducedSeqFrames": 0,
+  "reducedNoAnim": true,
+  "width": 390
+ },
+ {
+  "overflow": false,
+  "overflowers": [
+   "DIV.dotfield",
+   "DIV.hero-glow",
+   "LI",
+   "DIV.bezel",
+   "DIV.led"
+  ],
+  "badge": true,
+  "badgeText": "Special Edition",
+  "hasFrames": true,
+  "chips": 7,
+  "syllables": "kit-chen",
+  "hero": true,
+  "colorsFirst": "teal",
+  "form": "That email looks off.",
+  "errors": [],
+  "colorsPan": [
+   0.505,
+   0.343
+  ],
+  "reducedSeqFrames": 0,
+  "reducedNoAnim": true,
+  "width": 430
+ },
+ {
+  "overflow": false,
+  "overflowers": [
+   "DIV.dotfield",
+   "DIV.hero-glow",
+   "LI",
+   "DIV.bezel",
+   "DIV.led"
+  ],
+  "badge": true,
+  "badgeText": "Special Edition",
+  "hasFrames": true,
+  "chips": 7,
+  "syllables": "kit-chen",
+  "hero": true,
+  "colorsFirst": "teal",
+  "form": "That email looks off.",
+  "errors": [],
+  "colorsPan": [
+   0.567,
+   0.357
+  ],
+  "reducedSeqFrames": 0,
+  "reducedNoAnim": true,
+  "width": 768
+ },
+ {
+  "overflow": false,
+  "overflowers": [
+   "DIV.dotfield",
+   "DIV.hero-glow",
+   "LI",
+   "DIV.bezel",
+   "DIV.led"
+  ],
+  "badge": true,
+  "badgeText": "Special Edition",
+  "hasFrames": true,
+  "chips": 7,
+  "syllables": "kit-chen",
+  "hero": true,
+  "colorsFirst": "teal",
+  "form": "That email looks off.",
+  "errors": [],
+  "colorsPan": [
+   0.575,
+   0.402
+  ],
+  "reducedSeqFrames": 0,
+  "reducedNoAnim": true,
+  "width": 1440
+ }
+]

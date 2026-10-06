@@ -178,3 +178,31 @@ the colours board pans from right of centre toward centre (centre of the dark pi
 0.40 at 1440 px, same as before), reduced motion fetches zero sequence frames and adds `no-anim`, and the waitlist
 form's validation path runs (the real submit still posts to Formspree and was not exercised). Screenshots at eleven
 scroll spots (`--shots`, `--compare`) differ from the old build only inside the LED boards and the intro's timing.
+
+## 2026-10-06: the owner's review polish
+
+Measured with the same harness and profiles: before at 58b6619 (the commit above), after at ee0dca5. Results are in
+`docs/perf/polish-{before,after}-{phone,desktop,checks}.json`.
+
+| Metric | Phone before | Phone after | Desktop before | Desktop after |
+|---|---|---|---|---|
+| Requests / transfer, load + 3 s | 44 / 491 KB | 43 / 491 KB | 44 / 2843 KB | 43 / 2843 KB |
+| FCP / LCP | 528 / 528 ms | 508 / 508 ms | 104 / 104 ms | 108 / 108 ms |
+| Total blocking time | 64 ms | 36 ms | 0 ms | 0 ms |
+| Transfer after a full scroll (renders) | 7610 KB (4042 KB) | 6204 KB (2633 KB) | 13529 KB (9873 KB) | 9882 KB (6223 KB) |
+| Hero board animating (3 s) | 60.1 fps | 60.3 fps | 60.1 fps | 60.1 fps |
+| Hero sequence scrub (3.5 s) | 59.6 fps, max 33.3 ms | 59.8 fps, max 33.3 ms | 59.9 fps | 60.2 fps |
+| Colors section scroll (3.5 s) | 51.4 fps, max 50 ms | 53.6 fps, max 33.4 ms | 60.1 fps | 60.1 fps |
+| Tiles section (3 s) | 60.2 fps | 60.2 fps | 60.1 fps | 60.1 fps |
+| Console errors | 0 | 0 | 0 | 0 |
+
+- Pick your frame is no longer a pinned scroll scrub of the 60-frame colors render: it is a row of four live boards
+  that slides to the picked frame. Its frames and poster are not fetched any more (one request fewer at load, 1.4 MB
+  less over a phone's full scroll, 3.6 MB less on desktop). The carousel boards are built when the section comes
+  near and draw at 30 fps, only the ones on screen. The "Colours sequence scrub" row of `perf.py` now measures a
+  plain scroll through that section and into the room.
+- The 4,096 LEDs card draws its rainbow on a canvas (five GPU draws a frame at 20 fps, only while on screen): about
+  3 ms of script per second on the 4x phone, 60 fps held. Its close-up render is no longer fetched.
+- `perf.py --checks`: the colors pan probe is replaced by a carousel probe (opens on Mint Glow, centred and fully in
+  view; picking Midnight centres Midnight; the section keeps its height), and the badge probe looks for the hero tag
+  as an absolutely placed overlay. All four widths pass, with no overflow and no errors.
