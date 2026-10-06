@@ -195,8 +195,8 @@ function load(pathname, answer = () => new Promise(() => {}), { popups = true } 
 
 const SAME_WIFI = 'Open this on the same Wi-Fi as your MooBoard';
 const SETUP_STEPS = [
-  'Plug it in. The screen shows a Wi-Fi name and code.',
-  'Join MooBoard-XXXX on your phone with that code.',
+  'Plug it in. Its screen shows how to join its own Wi-Fi.',
+  'Scan the code with your phone\u2019s camera, or join mooboard-XXXX with the password shown.',
   'The setup page opens. Pick your home Wi-Fi.',
   'Come back to mooboard.co/hi.',
 ];
