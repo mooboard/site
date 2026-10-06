@@ -149,7 +149,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   var MARK_FRAME = { teal: '#77EDD7', orange: '#FF7A21', black: '#17191C', white: '#FFFFFF' };
   function setHeroFrame(f) {
     $('#hero-bezel').dataset.frame = f;
-    $('.hero .controls').dataset.frame = f;
+    $('.hero .stage').dataset.frame = f;
     $$('.mark').forEach(function (m) { m.style.setProperty('--mark-frame', MARK_FRAME[f]); m.dataset.frame = f; });
     $$('.swatches .sw').forEach(function (s) { s.classList.toggle('on', s.dataset.frame === f); s.setAttribute('aria-checked', s.dataset.frame === f); });
     setRadioTabStop('.swatches .sw', f);

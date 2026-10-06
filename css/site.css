@@ -126,7 +126,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .pun .d { color: var(--accent-lite); transform-origin: 20% 90%; }
 .kicker { position: relative; margin: 14px 0 0; font-family: var(--display); font-weight: 500; font-size: clamp(18px, 2.4vw, 26px); color: rgba(255, 255, 255, .7); }
 
-.stage { position: relative; width: min(1180px, 100%, 150vh); margin-top: clamp(30px, 5vh, 60px); perspective: 1600px; }
+.stage { position: relative; width: min(1180px, 100%, 150vh); margin-top: clamp(40px, 5vh, 60px); perspective: 1600px; }
 .tilt { transform-style: preserve-3d; transition: transform .8s var(--ease); cursor: pointer; }
 .floor-shadow { position: absolute; left: 8%; right: 8%; bottom: -46px; height: 40px; border-radius: 50%; background: radial-gradient(closest-side, rgba(var(--glow), .35), transparent); filter: blur(12px); }
 
@@ -526,8 +526,26 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 /* the sweep moves by transform (left -60% to 130% of the note = 422% of its own width): no layout per frame */
 @keyframes lightleak { 0% { transform: translateX(0) skewX(-20deg); } 55%, 100% { transform: translateX(422.3%) skewX(-20deg); } }
 [data-frame="teal"] > .glass-note, [data-frame="teal"] .glass-colors { opacity: 1; transform: none; }
-.glass-hero { max-width: 0; padding: 0; border-width: 0; transition: opacity .5s var(--ease), transform .5s var(--ease), max-width .5s var(--ease), padding .5s var(--ease); }
-.controls[data-frame="teal"] > .glass-hero { max-width: 200px; padding: 0 14px 0 10px; border-width: 1px; }
+/* hero: the badge is a tag on top of the board's top-left corner, in the gap under the kicker (.stage keeps at least
+   40px there). It is absolutely placed, so it takes no space and nothing moves when it fades in or out */
+.stage-par { position: relative; }
+.glass-hero { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 2; }
+.stage[data-frame="teal"] .glass-hero { opacity: 1; transform: none; }
+/* Mint Glow's selection ring glows teal, and a glint travels once around it every 3.6 s: the badge's light sweep
+   (same rhythm) bent into a circle. Transform and opacity only; under reduced motion the ring just glows */
+.cp i { position: relative; }
+.sw[data-frame="teal"]::before, .cp[data-frame="teal"] i::before {
+  content: ''; position: absolute; z-index: 1; inset: -5px; border-radius: 50%; opacity: 0;
+  background: conic-gradient(rgba(255, 255, 255, 0) 0deg, #fff 40deg, rgba(255, 255, 255, 0) 80deg, rgba(255, 255, 255, 0) 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
+}
+.cp[data-frame="teal"] i::before { inset: -4px; }
+.cp.on[data-frame="teal"] i::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid #9ff5e4; }
+.sw.on[data-frame="teal"]::after, .cp.on[data-frame="teal"] i::after { border-color: #9ff5e4; box-shadow: 0 0 14px rgba(119, 237, 215, .8), inset 0 0 6px rgba(119, 237, 215, .45); }
+.sw.on[data-frame="teal"]::before, .cp.on[data-frame="teal"] i::before { animation: ringGlint 3.6s 1s ease-in-out infinite; }
+@keyframes ringGlint { 0% { transform: rotate(-60deg); opacity: 0; } 10%, 45% { opacity: 1; } 55%, 100% { transform: rotate(300deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .sw[data-frame="teal"]::before, .cp[data-frame="teal"] i::before { animation: none !important; opacity: 0; } }
 .color-pick-wrap { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .colors.has-frames .color-pick-wrap { position: absolute; left: var(--gut); right: var(--gut); bottom: max(40px, 7vh); }
 .colors.has-frames .color-pick-wrap .color-pick { position: static; width: 100%; }
