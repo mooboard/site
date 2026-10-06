@@ -130,7 +130,7 @@
     label: { fam: 'fredoka', w: 600, smallDigits: true },  // LABEL, TEMP, TITLE, ROW (SfSemibold)
     clock: { fam: 'fredoka', w: 600 },                     // SfSemiboldClock
     medium: { fam: 'fredoka', w: 500 },                    // SfMedium (Minimal, Nixie)
-    bold: { fam: 'fredoka', w: 700 },                      // SfrBold: Now Watching's title, the celebration's word
+    bold: { fam: 'fredoka', w: 700 },                      // sfr bold for the celebration word
     lyric: { fam: 'round', w: 700 },                       // SfrBold: the line being sung
     lyricSide: { fam: 'round', w: 590 },                   // SfrSemibold: the side lines
     sfSemi: { fam: 'sys', w: 590 }                         // SfSemibold in the SF Pro family (the lyric decor's time)
@@ -2114,28 +2114,156 @@
     };
   };
 
-  // Now Watching without a picture (NowWatchingScene.cpp): a TV set on the accent's wash at the left, the title in the
-  // 66-px column from x 61 at cap 10 down to 7 on one or two rows, the season and episode at cap 6 in the accent
+  // now watching without a picture as NowWatchingScene.cpp and WatchFit.cpp draw it + the site shows six real titles in turn with no art
+  var NW = { face: 'lyric', x: 61, right: 126, top: 2, rows: 29, box: 57, accent: [232, 116, 59], amber: hexc('#FFB347') };   // the title face is the lyric centre line as on the board
+  var NW_HOLD = 1.6, NW_SPEED = 18, NW_EACH = 5;   // the marquee pace and holds + seconds a title that fits stays up
+  var WATCHING = [
+    { show: 'Bluey', se: 'S3 E12' },
+    { show: 'Stranger Things', se: 'S4 E1' },
+    { show: 'The Office', se: 'S4 E9' },
+    { show: 'Dune: Part Two' },
+    { show: 'Only Murders in the Building', se: 'S3 E8' },
+    { show: 'Ted Lasso', se: 'S2 E8', paused: true }
+  ];
+  // whether a row fits the column from a pen at left + the pen moves right only for ink left of it
+  function nwFits(L, left) { return L.empty || left - Math.min(0, L.l) + L.r <= NW.right; }
+  function nwPen(L, left) { return left - Math.min(0, L.l); }
+  function nwOver(L) { return L.empty ? 0 : Math.max(0, nwPen(L, NW.x) + L.r - NW.right); }
+  // a row with px added after every glyph and its ink measured again
+  function nwTrack(L, px) {
+    var spans = L.spans.map(function (sp, i) { return { x: sp.x + i * px, g: sp.g, i: sp.i }; }), l = 1e9, r = -1e9;
+    spans.forEach(function (sp) { if (sp.g.w) { l = Math.min(l, sp.x + sp.g.x); r = Math.max(r, sp.x + sp.g.x + sp.g.w - 1); } });
+    return { role: L.role, cap: L.cap, str: L.str, spans: spans, adv: L.adv + (spans.length - 1) * px, empty: L.empty, l: l, r: r, t: L.t, b: L.b, inkW: r - l + 1, inkH: L.inkH };
+  }
+  // two rows split at a space + boxed prefers rows inside the column then the narrowest widest row then the least spread
+  function nwSplit(words, cap, boxed) {
+    var best = null;
+    for (var k = 1; k < words.length; k++) {
+      var rows = [line(NW.face, cap, words.slice(0, k).join(' ')), line(NW.face, cap, words.slice(k).join(' '))];
+      var over = boxed ? rows.filter(function (L) { return nwOver(L) > 0; }).length : 0;
+      var w = rows.map(function (L) { return nwPen(L, NW.x) + L.r - NW.x + 1; }), wide = Math.max(w[0], w[1]), spread = Math.abs(w[0] - w[1]);
+      if (!best || over < best.over || (over === best.over && (wide < best.wide || (wide === best.wide && spread < best.spread)))) best = { rows: rows, over: over, wide: wide, spread: spread };
+    }
+    return best.rows;
+  }
+  // rows set cap plus 2 apart + further where their ink would touch
+  function nwStack(rows, cap) {
+    var base = [], y = 0;
+    rows.forEach(function (L, i) { if (i) y += Math.max(Math.floor(cap) + 2, rows[i - 1].b - L.t + 2); base.push(y); });
+    var top = base[0] + rows[0].t, bottom = base[base.length - 1] + rows[rows.length - 1].b;
+    return { rows: rows, base: base, top: top, height: bottom - top + 1 };
+  }
+  // the small row + an episode shows its season and episode behind the pause sign while paused + a film shows now showing letter spaced where it fits
+  function nwSmall(item) {
+    var sm = { pause: false, col: NW.accent, left: NW.x, L: null };
+    if (item.se) {
+      sm.L = line('label', 6, item.se);
+      sm.pause = !!item.paused && nwFits(sm.L, NW.x + 9);
+      if (sm.pause) sm.left = NW.x + 9;
+    } else {
+      var plain = line('label', 6, item.paused ? 'INTERMISSION' : 'NOW SHOWING'), tries = [nwTrack(plain, 1), plain, nwTrack(plain, -1)];
+      sm.L = tries.filter(function (L) { return nwFits(L, NW.x); })[0] || tries[2];
+      sm.col = NW.amber;
+    }
+    sm.top = sm.pause ? Math.min(sm.L.t, -6) : sm.L.t;
+    sm.height = (sm.pause ? Math.max(sm.L.b, -1) : sm.L.b) - sm.top + 1;
+    return sm;
+  }
+  // the fit ladder + one still row at cap 11 to 9 + two still rows at cap 9 to 7 + else rows that glide + the block centred between the margins
+  function nwLayout(item) {
+    var words = item.show.split(/\s+/).filter(Boolean), text = words.join(' '), sm = nwSmall(item), title = null, rows, k, n, c;
+    var room = function (st) { return st.height + 1 + sm.height <= NW.rows; };
+    var still = [[1, 11], [1, 10], [1, 9], [2, 9], [2, 8], [2, 7]];
+    for (k = 0; k < still.length && !title; k++) {
+      if (still[k][0] === 2 && words.length < 2) continue;
+      rows = still[k][0] === 1 ? [line(NW.face, still[k][1], text)] : nwSplit(words, still[k][1], true);
+      if (rows.some(function (L) { return nwOver(L) > 0; })) continue;
+      var st1 = nwStack(rows, still[k][1]);
+      if (room(st1)) title = st1;
+    }
+    for (n = 2; n >= 1 && !title; n--) for (c = 9; c >= 7 && !title; c--) {
+      if (n === 2 && words.length < 2) continue;
+      var st2 = nwStack(n === 1 ? [line(NW.face, c, text)] : nwSplit(words, c, false), c);
+      if (room(st2)) title = st2;
+    }
+    var height = title.height + 1 + sm.height, top = NW.top + Math.floor((NW.rows - height) / 2), travel = 0;
+    var out = title.rows.map(function (L, i) { var tr = nwOver(L); travel = Math.max(travel, tr); return { L: L, pen: nwPen(L, NW.x), base: top - title.top + title.base[i], travel: tr }; });
+    return { rows: out, small: sm, smallPen: nwPen(sm.L, sm.left), smallBase: top + title.height + 1 - sm.top, travel: travel, paused: !!item.paused, gen: textGen };
+  }
+  function nwRound(travel) { return travel > 0 ? 2 * NW_HOLD + 2 * Math.max(.001, travel / NW_SPEED) : 0; }
+  // hold then glide eased then hold then glide back as the board bounces a row too wide for its column
+  function nwProgress(travel, u) {
+    var glide = Math.max(.001, travel / NW_SPEED);
+    if (u < NW_HOLD) return 0;
+    u -= NW_HOLD;
+    if (u < glide) return smooth(0, 1, u / glide);
+    u -= glide;
+    if (u < NW_HOLD) return 1;
+    u -= NW_HOLD;
+    return u < glide ? 1 - smooth(0, 1, u / glide) : 0;
+  }
+  function nwLine(f, x0, y0, x1, y1, col, a) {
+    var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1, dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1, e = dx + dy;
+    for (;;) {
+      f.blend(x0, y0, col, a);
+      if (x0 === x1 && y0 === y1) return;
+      var e2 = 2 * e;
+      if (e2 >= dy) { e += dy; x0 += sx; }
+      if (e2 <= dx) { e += dx; y0 += sy; }
+    }
+  }
+  // the tv set as the firmware draws it + a rounded body with a lit screen and a play sign + rabbit ears and two feet
+  function nwTvSet(f, col) {
+    var cx = 28, x0 = 15, y0 = 8, a = .95, i, k;
+    for (i = 1; i < 26; i++) { f.blend(x0 + i, y0, col, a); f.blend(x0 + i, y0 + 18, col, a); }
+    for (i = 1; i < 18; i++) { f.blend(x0, y0 + i, col, a); f.blend(x0 + 26, y0 + i, col, a); }
+    f.rect(x0 + 3, y0 + 3, 21, 13, col, .22);
+    for (i = 0; i < 5; i++) for (k = 0; k < 2 * (4 - i) + 1; k++) f.blend(cx - 2 + i, y0 + 9 - (4 - i) + k, col, a);
+    nwLine(f, cx - 1, y0 - 1, cx - 6, y0 - 7, col, a);
+    nwLine(f, cx + 1, y0 - 1, cx + 6, y0 - 7, col, a);
+    for (i = 0; i < 3; i++) { f.blend(x0 + 3 + i, y0 + 19, col, a); f.blend(x0 + 21 + i, y0 + 19, col, a); }
+  }
+  // a gliding row clipped to the text column as the board clips it
+  function nwClipped(f, L, pen, base, col) {
+    for (var k = 0; k < L.spans.length; k++) {
+      var sp = L.spans[k], g = sp.g;
+      if (!g.w) continue;
+      for (var yy = 0; yy < g.h; yy++) for (var xx = 0; xx < g.w; xx++) {
+        var av = g.a[yy * g.w + xx], X = pen + sp.x + g.x + xx, Y = base + g.y + yy;
+        if (av && X >= NW.x && X <= NW.right && Y > 0 && Y < H - 1) f.blend(X, Y, col, av / 255);
+      }
+    }
+  }
   S.tv = function () {
-    var accent = hexc('#FF9A5C');
+    var lay = [];
+    function layout(i) { if (!lay[i] || lay[i].gen !== textGen) lay[i] = nwLayout(WATCHING[i]); return lay[i]; }
+    function stay(i) { var L = layout(i); return L.travel ? Math.max(NW_EACH, nwRound(L.travel) + .4) : NW_EACH; }
     return {
       label: 'TV', dur: 7,
-      draw: function (f, t) {
+      draw: function (f, t, st) {
+        var total = 0, i, x, y;
+        for (i = 0; i < WATCHING.length; i++) total += stay(i);
+        var u = (st || 0) % total;
+        for (i = 0; i < WATCHING.length - 1 && u >= stay(i); i++) u -= stay(i);
+        var L = layout(i);
         f.fill(BLACK);
-        for (var y = 0; y < 32; y++) for (var x = 0; x < 57; x++) f.set(x, y, mul(accent, .12 + .26 * (x + y) / (56 + 31)));
-        var tv = mix(accent, WHITE, .55), bx = 15, by = 8;
-        seg(f, 28, 8, 21, 1.5, .5, tv, .95); seg(f, 29, 8, 36, 1.5, .5, tv, .95);
-        for (var i = 0; i < 27; i++) { f.blend(bx + i, by, tv, .95); f.blend(bx + i, by + 18, tv, .95); }
-        for (i = 0; i < 19; i++) { f.blend(bx, by + i, tv, .95); f.blend(bx + 26, by + i, tv, .95); }
-        f.rect(bx + 3, by + 3, 21, 13, tv, .22);
-        for (i = 0; i < 5; i++) f.rect(bx + 11 + i, by + 5 + i, 1, 9 - 2 * i, tv, .95);
-        f.rect(18, 27, 3, 1, tv, .95); f.rect(36, 27, 3, 1, tv, .95);
-        var title = 'Night Train', one = fit('bold', [10, 9, 8, 7], title, 66), rows = one ? [one] : null;
-        if (!rows) { var parts = title.split(' '); rows = [line('bold', 7, parts[0]), line('bold', 7, parts.slice(1).join(' '))]; }
-        if (rows.length === 1) drawText(f, rows[0], penLeft(rows[0], 61), capBase(6, rows[0].cap), WHITE);
-        else rows.forEach(function (L, k) { drawText(f, L, penLeft(L, 61), capBase(3 + k * 9, 7), WHITE); });
-        var se = line('label', 6, 'S2 E5');
-        drawText(f, se, penLeft(se, 61), capBase(24, 6), accent);
+        for (y = 0; y < H; y++) for (x = 0; x < NW.box; x++) f.set(x, y, mul(NW.accent, .12 + .26 * (x + y) / (NW.box - 1 + H - 1)));
+        f.clip(0, 0, NW.box, H);
+        nwTvSet(f, mix(NW.accent, WHITE, .55));
+        f.noclip();
+        if (L.paused) {
+          for (y = 0; y < H; y++) for (x = 0; x < NW.box; x++) {
+            var q = (y * W + x) * 3, grey = Math.round(.2126 * f.p[q] + .7152 * f.p[q + 1] + .0722 * f.p[q + 2]) * .8;
+            f.set(x, y, [grey, grey, grey]);
+          }
+        }
+        var go = L.travel ? nwProgress(L.travel, u) : 0;
+        L.rows.forEach(function (r) {
+          if (r.travel) nwClipped(f, r.L, r.pen - Math.floor(go * r.travel + .5), r.base, WHITE);
+          else drawText(f, r.L, r.pen, r.base, WHITE);
+        });
+        drawText(f, L.small.L, L.smallPen, L.smallBase, L.small.col);
+        if (L.small.pause) { f.rect(NW.x, L.smallBase - 6, 2, 6, WHITE, 1); f.rect(NW.x + 4, L.smallBase - 6, 2, 6, WHITE, 1); }
         void t;
       }
     };
@@ -3432,6 +3560,16 @@
           if (tt > 0) drawText(f, L, penLeft(L, x), 26 + jump, null, 1, function (X, Y) { return mix(WHITE, [119, 237, 215], (Y - 8) / 18); });
           x += L.inkW + 2;
         }
+      }
+    };
+  };
+  // the startup card cow on its own and centred as the hi page boards show it + it blinks as on the panel
+  S.mark = function () {
+    return {
+      label: 'Logo', dur: 8,
+      draw: function (f, t) {
+        f.fill(BLACK);
+        drawMark(f, Math.round((W - MARK[0].length) / 2), Math.round((H - MARK.length) / 2), t, [119, 237, 215], null);
       }
     };
   };
