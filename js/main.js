@@ -141,6 +141,75 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     btn.addEventListener('click', function () { var r = $('#app-row'); r.scrollBy({ left: +btn.dataset.dir * r.clientWidth * .8, behavior: REDUCED ? 'auto' : 'smooth' }); });
   });
 
+  /* ---------- the 4,096 LEDs card: a close-up of the dot matrix with a full-spectrum wave running across it ---------- */
+  // Every LED is one cell of a tiny color image, scaled up without smoothing and cut into round dots by a pattern,
+  // over the unlit panel, with a soft glow and a glassy sheen: five GPU draws a frame at 20 fps, only while the card
+  // is on screen; one still frame under reduced motion
+  (function () {
+    var cv = $('.rainbow-leds');
+    if (!cv || !cv.getContext) return;
+    var card = cv.parentNode, ctx = cv.getContext('2d'), PITCH = 26, FPS = 20;
+    var src = document.createElement('canvas'), sx = src.getContext('2d'), data = null;
+    var W = 0, H = 0, cd = 0, cols = 0, rows = 0, pats = null, on = false, raf = 0, last = 0;
+    function tile(cd, draw) { var c = document.createElement('canvas'); c.width = c.height = cd; draw(c.getContext('2d'), cd / 2); return ctx.createPattern(c, 'repeat'); }
+    function size() {
+      var dpr = Math.min(devicePixelRatio || 1, 2), w = Math.round(card.clientWidth * dpr), h = Math.round(card.clientHeight * dpr);
+      if (!w || !h || (w === W && h === H)) return;
+      W = cv.width = w; H = cv.height = h;
+      cd = Math.max(10, Math.round(PITCH * dpr)); cols = Math.ceil(W / cd); rows = Math.ceil(H / cd);
+      src.width = cols; src.height = rows; data = sx.createImageData(cols, rows);
+      pats = {
+        // a lit LED: a disc 62% of the pitch with a soft edge
+        dot: tile(cd, function (x, m) { var g = x.createRadialGradient(m, m, 0, m, m, cd * .32); g.addColorStop(0, '#fff'); g.addColorStop(.78, '#fff'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, cd, cd); }),
+        // the unlit panel: dark board, grey dots with a faint rim
+        panel: tile(cd, function (x, m) { x.fillStyle = '#141617'; x.fillRect(0, 0, cd, cd); x.fillStyle = '#25292b'; x.beginPath(); x.arc(m, m, cd * .3, 0, 6.3); x.fill(); x.strokeStyle = 'rgba(255,255,255,.06)'; x.lineWidth = Math.max(1, cd * .03); x.beginPath(); x.arc(m, m - cd * .02, cd * .29, 3.6, 5.8); x.stroke(); }),
+        // each LED cap catches a little light at its upper left
+        sheen: tile(cd, function (x, m) { var g = x.createRadialGradient(m - cd * .1, m - cd * .11, 0, m - cd * .1, m - cd * .11, cd * .16); g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, cd, cd); })
+      };
+      draw(last);
+    }
+    function hue(h) {   // h in turns -> [r, g, b] at full saturation
+      h = ((h % 1) + 1) % 1 * 6;
+      var f = h - Math.floor(h), q = 1 - f, i = Math.floor(h);
+      return [[1, f, 0], [q, 1, 0], [0, 1, f], [0, q, 1], [f, 0, 1], [1, 0, q]][i];
+    }
+    function draw(t) {
+      if (!W) return;
+      var d = data.data;
+      for (var y = 0; y < rows; y++) {
+        // dimmer toward the bottom, where the number sits
+        var fall = 1 - .5 * Math.max(0, Math.min(1, (y / rows - .4) / .6));
+        for (var x = 0; x < cols; x++) {
+          var c = hue(x / cols * .85 + y / rows * .22 + t * .09), v = (.5 + .5 * Math.sin(x * .55 + y * .3 + t * 2.6)) * .75 + .25;
+          var k = v * fall * 255, i = (y * cols + x) * 4;
+          // a little white in the brightest cores, like a real LED
+          var wv = Math.max(0, v - .8) * 1.6;
+          d[i] = Math.min(255, (c[0] + wv) * k); d[i + 1] = Math.min(255, (c[1] * .92 + wv) * k); d[i + 2] = Math.min(255, (c[2] + wv) * k); d[i + 3] = 255;
+        }
+      }
+      sx.putImageData(data, 0, 0);
+      var fw = cols * cd, fh = rows * cd;
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'copy'; ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(src, 0, 0, fw, fh);
+      ctx.globalCompositeOperation = 'destination-in'; ctx.fillStyle = pats.dot; ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'destination-over'; ctx.fillStyle = pats.panel; ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .3; ctx.imageSmoothingEnabled = true; ctx.drawImage(src, 0, 0, fw, fh);
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.fillStyle = pats.sheen; ctx.fillRect(0, 0, W, H);
+    }
+    function loop(now) {
+      raf = on ? requestAnimationFrame(loop) : 0;
+      if (now - last * 1000 < 1000 / FPS - 4) return;
+      last = now / 1000; draw(last);
+    }
+    if (window.ResizeObserver) new ResizeObserver(size).observe(card); else addEventListener('resize', size);
+    size();
+    if (REDUCED || !('IntersectionObserver' in window)) return;
+    new IntersectionObserver(function (e) {
+      on = e[0].isIntersecting;
+      if (on && !raf) raf = requestAnimationFrame(loop);
+    }, { rootMargin: '100px' }).observe(card);
+  })();
+
   /* ---------- frame colors ---------- */
   // the frame colors, in the order they are shown everywhere: Mint Glow, Sunset, Midnight, Moonlight
   var FRAMES = ['teal', 'orange', 'black', 'white'];
