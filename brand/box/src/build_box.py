@@ -279,7 +279,7 @@ def face_back_wall():
     # centre: made by + placeholder
     cx = w / 2
     s.append(f'<rect x="{cx - 90}" y="5" width="180" height="50" rx="12" fill="{SKY}"/>')
-    s.append(text(cx, 16, 'Designed by MooBoard', 5.2, 'fd', '#FFFFFF', 'middle'))
+    s.append(text(cx, 16, 'Designed by mooboard', 5.2, 'fd', '#FFFFFF', 'middle'))
     s.append(f'<rect x="{cx - 82}" y="22" width="164" height="28" rx="3" fill="#FFFFFF" fill-opacity=".45" stroke="{INK}" stroke-width="0.4" stroke-dasharray="1.6 1.1"/>')
     s.append(text(cx, 31.5, 'PLACEHOLDER: company name and address', 3.6, 'nu', '#B3261E', 'middle'))
     s.append(text(cx, 38.5, 'country of origin, model number,', 3.0, 'nr', INK, 'middle'))
@@ -519,7 +519,7 @@ def build_dieline():
     SH = FLAT_H + LEG
     cut = cut_outline()
     s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{SW:.1f}mm" height="{SH:.1f}mm" viewBox="0 0 {SW:.1f} {SH:.1f}">']
-    s.append(f'<title>MooBoard mailer dieline, inside {L:.0f} x {W:.0f} x {H:.0f} mm, scale 1:1</title>')
+    s.append(f'<title>mooboard mailer dieline, inside {L:.0f} x {W:.0f} x {H:.0f} mm, scale 1:1</title>')
     s.append('<style>' + font_css() +
              '.cut{fill:none;stroke:#E6007E;stroke-width:0.5}'
              '.fold{fill:none;stroke:#00A0E0;stroke-width:0.5;stroke-dasharray:4 2.5}'

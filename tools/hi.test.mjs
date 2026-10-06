@@ -193,7 +193,7 @@ function load(pathname, answer = () => new Promise(() => {}), { popups = true } 
   return page;
 }
 
-const SAME_WIFI = 'Open this on the same Wi-Fi as your MooBoard';
+const SAME_WIFI = 'Open this on the same Wi-Fi as your mooboard';
 const SETUP_STEPS = [
   'Plug it in. Its screen shows how to join its own Wi-Fi.',
   'Scan the code with your phone\u2019s camera, or join mooboard-XXXX with the password shown.',
@@ -213,7 +213,7 @@ function assertSameWifi(page) {
   assert.equal(page.pupils.pl.getAttribute('fill'), '#0E1A22', 'the cow settles');
   const setup = page.setup();
   assert.ok(setup, 'the new-board steps');
-  assert.equal(setup.children[0].textContent, 'Setting up a new MooBoard?');
+  assert.equal(setup.children[0].textContent, 'Setting up a new mooboard?');
   assert.deepEqual(setup.children[1].children.map((li) => li.textContent), SETUP_STEPS);
 }
 
@@ -243,7 +243,7 @@ test('routing: a board code under any path word, or bare, looks that code up', a
     const page = load(path);
     await page.settle();
     assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/lookup/5KAS`], path);
-    assert.equal(page.h1(), 'Finding your MooBoard', path);
+    assert.equal(page.h1(), 'Finding your mooboard', path);
   }
 });
 
@@ -252,7 +252,7 @@ test('routing: /hi asks for the boards near you, the other words go to /hi', asy
     const page = load(path);
     await page.settle();
     assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/nearby`], path);
-    assert.equal(page.h1(), 'Looking for your MooBoard', path);
+    assert.equal(page.h1(), 'Looking for your mooboard', path);
   }
   for (const path of ['/hello', '/hello/', '/wall', '/my/', '/moo', '/go', '/open/', '/Wall', '/HELLO']) {
     const page = load(path);
@@ -313,7 +313,7 @@ test('a lookup that hangs gives up after 6 s', async () => {
   await page.settle();
   page.timers.advance(5999);
   await page.settle();
-  assert.equal(page.h1(), 'Finding your MooBoard');
+  assert.equal(page.h1(), 'Finding your mooboard');
   page.timers.advance(1);
   await page.settle();
   assertSameWifi(page);
@@ -341,7 +341,7 @@ const BEDROOM = { code: 'T8QP', name: 'bedroom', localIp: '192.168.0.111', versi
 test('/hi with several boards: a card each, a tap opens that one, and Identify opens its page in a new tab', async () => {
   const page = load('/hi', nearbyOf([BEDROOM, KITCHEN]));
   await page.settle();
-  assert.equal(page.h1(), 'Pick your MooBoard');
+  assert.equal(page.h1(), 'Pick your mooboard');
   const cards = page.cards();
   assert.equal(cards.length, 2);
   assert.deepEqual(cards.map((c) => c.textContent), ['bedroomT8QP', 'Kitchen5KAS']);
@@ -389,7 +389,7 @@ test('/hi with one board: "Stay here" cancels, and the card still opens it', asy
   page.buttons().find((b) => b.textContent === 'Stay here').click();
   page.timers.advance(10000);
   assert.deepEqual(page.replaced, []);
-  assert.equal(page.h1(), 'Your MooBoard');
+  assert.equal(page.h1(), 'Your mooboard');
   assert.deepEqual(page.idents(), []);
   page.cards()[0].click();
   assert.deepEqual(page.replaced, ['http://192.168.0.110/']);
@@ -427,7 +427,7 @@ const FOUND = () => json({ found: true, localIp: '192.168.0.120', name: 'Kitchen
 test('/hi on a shared connection: name and code only, each with an Identify button', async () => {
   const page = load('/hi', sharedNet(FOUND));
   await page.settle();
-  assert.equal(page.h1(), 'Pick your MooBoard');
+  assert.equal(page.h1(), 'Pick your mooboard');
   assert.match(page.text(), /shared/);
   assert.deepEqual(page.cards().map((c) => c.textContent), ['Kitchen5KAS', 'KitchenT8QP']);
   const idents = page.idents();
@@ -453,7 +453,7 @@ test('/hi on a shared connection: Identify opens a tab in the tap, looks the boa
   assert.equal(tab.closed, false);
   assert.deepEqual(page.replaced, [], 'this page stays on the list');
   assert.deepEqual(page.assigned, []);
-  assert.equal(page.h1(), 'Pick your MooBoard');
+  assert.equal(page.h1(), 'Pick your mooboard');
 });
 
 test('/hi on a shared connection: Identify for a board the lookup cannot find closes the tab and shows the same-Wi-Fi page', async () => {

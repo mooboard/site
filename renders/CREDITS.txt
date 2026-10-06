@@ -1,4 +1,4 @@
-MooBoard renders: third-party assets
+mooboard renders: third-party assets
 
 All assets below are from Poly Haven (https://polyhaven.com), licensed CC0 (public domain).
 Downloaded 2026-09-29 through https://api.polyhaven.com/files/<id>.
@@ -18,5 +18,5 @@ HDRIs
 - kloofendal_48d_partly_cloudy_puresky (daylight through the window)
                                              https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
 
-Everything else (MooBoard enclosure from the project's OpenSCAD model, LED face, cable, studio, room shell,
+Everything else (mooboard enclosure from the project's OpenSCAD model, LED face, cable, studio, room shell,
 desk, monitor, keyboard, pot) is modelled for these renders. Fonts on the LED face: Nunito and Fredoka (SIL OFL).

@@ -1,7 +1,7 @@
-# MooBoard brand (draft 1, 2026-09-29)
+# mooboard brand (draft 1, 2026-09-29)
 
-MooBoard is a 128 x 32 LED wall display. The name plays on *mood board*, with a moo: the founder loves cows and signs
-with "moo". Written **MooBoard** in text; the wordmark is lowercase **mooboard**.
+mooboard is a 128 x 32 LED wall display. The name plays on *mood board*, with a moo: the founder loves cows and signs
+with "moo". Always written in lowercase, even at the start of a sentence or a title: **mooboard**, and the first product **mooboard one**. Model codes stay in capitals (MB1W, MB1D, MB1P).
 
 ## Voice
 
@@ -29,7 +29,7 @@ excitement). Everything sits on the centre line.
 
 | Token | Hex | Use |
 |---|---|---|
-| MooBoard Teal | `#77EDD7` | The brand colour (the owner, 2026-09-29: "no blue, keep the bambulab teal as the brand color"): Bambu PETG Translucent Teal 32501. Logo, highlights, buttons (with ink text) |
+| mooboard Teal | `#77EDD7` | The brand colour (the owner, 2026-09-29: "no blue, keep the bambulab teal as the brand color"): Bambu PETG Translucent Teal 32501. Logo, highlights, buttons (with ink text) |
 | Deep Mint | `#0E6B5E` | Text and icons on light grounds (passes AA on white) |
 | Ink | `#0E1A22` | Text on light, dark grounds, the mark's screen |
 | Mint White | `#E9FBF7` | Light ground |

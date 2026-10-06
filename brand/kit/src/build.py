@@ -5,13 +5,13 @@ def inner(n):
 MARK={c:inner(f'mark-{c}.svg') for c in ['sky','black','white','orange']}
 WORD={c:inner(f'wordmark-{c}.svg') for c in ['deep','white','sky','black']}
 b64=lambda p: base64.b64encode(open(p,'rb').read()).decode()
-def marksvg(c): return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 136 112" role="img" aria-label="MooBoard mark">{MARK[c]}</svg>'
+def marksvg(c): return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 136 112" role="img" aria-label="mooboard mark">{MARK[c]}</svg>'
 WH=67.2; WW=4483*WH/775; GAP=22.4; LW=136+GAP+WW
 def lockbody(m,w):
     return (f'<svg x="0" y="0" width="136" height="112" viewBox="0 0 136 112">{MARK[m]}</svg>'
             f'<svg x="{136+GAP:.1f}" y="{(112-WH)/2:.1f}" width="{WW:.1f}" height="{WH}" viewBox="0 0 4483 775">{WORD[w]}</svg>')
 def lockup(m,w,extra=''):
-    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {LW:.1f} 112" role="img" aria-label="MooBoard" {extra}>{lockbody(m,w)}</svg>'
+    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {LW:.1f} 112" role="img" aria-label="mooboard" {extra}>{lockbody(m,w)}</svg>'
 LOCK={'light':('sky','deep'),'dark':('sky','white'),'sky':('white','white')}
 for k,(m,w) in LOCK.items():
     open(f'{K}/lockup-{k}.svg','w').write(lockup(m,w)+'\n')

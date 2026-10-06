@@ -135,7 +135,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   $$('#app-row li').forEach(function (li, n) {
     var name = li.textContent.trim(); li.textContent = '';
     var bz = document.createElement('div'); bz.className = 'bezel'; bz.dataset.frame = FRAME_OF[li.dataset.bg];
-    var led = document.createElement('div'); led.className = 'led'; led.setAttribute('role', 'img'); led.setAttribute('aria-label', name + ' on MooBoard');
+    var led = document.createElement('div'); led.className = 'led'; led.setAttribute('role', 'img'); led.setAttribute('aria-label', name + ' on mooboard');
     bz.appendChild(led); li.appendChild(bz);
     li.insertAdjacentHTML('beforeend', '<div class="app-name">' + appIcon(li, n) + '<span>' + name + '</span></div>');
     var b = lazyBoard(led, { scenes: [li.dataset.scene], auto: false, fps: 30 }, $('#app-row'));

@@ -2,7 +2,7 @@
  {
   "id": "red",
   "title": "Red",
-  "artist": "MooBoard",
+  "artist": "mooboard",
   "genre": "Pop country",
   "tint": "#E0343C",
   "src": null,
@@ -586,7 +586,7 @@
  {
   "id": "yellow",
   "title": "Yellow",
-  "artist": "MooBoard",
+  "artist": "mooboard",
   "genre": "Piano rock",
   "tint": "#FFD23F",
   "src": null,
@@ -1200,7 +1200,7 @@
  {
   "id": "blue",
   "title": "Blue",
-  "artist": "MooBoard",
+  "artist": "mooboard",
   "genre": "Hyperpop",
   "tint": "#2F6BFF",
   "src": null,
@@ -2092,7 +2092,7 @@
  {
   "id": "violet",
   "title": "Violet",
-  "artist": "MooBoard",
+  "artist": "mooboard",
   "genre": "Late night R&B",
   "tint": "#8F00FF",
   "src": null,
@@ -2492,7 +2492,7 @@
  {
   "id": "heat",
   "title": "Heat",
-  "artist": "MooBoard",
+  "artist": "mooboard",
   "genre": "Psych pop",
   "tint": "#FF7A2F",
   "src": null,
