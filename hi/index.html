@@ -230,13 +230,13 @@ a{color:#77EDD7}
     spin(true);
   }
 
-  // A new board is on nobody's network yet: its setup screen shows its own Wi-Fi's name and an 8-digit code.
+  // A new board is on nobody's network yet: its setup screen shows its own Wi-Fi (a Wi-Fi QR once the setup flow ships, the name and password today).
   function setupSteps() {
     var box = el('section', 'setup');
     box.appendChild(el('h2', '', 'Setting up a new MooBoard?'));
     var ol = el('ol');
-    ol.appendChild(el('li', '', 'Plug it in. The screen shows a Wi-Fi name and code.'));
-    ol.appendChild(el('li', '', 'Join MooBoard-XXXX on your phone with that code.'));
+    ol.appendChild(el('li', '', 'Plug it in. Its screen shows how to join its own Wi-Fi.'));
+    ol.appendChild(el('li', '', 'Scan the code with your phone\u2019s camera, or join MooBoard-XXXX with the password shown.'));
     ol.appendChild(el('li', '', 'The setup page opens. Pick your home Wi-Fi.'));
     var back = el('li', '', 'Come back to ');
     back.appendChild(link('', 'mooboard.co/hi', '/hi'));
