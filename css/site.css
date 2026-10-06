@@ -334,7 +334,12 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
   .logo .mark { width: 42px; }
   .price .now { font-size: 38px; }
   .btn { height: 52px; font-size: 18px; }
-  .chip { height: 30px; padding: 0 11px; font-size: 12px; }
+  .chip { height: 30px; }
+}
+/* the six scene chips stay on one row on phones + tighter pills that scale with the screen */
+@media (max-width: 600px) {
+  .chips { gap: min(6px, 1vw); }
+  .chip { padding: 0 min(11px, 1.45vw); font-size: min(12px, 2.95vw); letter-spacing: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -517,6 +522,8 @@ html:not(.js) .motion { display: none; }
   .app-row { scroll-padding: 0 var(--gut); }
   .app-row li { width: 80vw; scroll-snap-align: start; }
 }
+/* the taller tap area of a chip stays inside half the gap so neighbours never overlap */
+@media (max-width: 600px) { .chip::before { inset: -7px -1.5px; } }
 @media (max-width: 380px) {
   .cp span { font-size: 11px; }
   .cp { padding-right: 8px; }

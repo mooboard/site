@@ -64,7 +64,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   }
 
   /* ---------- boards ---------- */
-  var HERO_SCENES = ['time', 'song', 'art', 'calendar', 'score', 'prayer', 'weather'];
+  var HERO_SCENES = ['time', 'song', 'art', 'calendar', 'score', 'weather'];
   var first = HERO_SCENES.indexOf(params.get('scene'));
   if (first > 0) HERO_SCENES = HERO_SCENES.slice(first).concat(HERO_SCENES.slice(0, first));
   var heroEl = $('#hero-board');
