@@ -430,6 +430,10 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .app-row::-webkit-scrollbar { display: none; }
 .app-row li { flex: none; width: clamp(270px, 34vw, 440px); scroll-snap-align: center; display: flex; flex-direction: column; gap: 14px; }
 .app-row .bezel { transition: transform .45s var(--ease); }
+/* the row scrolls sideways, so it clips at its padding box: the bezels' outer glow and drop shadow showed there as a
+   lighter band behind the cards. The cards keep only their inner edges and sit on the section's own background */
+.app-row .bezel { box-shadow: 0 1px 0 rgba(255, 255, 255, .18) inset, 0 -1px 0 rgba(0, 0, 0, .25) inset; }
+.app-row .bezel[data-frame="teal"] { box-shadow: 0 0 0 1px rgba(200, 255, 240, .35) inset, 0 0 18px rgba(var(--glow), .6) inset; }
 .app-row li:hover .bezel { transform: translateY(-6px); }
 .app-name { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 600; font-size: 19px; color: rgba(255, 255, 255, .9); }
 .app-name svg { width: 30px; height: 30px; flex: none; }
