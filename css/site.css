@@ -253,7 +253,8 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .stat b small { font-size: .42em; margin: 0 .12em; }
 .stat > span { display: block; margin-top: 10px; font-weight: 800; font-size: clamp(15px, 1.6vw, 20px); color: var(--ink); opacity: .7; }
 @media (min-width: 900px) { .stats { grid-template-columns: repeat(4, auto); justify-content: space-between; } .stat b { font-size: clamp(56px, 6.6vw, 112px); } }
-.marquee { margin-top: clamp(60px, 9vw, 120px); background: var(--ink); color: #fff; padding: 22px 0; transform: rotate(-2deg) scale(1.05); }
+/* level band; 8% wider than the page on each side so the scroll drift (xPercent ±6 in main.js) never shows its ends */
+.marquee { margin: clamp(60px, 9vw, 120px) -8% 0; background: var(--ink); color: #fff; padding: 22px 0; }
 .track { display: flex; align-items: center; gap: 28px; width: max-content; animation: marq 36s linear infinite; }
 .track span { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 4vw, 48px); white-space: nowrap; }
 .track i { width: 12px; height: 12px; border-radius: 50%; background: var(--accent-lite); box-shadow: 0 0 12px var(--accent-lite); flex: none; }
