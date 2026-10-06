@@ -9,8 +9,6 @@ main{width:100%;max-width:420px}
 .hero{display:none;width:232px;max-width:100%;margin:0 auto}
 .lit .cow{display:none}
 .lit .hero{display:block}
-.cow.pixel{aspect-ratio:34/25}
-.leds{display:block;width:100%;height:auto;filter:drop-shadow(0 0 3px rgba(119,237,215,.45))}
 h1{margin:0 0 10px;font-size:1.6rem;line-height:1.2;font-weight:800;color:#fff;letter-spacing:-.01em;overflow-wrap:anywhere}
 h1:focus{outline:none}
 p{margin:0 0 22px;color:#A9BDB8}

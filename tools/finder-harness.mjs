@@ -150,24 +150,17 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
   const top = new El('div');
   const hero = new El('div');
   const head = new El('head');
-  const cow = new El('div');
   const install = new El('div');
   for (const root of [view, top, hero, head, install]) root.root = true;
   top.className = 'top';
   hero.className = 'hero';
-  cow.className = 'cow pixel';
   install.className = 'install';
-  const ids = { view, top, hero };
-  let pupils = null;
-  if (kind === 'portal') {
-    top.appendChild(cow);
-    Object.assign(ids, { cow, install });
-  } else {
-    pupils = { pl: new El('circle'), pr: new El('circle') };
-    pupils.pl.setAttribute('fill', '#0E1A22');
-    pupils.pr.setAttribute('fill', '#0E1A22');
-    Object.assign(ids, pupils);
-  }
+  // both pages show the brand mark + its pupils are the ones the loading rainbow lights
+  const pupils = { pl: new El('circle'), pr: new El('circle') };
+  pupils.pl.setAttribute('fill', '#0E1A22');
+  pupils.pr.setAttribute('fill', '#0E1A22');
+  const ids = { view, top, hero, ...pupils };
+  if (kind === 'portal') ids.install = install;
   const roots = [top, view, hero, install];
   const byId = (id) => ids[id] ?? roots.flatMap((r) => r.all()).find((e) => e.attrs && e.attrs.id === id) ?? null;
   // a fake js/board.js + it records each board the page asks it to draw
@@ -254,14 +247,11 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
     view,
     top,
     hero,
-    cow,
     install,
     made,
     store,
     registered,
-    get pupils() {
-      return pupils ?? { pl: byId('pl'), pr: byId('pr') };
-    },
+    pupils,
     timers,
     replaced,
     assigned,

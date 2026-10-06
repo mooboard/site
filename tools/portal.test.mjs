@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import { API, BEDROOM, IPHONE, KITCHEN, json, load, nearbyOf, read, script } from './finder-harness.mjs';
 
 const portal = read('portal/index.html');
+const hi = read('hi/index.html');
 const manifest = JSON.parse(read('portal/manifest.webmanifest'));
 const sw = read('portal/sw.js');
 const MINE = 'mooboard.portal';
@@ -33,15 +34,17 @@ const pngSize = (rel) => {
   return [b.readUInt32BE(16), b.readUInt32BE(20)];
 };
 
-test('the portal page links its manifest and icons and the shared css and js, and has no vector cow', () => {
+test('the portal page links its manifest and icons and the shared css and js, and shows the matrix cow as /hi does', () => {
   assert.match(portal, /<link rel="manifest" href="\/portal\/manifest\.webmanifest">/);
   assert.match(portal, /<link rel="apple-touch-icon" href="\/portal\/apple-touch-icon\.png">/);
   assert.match(portal, /<meta name="theme-color" content="#0E1A22">/);
   assert.match(portal, /<meta name="apple-mobile-web-app-capable" content="yes">/);
   assert.deepEqual(portal.match(/<script[^>]*src="[^"]*"/g), ['<script src="/js/finder.js"']);
   assert.deepEqual(portal.match(/<link[^>]+stylesheet[^>]*>/g), ['<link rel="stylesheet" href="/css/finder.css">']);
-  assert.doesNotMatch(portal, /<symbol|href="#cow"|<use\b/, 'the pixel cow only');
-  assert.match(portal, /<div id="cow" class="cow pixel" role="img" aria-label="mooboard"><\/div>/);
+  const symbol = (src) => src.match(/<symbol id="cow"[\s\S]*?<\/symbol>/)[0];
+  assert.equal(symbol(portal), symbol(hi), 'the same brand mark as /hi');
+  assert.match(portal, /<svg class="cow" viewBox="0 0 136 108" role="img" aria-label="mooboard"><use href="#cow"\/><\/svg>/);
+  assert.doesNotMatch(portal, /class="cow pixel"/, 'no cow drawn all in dots');
   assert.match(portal, /<div id="install" class="install"><\/div>/);
   assert.match(portal, /<meta name="referrer" content="no-referrer">/);
 });
@@ -80,18 +83,14 @@ test('the service worker keeps the portal shell and leaves the api and the board
   assert.match(sw, /req\.method !== 'GET'/);
 });
 
-test('the pixel cow is the board\'s own: the grid of MARK in js/board.js, as round leds, its pupils flickering while it looks', async () => {
-  const grid = (src) => src.match(/var MARK = \[\n([\s\S]*?)\n  \];/)[1].match(/'([.cspwo]+)'/g);
-  assert.deepEqual(grid(script), grid(read('js/board.js')), 'the same 25 rows');
-  const page = openPortal();
-  const svg = page.cow.children[0];
-  assert.equal(svg.tagName, 'SVG');
-  assert.equal(svg.getAttribute('viewBox'), '0 0 34 25');
-  const lit = grid(script).join('').replace(/[^cspwo]/g, '').length;
-  assert.equal(svg.children.length, lit, 'a round led for every lit dot');
-  assert.ok(svg.children.every((c) => c.tagName === 'CIRCLE'));
-  assert.match(page.pupils.pl.getAttribute('fill'), /^hsl\(\d{1,3},100%,50%\)$/, 'looking');
+test('the logo is the matrix cow, its pupils flickering while it looks and settling after', async () => {
+  assert.doesNotMatch(script, /var MARK = |pixelCow/, 'no cow drawn all in dots by the script');
+  const page = openPortal(nearbyOf([]));
   assert.equal(page.h1(), 'Looking for your mooboard');
+  assert.match(page.pupils.pl.getAttribute('fill'), /^hsl\(\d{1,3},100%,50%\)$/, 'looking');
+  await page.settle();
+  assert.equal(page.pupils.pl.getAttribute('fill'), '#0E1A22', 'settled');
+  assert.equal(page.top.className, 'top', 'the cow on top');
 });
 
 test('a first visit with one board counts down like /hi and remembers the board once it opens, never its address', async () => {
@@ -295,7 +294,7 @@ test('a remembered name is text, never markup, and the portal draws nothing thro
   const name = '<img src=x onerror=alert(1)>';
   const page = openPortal(homeWith(() => new Promise(() => {})), { storage: remembered({ code: '5KAS', name }) });
   assert.equal(page.h1(), `Opening ${name}…`);
-  assert.ok([page.view, page.hero, page.cow, page.install].flatMap((r) => r.all()).every((e) => e.html === null));
+  assert.ok([page.view, page.hero, page.install].flatMap((r) => r.all()).every((e) => e.html === null));
   const bad = openPortal(nearbyOf([]), { storage: { [MINE]: '{not json' } });
   await bad.settle();
   assert.equal(bad.h1(), SAME_WIFI, 'a broken memory is a first visit');

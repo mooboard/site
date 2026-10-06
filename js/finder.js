@@ -9,39 +9,9 @@
   var TICK_MS = 100;   // the panel's startup card gives the pupils a new colour every 100 ms
   var PORTAL_GO_MS = 1500;          // how long the portal says it is opening the board it remembers
   var MINE = 'mooboard.portal';     // where the portal keeps the board it opened last
-  // the startup card cow as round leds + the grid is the mark grid in js/board.js and a test keeps the two the same
-  var MARK = [
-    '..........ccc........ccc..........',
-    '..........ccc........ccc..........',
-    '..........ccc........ccc..........',
-    '..........ccsssssssssscc..........',
-    '........ssssssssssssssssss........',
-    '.......ssssssssssssssssssss.......',
-    '......ssssssssssssssssssssss......',
-    '...sssssss..............sssssss...',
-    '.ssssssss................ssssssss.',
-    'sspppsss...www......www...ssspppss',
-    '.sspssss..wwwww....wwwww..sssspss.',
-    '..ssssss..wwoww....wwoww..ssssss..',
-    '....ssss..wwwww....wwwww..ssss....',
-    '....ssss...www......www...ssss....',
-    '....ssss..................ssss....',
-    '....ssss..................ssss....',
-    '....ssss.....pppppppp.....ssss....',
-    '.....sss....pp.pppp.pp....sss.....',
-    '.....sss.....pppppppp.....sss.....',
-    '.....ssss....pppppppp....ssss.....',
-    '.....sssss..............sssss.....',
-    '......ssssssssssssssssssssss......',
-    '.......ssssssssssssssssssss.......',
-    '........ssssssssssssssssss........',
-    '............ssssssssss............'
-  ];
-  var MARK_INK = { s: '#77EDD7', c: '#F5E9D6', p: '#FFAAC3', w: '#FFFFFF' };
   var view = document.getElementById('view');
   var start = route(location.pathname);
   var onPortal = start.kind === 'portal';
-  if (onPortal) pixelCow(document.getElementById('cow'));
   var pupils = [document.getElementById('pl'), document.getElementById('pr')];
   var rainbow = null;
   var autoGo = null;
@@ -516,29 +486,6 @@
     }, function () {
       if (here === screen) nearby();
     });
-  }
-
-  // the cow as the board draws it in round leds + its pupils are the ones the loading rainbow lights
-  function pixelCow(box) {
-    if (!box) return;
-    var NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('viewBox', '0 0 34 25');
-    svg.setAttribute('class', 'leds');
-    svg.setAttribute('aria-hidden', 'true');
-    for (var y = 0; y < MARK.length; y++) {
-      for (var x = 0; x < MARK[y].length; x++) {
-        var ch = MARK[y].charAt(x);
-        if (ch === '.') continue;
-        var dot = document.createElementNS(NS, 'circle');
-        dot.setAttribute('cx', x + .5);
-        dot.setAttribute('cy', y + .5);
-        dot.setAttribute('r', .42);
-        dot.setAttribute('fill', ch === 'o' ? INK : MARK_INK[ch]);
-        if (ch === 'o') dot.setAttribute('id', x < 17 ? 'pl' : 'pr');
-        svg.appendChild(dot);
-      }
-    }
-    box.appendChild(svg);
   }
 
   // add to home screen + where the browser offers its prompt a button and on an iphone the share steps + nothing once installed
