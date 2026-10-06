@@ -1,5 +1,5 @@
 {
-  "note": "Frame counts are 0 until the renders land; the site then falls back to render stills or the live board. screen: where the LED face sits in the last frames (fractions), so the live board can take over. colors/places: which frames show which frame colour or placement (1-based, inclusive). portrait: phone framing, a focus point (x, y) showing share w of the width, eased from the first to the last frame, placed at height 'at'.",
+  "note": "A sequence with 0 frames is skipped and its section keeps the live board. screen: where the LED face sits from frame 'from' on (fractions), so the live board can take over. portrait (optional): phone framing, a focus point (x, y) showing share w of the width, eased from the first to the last frame, placed at height 'at'. sizes, poster, src and stills are written by tools/renditions.py.",
   "sequences": {
     "hero": {
       "dir": "seq-hero",
@@ -21,73 +21,11 @@
         960,
         1600
       ],
-      "poster": "poster.webp"
-    },
-    "colors": {
-      "dir": "seq-colors",
-      "frames": 60,
-      "width": 1600,
-      "height": 900,
-      "ext": "webp",
-      "pad": 4,
-      "colors": {
-        "black": [
-          1,
-          12
-        ],
-        "white": [
-          13,
-          30
-        ],
-        "orange": [
-          31,
-          48
-        ],
-        "teal": [
-          49,
-          60
-        ]
-      },
-      "shiftY": 0.1,
-      "portrait": {
-        "from": {
-          "x": 0.5,
-          "y": 0.42,
-          "w": 0.7
-        },
-        "at": 0.42
-      },
-      "sizes": [
-        960,
-        1600
-      ],
-      "poster": "poster.webp"
-    },
-    "room": {
-      "dir": "seq-room",
-      "frames": 90,
-      "width": 1600,
-      "height": 900,
-      "ext": "webp",
-      "pad": 4,
-      "portrait": {
-        "from": {
-          "x": 0.495,
-          "y": 0.48,
-          "w": 0.6
-        },
-        "to": {
-          "x": 0.495,
-          "y": 0.5,
-          "w": 0.9
-        },
-        "at": 0.45
-      },
-      "sizes": [
-        960,
-        1600
-      ],
-      "poster": "poster.webp"
+      "poster": "poster.webp",
+      "src": "fa2f6a6657a24152"
     }
+  },
+  "stills": {
+    "bottom-cable": "f89960020490f7fa"
   }
 }

@@ -7,6 +7,8 @@ fonts/fredoka.woff2     Fredoka variable, wdth pinned to 100, wght 500..700, lat
 fonts/nunito.woff2      Nunito variable, wght 400..900, latin subset (from brand/fonts/Nunito.ttf)
 fonts/silkscreen.woff2  Silkscreen Regular, latin (Google Fonts' own woff2, OFL)
 fonts/devanagari.woff2  Noto Sans Devanagari 600, devanagari subset (Google Fonts' own woff2, OFL)
+The first two keep every name record of their source, the OFL notice among them, renamed for their new default weight.
+All four ship with their license next to them (fonts/OFL-*.txt).
 Needs fontTools + brotli (in the build venv) and the network for the last two."""
 import os
 import re
@@ -32,10 +34,11 @@ def build(src, dst, axes):
     o.layout_features = ['*']
     o.notdef_outline = True
     o.hinting = False
+    o.name_IDs = ['*']
     s = subset.Subsetter(o)
     s.populate(unicodes=subset.parse_unicodes(LATIN))
     s.subset(f)
-    f = instancer.instantiateVariableFont(f, axes, inplace=False, updateFontNames=False)
+    f = instancer.instantiateVariableFont(f, axes, inplace=False, updateFontNames=True)
     f.flavor = 'woff2'
     f.save(dst)
     return os.path.getsize(dst)

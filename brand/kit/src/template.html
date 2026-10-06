@@ -10,18 +10,18 @@
 @font-face{font-family:"Nunito";src:url(data:font/ttf;base64,{{NUNITO}}) format("truetype");font-weight:200 1000;font-display:block}
 :root{
   --sky:#77EDD7;--deep:#0E6B5E;--ink:#0E1A22;--mist:#E9FBF7;--cream:#F5E9D6;--pink:#FFB7C9;
-  --card:#FFFFFF;--line:rgba(14,26,34,.10);--soft:rgba(14,26,34,.55);
+  --card:#FFFFFF;--line:rgba(14,26,34,.10);--soft:rgba(14,26,34,.68);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{background:var(--mist);color:var(--ink);font-family:"Nunito",system-ui,sans-serif;font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 svg{display:block}
-.lock svg,.min svg,.cs svg{width:100%;height:auto}
+.lock>svg,.min div>svg,.cs>svg{width:100%;height:auto}
 .wrap{max-width:1240px;margin:0 auto;padding:0 48px}
 @media (max-width:700px){.wrap{padding:0 16px}}
 
 /* nav */
-nav{position:sticky;top:0;z-index:10;background:rgba(234,246,249,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav{position:sticky;top:0;z-index:10;background:rgba(233,251,247,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
 nav .home{display:flex;align-items:center;gap:10px;text-decoration:none}
 nav .home svg{height:30px;width:auto}
@@ -32,8 +32,8 @@ nav a.n:hover{background:#fff}
 
 /* hero */
 .hero{position:relative;min-height:min(88vh,860px);display:grid;place-items:center;overflow:hidden;
-  background-image:radial-gradient(circle,rgba(11,110,128,.13) 1.6px,transparent 2px);background-size:22px 22px;background-position:center}
-.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,var(--mist) 30%,rgba(234,246,249,0) 72%);pointer-events:none}
+  background-image:radial-gradient(circle,rgba(14,107,94,.13) 1.6px,transparent 2px);background-size:22px 22px;background-position:center}
+.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,var(--mist) 30%,rgba(233,251,247,0) 72%);pointer-events:none}
 .hero .in{position:relative;z-index:1;display:grid;justify-items:center;gap:56px;padding:120px 16px}
 .hero .lock{width:min(820px,86vw);height:auto}
 .hero .tag{display:flex;gap:10px;align-items:center}
@@ -46,7 +46,7 @@ nav a.n:hover{background:#fff}
 section{padding:128px 0}
 .head{display:flex;align-items:baseline;gap:22px;margin-bottom:56px}
 .num{font:800 14px/1 "Nunito";letter-spacing:.14em;color:var(--deep)}
-h2{font:600 clamp(48px,7vw,88px)/.95 "Fredoka";letter-spacing:-.02em}
+h2{font:600 clamp(48px,7vw,88px)/.95 "Fredoka";letter-spacing:-.01em}
 .cap{font:800 12px/1.2 "Nunito";letter-spacing:.12em;text-transform:uppercase;color:var(--soft)}
 .mono{font:700 13px/1.3 ui-monospace,"SF Mono",Menlo,monospace;color:var(--soft)}
 
@@ -58,19 +58,19 @@ h2{font:600 clamp(48px,7vw,88px)/.95 "Fredoka";letter-spacing:-.02em}
 
 /* logo */
 .logo .tile{aspect-ratio:16/10}
-.logo .tile svg{width:74%;height:auto}
+.logo .tile>svg{width:74%;height:auto}
 
 /* space */
 .space{display:grid;grid-template-columns:1.7fr 1fr;gap:24px}
 @media (max-width:900px){.space{grid-template-columns:1fr}}
 .card{background:var(--card);border-radius:32px;padding:48px;border:1px solid var(--line)}
 .space .card{display:grid;align-content:center;gap:28px;min-height:380px}
-.space .cs svg{width:100%;height:auto}
+.space .cs>svg{width:100%;height:auto}
 .mins{display:flex;align-items:flex-end;gap:40px;flex-wrap:wrap}
 .min{display:grid;gap:14px;justify-items:start}
 .ruler{display:flex;align-items:center;gap:10px}
 .ruler b{width:2px;background:var(--pink);border-radius:2px}
-.big{font:600 64px/1 "Fredoka";letter-spacing:-.02em}
+.big{font:600 64px/1 "Fredoka";letter-spacing:-.01em}
 .big small{font:700 18px "Nunito";color:var(--soft);margin-left:6px;letter-spacing:0}
 
 /* mark */
@@ -80,7 +80,7 @@ h2{font:600 clamp(48px,7vw,88px)/.95 "Fredoka";letter-spacing:-.02em}
 /* colour */
 .sw{background:var(--card);border-radius:32px;overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column}
 .sw .chip{height:220px;position:relative}
-.sw .chip span{position:absolute;left:24px;bottom:20px;font:600 44px/1 "Fredoka";letter-spacing:-.02em}
+.sw .chip span{position:absolute;left:24px;right:24px;bottom:20px;font:600 44px/1 "Fredoka";letter-spacing:-.01em}
 .sw .meta{padding:24px 24px 28px;display:grid;gap:14px}
 .sw .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .sw .hex{font:800 20px/1 "Nunito";letter-spacing:.02em}
@@ -93,7 +93,7 @@ h2{font:600 clamp(48px,7vw,88px)/.95 "Fredoka";letter-spacing:-.02em}
 .fr{background:var(--card);border-radius:32px;padding:24px;border:1px solid var(--line);display:flex;align-items:center;gap:20px}
 .fr .bar{width:64px;height:64px;border-radius:12px;flex:none;position:relative;overflow:hidden}
 .fr .bar.tl{background:
-   linear-gradient(rgba(126,217,214,.55),rgba(126,217,214,.55)),
+   linear-gradient(rgba(119,237,215,.55),rgba(119,237,215,.55)),
    repeating-conic-gradient(#C9D6DB 0 25%,#fff 0 50%) 0 0/16px 16px}
 .fr b{font:600 24px/1 "Fredoka";display:block;margin-bottom:8px}
 .fr .mono{display:block}
@@ -102,7 +102,7 @@ h2{font:600 clamp(48px,7vw,88px)/.95 "Fredoka";letter-spacing:-.02em}
 .spec{display:grid;grid-template-columns:1fr 1fr;gap:24px}
 @media (max-width:900px){.spec{grid-template-columns:1fr}}
 .spec .card{display:grid;grid-template-rows:auto 1fr auto;gap:20px;min-height:460px}
-.spec .aa{font-size:clamp(160px,20vw,260px);line-height:.85;letter-spacing:-.03em}
+.spec .aa{font-size:clamp(160px,20vw,260px);line-height:.85;letter-spacing:-.01em}
 .f-disp{font-family:"Fredoka";font-weight:600}
 .f-body{font-family:"Nunito";font-weight:800}
 .weights{display:flex;gap:18px;flex-wrap:wrap;font-size:28px}
@@ -116,7 +116,7 @@ h2{font:600 clamp(48px,7vw,88px)/.95 "Fredoka";letter-spacing:-.02em}
 .led{background:var(--ink);color:#fff;position:relative;overflow:hidden}
 .led .num{color:var(--sky)}
 .board{border-radius:14px;padding:12px;background:#17191C;box-shadow:0 40px 80px -30px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.06) inset;transition:background .4s}
-.board.tl{background:rgba(126,217,214,.55);box-shadow:0 40px 90px -30px rgba(61,196,224,.55),0 0 0 1px rgba(255,255,255,.35) inset}
+.board.tl{background:rgba(119,237,215,.55);box-shadow:0 40px 90px -30px rgba(119,237,215,.55),0 0 0 1px rgba(255,255,255,.35) inset}
 .board.wh{background:#F5F3EF}.board.or{background:#FF7A21}
 .board canvas{display:block;width:100%;height:auto;aspect-ratio:4/1;border-radius:4px;background:#0B0A0E}
 .ledbar{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-top:40px;flex-wrap:wrap}
@@ -133,7 +133,7 @@ h2{font:600 clamp(48px,7vw,88px)/.95 "Fredoka";letter-spacing:-.02em}
 /* do / dont */
 .dd .it{background:var(--card);border-radius:28px;border:1px solid var(--line);overflow:hidden}
 .dd .vis{aspect-ratio:4/3;display:grid;place-items:center;overflow:hidden}
-.dd .vis svg{width:70%;height:auto}
+.dd .vis>svg{width:70%;height:auto}
 .dd .lab{display:flex;align-items:center;gap:12px;padding:18px 20px;font:800 16px/1 "Nunito"}
 .dd .ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none}
 .dd .ic svg{width:16px;height:16px}
@@ -155,17 +155,17 @@ h2{font:600 clamp(48px,7vw,88px)/.95 "Fredoka";letter-spacing:-.02em}
 
 footer{padding:120px 0 80px;text-align:center;display:grid;justify-items:center;gap:20px}
 footer svg{width:120px;height:auto}
-footer .moo{font:600 96px/1 "Fredoka";letter-spacing:-.03em;color:var(--deep)}
+footer .moo{font:600 96px/1 "Fredoka";letter-spacing:-.01em;color:var(--deep)}
 </style>
 </head>
 <body>
 
 <nav><div class="wrap">
-  <a class="home" href="#top" aria-label="mooboard">{{MARK_sky}}</a>
+  <a class="home" href="#top" aria-label="mooboard">{{MARK_teal}}</a>
   <ol>
-    <li><a class="n" href="#logo">01</a></li><li><a class="n" href="#space">02</a></li><li><a class="n" href="#mark">03</a></li>
-    <li><a class="n" href="#colour">04</a></li><li><a class="n" href="#type">05</a></li><li><a class="n" href="#glow">06</a></li>
-    <li><a class="n" href="#rules">07</a></li><li><a class="n" href="#icons">08</a></li>
+    <li><a class="n" href="#logo" aria-label="01 Logo">01</a></li><li><a class="n" href="#space" aria-label="02 Space">02</a></li><li><a class="n" href="#mark" aria-label="03 Mark">03</a></li>
+    <li><a class="n" href="#colour" aria-label="04 Color">04</a></li><li><a class="n" href="#type" aria-label="05 Type">05</a></li><li><a class="n" href="#glow" aria-label="06 Glow">06</a></li>
+    <li><a class="n" href="#rules" aria-label="07 Do, don't">07</a></li><li><a class="n" href="#icons" aria-label="08 Icons">08</a></li>
   </ol>
 </div></nav>
 
@@ -182,7 +182,7 @@ footer .moo{font:600 96px/1 "Fredoka";letter-spacing:-.03em;color:var(--deep)}
   <div class="grid g3">
     <div><div class="tile" style="background:#fff;box-shadow:0 0 0 1px var(--line) inset">{{LOCKUP_light}}</div><div class="cap">Light</div></div>
     <div><div class="tile" style="background:var(--ink)">{{LOCKUP_dark}}</div><div class="cap">Dark</div></div>
-    <div><div class="tile" style="background:var(--sky)">{{LOCKUP_sky}}</div><div class="cap">Sky</div></div>
+    <div><div class="tile" style="background:var(--sky)">{{LOCKUP_sky}}</div><div class="cap">Teal</div></div>
   </div>
 </div></section>
 
@@ -192,7 +192,7 @@ footer .moo{font:600 96px/1 "Fredoka";letter-spacing:-.03em;color:var(--deep)}
     <div class="card"><div class="cs">{{CLEARSPACE}}</div><div class="cap">Half the mark, all round</div></div>
     <div class="card">
       <div class="mins">
-        <div class="min"><div class="ruler"><b style="height:24px"></b><div style="width:29px">{{MARK_sky}}</div></div></div>
+        <div class="min"><div class="ruler"><b style="height:24px"></b><div style="width:29px">{{MARK_teal}}</div></div></div>
         <div class="min"><div class="ruler"><b style="height:24px"></b><div style="width:117px">{{LOCKUP_light}}</div></div></div>
       </div>
       <div class="big">24<small>px</small></div>
@@ -204,23 +204,23 @@ footer .moo{font:600 96px/1 "Fredoka";letter-spacing:-.03em;color:var(--deep)}
 <section id="mark" class="marks" style="padding-top:0"><div class="wrap">
   <div class="head"><span class="num">03</span><h2>Mark</h2></div>
   <div class="grid g4">
-    <div><div class="tile" style="background:#fff;box-shadow:0 0 0 1px var(--line) inset">{{MARK_sky}}</div><div class="cap">Sky &middot; #77EDD7</div></div>
+    <div><div class="tile" style="background:#fff;box-shadow:0 0 0 1px var(--line) inset">{{MARK_teal}}</div><div class="cap">Teal &middot; #77EDD7</div></div>
     <div><div class="tile" style="background:var(--cream)">{{MARK_black}}</div><div class="cap">Black &middot; #17191C</div></div>
-    <div><div class="tile" style="background:var(--sky)">{{MARK_white}}</div><div class="cap">White &middot; #F5F3EF</div></div>
+    <div><div class="tile" style="background:var(--sky)">{{MARK_white}}</div><div class="cap">White &middot; #FFFFFF</div></div>
     <div><div class="tile" style="background:var(--ink)">{{MARK_orange}}</div><div class="cap">Orange &middot; #FF7A21</div></div>
   </div>
 </div></section>
 
 <section id="colour" style="padding-top:0"><div class="wrap">
-  <div class="head"><span class="num">04</span><h2>Colour</h2></div>
+  <div class="head"><span class="num">04</span><h2>Color</h2></div>
   <div class="grid g3">
 {{SWATCHES}}
   </div>
   <div class="frames">
-    <div class="fr"><div class="bar" style="background:#17191C"></div><div><b>Black</b><span class="mono">#17191C</span><span class="mono">matte</span></div></div>
-    <div class="fr"><div class="bar" style="background:#F5F3EF;box-shadow:0 0 0 1px var(--line) inset"></div><div><b>White</b><span class="mono">#F5F3EF</span><span class="mono">matte</span></div></div>
-    <div class="fr"><div class="bar" style="background:#FF7A21"></div><div><b>Orange</b><span class="mono">#FF7A21</span></div></div>
-    <div class="fr"><div class="bar tl"></div><div><b>Teal</b><span class="mono">#77EDD7</span><span class="mono">55% frosted</span></div></div>
+    <div class="fr"><div class="bar tl"></div><div><b>Mint Glow</b><span class="mono">#77EDD7</span><span class="mono">55% frosted</span></div></div>
+    <div class="fr"><div class="bar" style="background:#FF7A21"></div><div><b>Sunset</b><span class="mono">#FF7A21</span></div></div>
+    <div class="fr"><div class="bar" style="background:#17191C"></div><div><b>Midnight</b><span class="mono">#17191C</span><span class="mono">matte</span></div></div>
+    <div class="fr"><div class="bar" style="background:#F5F3EF;box-shadow:0 0 0 1px var(--line) inset"></div><div><b>Moonlight</b><span class="mono">#F5F3EF</span><span class="mono">matte</span></div></div>
   </div>
 </div></section>
 
@@ -241,11 +241,11 @@ footer .moo{font:600 96px/1 "Fredoka";letter-spacing:-.03em;color:var(--deep)}
     </div>
   </div>
   <div class="scale">
-    <div class="r"><span class="mono">Display 88</span><span class="f-disp" style="font-size:clamp(48px,7vw,88px);line-height:1;letter-spacing:-.02em">Hello, moo.</span></div>
+    <div class="r"><span class="mono">Display 88</span><span class="f-disp" style="font-size:clamp(48px,7vw,88px);line-height:1;letter-spacing:-.01em">Hello, moo.</span></div>
     <div class="r"><span class="mono">Title 56</span><span class="f-disp" style="font-size:clamp(36px,5vw,56px);line-height:1.05;letter-spacing:-.01em">Your wall, in a mood.</span></div>
     <div class="r"><span class="mono">Heading 32</span><span class="f-disp" style="font-size:32px;font-weight:500;line-height:1.1">Lyrics, word by word.</span></div>
     <div class="r"><span class="mono">Body 18</span><span style="font-size:18px;max-width:560px">The time, the sky outside and the song in the room, on 4,096 soft dots.</span></div>
-    <div class="r"><span class="mono">Label 12</span><span class="cap" style="color:var(--deep)">Launch colours</span></div>
+    <div class="r"><span class="mono">Label 12</span><span class="cap" style="color:var(--deep)">Launch colors</span></div>
     <div class="r"><span class="mono">Figures</span><span class="tnum" style="font:800 clamp(40px,6vw,72px)/1 Nunito;letter-spacing:-.02em;font-variant-numeric:tabular-nums">128 x 32</span></div>
   </div>
 </div></section>
@@ -259,11 +259,11 @@ footer .moo{font:600 96px/1 "Fredoka";letter-spacing:-.03em;color:var(--deep)}
       <div><b><span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#1B1920;box-shadow:0 0 0 1px rgba(255,255,255,.2);vertical-align:-2px"></span> #1B1920</b><span class="cap">Unlit</span></div>
       <div><b><span class="sweep"></span> Sweep</b><span class="cap">#FFB81C to #FF2E88</span></div>
     </div>
-    <div class="pick" role="group" aria-label="Frame colour">
-      <button style="background:#17191C" data-c="" aria-pressed="true" aria-label="Black"></button>
-      <button style="background:#F5F3EF" data-c="wh" aria-pressed="false" aria-label="White"></button>
-      <button style="background:#FF7A21" data-c="or" aria-pressed="false" aria-label="Orange"></button>
-      <button style="background:rgba(126,217,214,.8)" data-c="tl" aria-pressed="false" aria-label="Teal"></button>
+    <div class="pick" role="group" aria-label="Frame color">
+      <button style="background:rgba(119,237,215,.8)" data-c="tl" aria-pressed="false" aria-label="Mint Glow"></button>
+      <button style="background:#FF7A21" data-c="or" aria-pressed="false" aria-label="Sunset"></button>
+      <button style="background:#17191C" data-c="" aria-pressed="true" aria-label="Midnight"></button>
+      <button style="background:#F5F3EF" data-c="wh" aria-pressed="false" aria-label="Moonlight"></button>
     </div>
   </div>
 </div></section>
@@ -279,7 +279,7 @@ footer .moo{font:600 96px/1 "Fredoka";letter-spacing:-.03em;color:var(--deep)}
   <div class="head"><span class="num">08</span><h2>Icons</h2></div>
   <div class="icons">
     <div class="ico"><div class="v"><img src="{{URI_ios}}" width="180" height="180" alt="iOS app icon"></div><div class="nm"><b>App</b><span class="mono">app-icon-1024.png</span></div></div>
-    <div class="ico"><div class="v"><div style="width:180px;height:180px;border-radius:50%;overflow:hidden;background:#77EDD7"><img src="{{URI_andfg}}" width="180" height="180" alt="Android adaptive icon" style="transform:scale(1.5);transform-origin:center"></div></div><div class="nm"><b>Android</b><span class="mono">foreground-432.png</span></div></div>
+    <div class="ico"><div class="v"><div style="width:180px;height:180px;border-radius:50%;overflow:hidden;background:url({{URI_andbg}}) center/cover"><img src="{{URI_andfg}}" width="180" height="180" alt="Android adaptive icon" style="transform:scale(1.5);transform-origin:center"></div></div><div class="nm"><b>Android</b><span class="mono">foreground-432.png</span></div></div>
     <div class="ico"><div class="v"><img src="{{URI_avatar}}" width="180" height="180" alt="Social avatar" style="border-radius:50%"></div><div class="nm"><b>Avatar</b><span class="mono">avatar-800.png</span></div></div>
   </div>
   <div class="favs">
@@ -287,15 +287,15 @@ footer .moo{font:600 96px/1 "Fredoka";letter-spacing:-.03em;color:var(--deep)}
     <div class="f"><img class="pix" src="{{PNG_fav32}}" width="128" height="128" alt="32 px favicon, enlarged"><span class="mono">32 &middot; x4</span></div>
     <div class="f"><img src="{{PNG_fav16}}" width="16" height="16" alt=""><span class="mono">16</span></div>
     <div class="f"><img src="{{PNG_fav32}}" width="32" height="32" alt=""><span class="mono">32</span></div>
-    <div class="f"><img src="{{URI_app}}" width="90" height="90" style="border-radius:20px" alt=""><span class="mono">180</span></div>
-    <div class="f"><img src="{{URI_app}}" width="96" height="96" style="border-radius:22px" alt=""><span class="mono">512</span></div>
+    <div class="f"><img src="{{PNG_fav180}}" width="90" height="90" style="border-radius:20px" alt=""><span class="mono">180</span></div>
+    <div class="f"><img src="{{PNG_fav512}}" width="96" height="96" style="border-radius:22px" alt=""><span class="mono">512</span></div>
     <div class="f"><img src="{{FAVSVG_URI}}" width="64" height="64" alt=""><span class="mono">SVG</span></div>
     <div class="f"><div class="chrome"><div class="tab"><img src="{{PNG_fav16}}" width="16" height="16" alt="">mooboard</div><div class="url">mooboard</div></div><span class="mono">Tab</span></div>
   </div>
 </div></section>
 
 <footer>
-  {{MARK_sky}}
+  {{MARK_teal}}
   <div class="moo">moo.</div>
 </footer>
 
@@ -337,34 +337,41 @@ footer .moo{font:600 96px/1 "Fredoka";letter-spacing:-.03em;color:var(--deep)}
     put(x+3,y-1,c);put(x+3,y+7,c);put(x-1,y+3,c);put(x+7,y+3,c);}
   var DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'];
   var LYR='MOO ALONG WITH ME',words=LYR.split(' ');
+  var still=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   function compose(t){
-    buf.fill(null);var d=new Date(),hh=('0'+d.getHours()).slice(-2),mm=('0'+d.getMinutes()).slice(-2);
+    buf.fill(null);var d=new Date(),hh=('0'+d.getHours()).slice(-2),mm=('0'+d.getMinutes()).slice(-2),on=still||d.getMilliseconds()<600;
     var warm='#FFF1DC',x=4;
     x=text(hh,x,2,warm,2,1);
-    if(d.getMilliseconds()<600){put(x,5,warm);put(x+1,5,warm);put(x,6,warm);put(x+1,6,warm);put(x,11,warm);put(x+1,11,warm);put(x,12,warm);put(x+1,12,warm);}
+    if(on){put(x,5,warm);put(x+1,5,warm);put(x,6,warm);put(x+1,6,warm);put(x,11,warm);put(x+1,11,warm);put(x,12,warm);put(x+1,12,warm);}
     x+=4;text(mm,x,2,warm,2,1);
     var ds=DAYS[d.getDay()]+' '+d.getDate();text(ds,124-width(ds),2,'#77EDD7');
     var tp='24°';sun(124-width(tp)-10,10);text(tp,124-width(tp),10,'#FFF1DC');
     // lyric sweep, word by word
-    var cyc=(t/1000+2.4)%7,n=Math.min(words.length,Math.floor(cyc/0.7)+ (cyc>0.2?1:0));
+    var cyc=(t/1000+2.4)%7,n=still?words.length:Math.min(words.length,Math.floor(cyc/0.7)+ (cyc>0.2?1:0));
     var sungChars=words.slice(0,n).join(' ').length+(n?1:0);
     var lw=width(LYR),lx=Math.round((W-lw)/2);
     text(LYR,lx,23,function(px,i){return i<sungChars?mix(MAR,PNK,(px-lx)/lw):'rgba(245,233,214,.55)'},1,1);
+    return hh+mm+on+n;
   }
   var P,R;
   function size(){var dpr=Math.min(window.devicePixelRatio||1,2),w=Math.round(cv.clientWidth*dpr)||1280;
     cv.width=w;cv.height=Math.round(w/4);P=w/W;R=P*.36;
     bg.width=cv.width;bg.height=cv.height;var b=bg.getContext('2d');b.fillStyle='#0B0A0E';b.fillRect(0,0,bg.width,bg.height);b.fillStyle='#1B1920';
     for(var y=0;y<H;y++)for(var x=0;x<W;x++){b.beginPath();b.arc((x+.5)*P,(y+.5)*P,R,0,7);b.fill();}}
-  function draw(t){compose(t);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.drawImage(bg,0,0);
+  // repaint only when the minute, the colon or the lyric word changes
+  var shown;
+  function draw(t,force){var k=compose(t);if(k===shown&&!force)return;shown=k;
+    ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.drawImage(bg,0,0);
     ctx.globalCompositeOperation='lighter';
     for(var pass=0;pass<2;pass++){ctx.globalAlpha=pass?1:.10;
       for(var i=0;i<buf.length;i++){var c=buf[i];if(!c)continue;var x=i%W,y=(i/W)|0;
         ctx.fillStyle=c;ctx.beginPath();ctx.arc((x+.5)*P,(y+.5)*P,pass?R:P*1.25,0,7);ctx.fill();}}
     ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;}
-  var last=0;function loop(t){if(t-last>50){draw(t);last=t}requestAnimationFrame(loop)}
-  size();draw(performance.now());requestAnimationFrame(loop);
-  window.addEventListener('resize',function(){size();draw(performance.now())});
+  var last=0,raf=0,seen=!window.IntersectionObserver;
+  function loop(t){raf=0;if(t-last>50){draw(t);last=t}if(seen)raf=requestAnimationFrame(loop)}
+  size();draw(performance.now(),true);if(seen)raf=requestAnimationFrame(loop);
+  else new IntersectionObserver(function(e){seen=e[e.length-1].isIntersecting;if(seen&&!raf)raf=requestAnimationFrame(loop)}).observe(cv);
+  window.addEventListener('resize',function(){size();draw(performance.now(),true)});
   var board=document.getElementById('board');
   document.querySelectorAll('.pick button').forEach(function(b){b.addEventListener('click',function(){
     document.querySelectorAll('.pick button').forEach(function(o){o.setAttribute('aria-pressed','false')});

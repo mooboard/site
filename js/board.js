@@ -9,7 +9,8 @@
   'use strict';
 
   var W = 128, H = 32, N = W * H;
-  var REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // reduced motion, or motion paused on the page (MooBoard.setPaused): either way the boards hold still frames
+  var PREFERS_REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches, REDUCED = PREFERS_REDUCED, paused = false;
   var BLACK = [0, 0, 0], WHITE = [255, 255, 255];
 
   /* ---------- helpers ---------- */
@@ -150,8 +151,8 @@
     ':': ['.', '#', '.', '.', '#', '.']
   };
   var G = mk(320, 112), gx = G.getContext('2d', { willReadFrequently: true });
-  var metricCache = {}, glyphCache = new Map(), kernCache = new Map(), lineCache = new Map(), textGen = 0;
-  function clearText() { metricCache = {}; glyphCache.clear(); kernCache.clear(); lineCache.clear(); if (typeof hiCache !== 'undefined') hiCache.clear(); textGen++; }
+  var metricCache = {}, glyphCache = new Map(), kernCache = new Map(), hiKern = new Map(), lineCache = new Map(), textGen = 0;
+  function clearText() { metricCache = {}; glyphCache.clear(); kernCache.clear(); hiKern.clear(); lineCache.clear(); if (typeof hiCache !== 'undefined') hiCache.clear(); textGen++; }
   if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', clearText);
   function q4(cap) { return Math.round(cap * 4) / 4; }
   // SF Pro Rounded is the board's lyric face. Safari reaches it as ui-rounded; Chrome cannot reach it at all, so there the
@@ -260,9 +261,14 @@
   function kernOf(role, capq, a, b) {
     var key = role + '|' + capq + '|' + a + b, k = kernCache.get(key);
     if (k != null) return k;
-    var hr = hiRes(role), sz = sizeFor(role, capq);
-    gx.font = fontOf(role, hr ? HI_PX : sz);
-    k = Math.round((gx.measureText(a + b).width - gx.measureText(a).width - gx.measureText(b).width) * (hr ? sz / HI_PX : 1));
+    var hr = hiRes(role), sz = sizeFor(role, capq), raw = hr ? hiKern.get(role + '|' + a + b) : null;
+    // a role drawn from 28 px is measured there once for all its sizes (a lyric line passes a dozen on the wheel)
+    if (raw == null) {
+      gx.font = fontOf(role, hr ? HI_PX : sz);
+      raw = gx.measureText(a + b).width - gx.measureText(a).width - gx.measureText(b).width;
+      if (hr) hiKern.set(role + '|' + a + b, raw);
+    }
+    k = Math.round(raw * (hr ? sz / HI_PX : 1));
     kernCache.set(key, k);
     return k;
   }
@@ -379,7 +385,7 @@
   function clockText(d) { var h = d.getHours(); return (H12 ? String((h + 11) % 12 + 1) : two(h)) + ':' + two(d.getMinutes()); }
   function dayMinOf(d) { return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; }
 
-  /* ---------- live weather: Open-Meteo, no key, location guessed from the time zone (no prompt) ---------- */
+  /* ---------- live weather: MET Norway (CC BY 4.0, credited on the page), no key, location guessed from the time zone (no prompt) ---------- */
   var TZ_CITY = {
     'America/New_York': [40.71, -74.01], 'America/Detroit': [42.33, -83.05], 'America/Toronto': [43.65, -79.38],
     'America/Chicago': [41.88, -87.63], 'America/Denver': [39.74, -104.99], 'America/Phoenix': [33.45, -112.07],
@@ -403,43 +409,83 @@
     'Asia/Riyadh': [24.71, 46.68], 'Asia/Tehran': [35.69, 51.39], 'Australia/Brisbane': [-27.47, 153.03]
   };
   var TZ = ''; try { TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* none */ }
-  var SOUTH = /^(Australia|Pacific\/Auckland|America\/(Sao_Paulo|Argentina|Santiago)|Africa\/Johannesburg)/.test(TZ);
+  // the southern hemisphere: the city's latitude, else the zones south of the equator
+  var HOME = TZ_CITY[TZ], SOUTH = HOME ? HOME[0] < 0 : new RegExp('^(Australia|Antarctica|NZ|Brazil|Chile' +
+    '|Pacific/(Auckland|Chatham|Fiji|Tongatapu|Apia|Samoa|Pago_Pago|Efate|Noumea|Port_Moresby|Bougainville|Guadalcanal|Norfolk|Rarotonga|Tahiti|Marquesas|Gambier|Pitcairn|Easter|Galapagos|Wallis|Fakaofo|Funafuti|Niue|Nauru|Kanton|Enderbury)' +
+    '|America/(Sao_Paulo|Argentina|Buenos_Aires|Cordoba|Mendoza|Catamarca|Jujuy|Rosario|Santiago|Punta_Arenas|Montevideo|Asuncion|La_Paz|Lima|Guayaquil|Bahia|Belem|Fortaleza|Recife|Maceio|Araguaina|Cuiaba|Campo_Grande|Porto_Velho|Porto_Acre|Rio_Branco|Eirunepe|Manaus|Noronha|Santarem)' +
+    '|Africa/(Johannesburg|Maputo|Harare|Lusaka|Lubumbashi|Windhoek|Gaborone|Maseru|Mbabane|Blantyre|Luanda|Kinshasa|Brazzaville|Dar_es_Salaam|Nairobi|Kigali|Bujumbura)' +
+    '|Indian/(Antananarivo|Mauritius|Reunion|Mayotte|Comoro|Mahe|Chagos|Kerguelen|Cocos|Christmas)|Asia/(Jakarta|Makassar|Ujung_Pandang|Jayapura|Dili)' +
+    '|Atlantic/(St_Helena|South_Georgia|Stanley))\\b').test(TZ);
   var FAHR = /^(en-US|en-LR|my)/.test(navigator.language || '') || /^America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Anchorage|Detroit|Indiana|Kentucky|Boise)|^Pacific\/Honolulu/.test(TZ);
-  // approximate sunrise and sunset (local minutes) from the time zone's offset and today's date until the real ones
-  // arrive; 06:30 and 18:30 when unknown
+  // approximate sunrise and sunset (local minutes) from the time zone's offset, its city's latitude (else 40 degrees)
+  // and today's date until the real ones arrive; 06:30 and 18:30 when unknown
   var SUN = (function () {
     try {
       var d = new Date(), doy = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
       var dst = Math.max(new Date(d.getFullYear(), 0, 1).getTimezoneOffset(), new Date(d.getFullYear(), 6, 1).getTimezoneOffset()) !== d.getTimezoneOffset() ? 1 : 0;
-      var lat = 40 * (SOUTH ? -1 : 1), decl = 23.44 * Math.sin((2 * Math.PI / 365) * (doy - 81)) * Math.PI / 180, la = lat * Math.PI / 180;
+      var lat = HOME ? HOME[0] : 40 * (SOUTH ? -1 : 1), decl = 23.44 * Math.sin((2 * Math.PI / 365) * (doy - 81)) * Math.PI / 180, la = lat * Math.PI / 180;
       var ha = Math.acos(clamp(-Math.tan(la) * Math.tan(decl), -1, 1)) * 12 / Math.PI, noon = 12 + dst;
       return [Math.round((noon - ha) * 60), Math.round((noon + ha) * 60)];
     } catch (e) { return [390, 1110]; }
   })();
   // One small request for the visitor's area (their time zone's city, else Indianapolis), after the page has loaded
-  // and gone idle, never blocking; kept for 30 minutes in this browser. A failed fetch leaves the fixed sample.
-  var WX = null, wxAsked = false, WX_KEY = 'moo-wx', WX_TTL = 30 * 60 * 1000;
-  function takeWeather(j) {
-    if (j && j.current) WX = { temp: Math.round(j.current.temperature_2m), code: j.current.weather_code, wind: j.current.wind_speed_10m };
+  // and gone idle, never blocking, and one for that city's sunrise and sunset; kept in this browser until MET's
+  // forecast expires (30 minutes at least) and the sun's for the day. A failed fetch leaves the fixed sample.
+  var WX = null, wxAsked = false, WX_KEY = 'moo-met', WX_TTL = 30 * 60 * 1000;
+  // MET's symbol (its _day, _night or _polartwilight cut off) as the WMO code the faces are drawn for
+  function wmoOf(sym) {
+    var s = String(sym || '').replace(/_(day|night|polartwilight)$/, ''), heavy = /^heavy/.test(s), light = /^light/.test(s), showers = /showers/.test(s);
+    if (/thunder/.test(s)) return 95;
+    if (/snow/.test(s)) return showers ? (heavy ? 86 : 85) : heavy ? 75 : light ? 71 : 73;
+    if (/sleet/.test(s)) return heavy ? 67 : light ? 56 : 57;
+    if (/rain/.test(s)) return showers ? (heavy ? 82 : light ? 80 : 81) : heavy ? 65 : light ? 61 : 63;
+    var c = { clearsky: 0, fair: 1, partlycloudy: 2, cloudy: 3, fog: 45 }[s];
+    return c == null ? 3 : c;
+  }
+  function dayKey(d) { return d.getFullYear() + '-' + two(d.getMonth() + 1) + '-' + two(d.getDate()); }
+  function offsetOf(d) { var o = -d.getTimezoneOffset(), a = Math.abs(o); return (o < 0 ? '-' : '+') + two(Math.floor(a / 60)) + ':' + two(a % 60); }
+  function minsOf(iso) { var m = /T(\d+):(\d+)/.exec(iso || ''); return m ? +m[1] * 60 + +m[2] : null; }
+  function takeWeather(kept) {
+    if (kept.now) WX = kept.now;
     // today's real sunrise and sunset (local clock times) drive the phase, the sky's colours and the arc
-    var d = j && j.daily, mins = function (iso) { var m = /T(\d+):(\d+)/.exec(iso || ''); return m ? +m[1] * 60 + +m[2] : null; };
-    var r = d && mins(d.sunrise && d.sunrise[0]), s = d && mins(d.sunset && d.sunset[0]);
-    if (r != null && s != null && s > r) { SUN[0] = r; SUN[1] = s; }
+    if (kept.sun && kept.sun.set > kept.sun.rise) { SUN[0] = kept.sun.rise; SUN[1] = kept.sun.set; }
   }
   function askWeather() {
     if (wxAsked) return; wxAsked = true;
-    var c = TZ_CITY[TZ] || TZ_CITY['America/Indiana/Indianapolis'], key = c.join(',') + (FAHR ? 'F' : 'C');
-    try { var kept = JSON.parse(localStorage.getItem(WX_KEY) || 'null'); if (kept && kept.key === key && Date.now() - kept.at < WX_TTL) { takeWeather(kept.j); return; } } catch (e) { /* no storage */ }
-    if (!window.fetch) return;
+    var c = HOME || TZ_CITY['America/Indiana/Indianapolis'], key = c.join(',') + (FAHR ? 'F' : 'C'), today = dayKey(new Date()), kept = null;
+    try { kept = JSON.parse(localStorage.getItem(WX_KEY) || 'null'); } catch (e) { /* no storage */ }
+    if (!kept || kept.key !== key) kept = { key: key };
+    // only what is still good goes on the board: an old forecast or another day's sun is dropped
+    if (!(Date.now() < kept.until)) delete kept.now;
+    // the sun only for the visitor's own city: the sample city's times would be wrong on their clock
+    if (!HOME || !kept.sun || kept.sun.day !== today) delete kept.sun;
+    takeWeather(kept);
+    var wxFresh = !!kept.now, sunFresh = !HOME || !!kept.sun;
+    if ((wxFresh && sunFresh) || !window.fetch) return;
+    var api = 'https://api.met.no/weatherapi/', at = '?lat=' + c[0] + '&lon=' + c[1];
+    var keep = function () { takeWeather(kept); restill(); try { localStorage.setItem(WX_KEY, JSON.stringify(kept)); } catch (e) { /* no storage */ } };
     var go = function () {
-      fetch('https://api.open-meteo.com/v1/forecast?latitude=' + c[0] + '&longitude=' + c[1] + '&current=temperature_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=auto&forecast_days=1' + (FAHR ? '&temperature_unit=fahrenheit' : ''))
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) {
-          if (!j || !j.current) return;
-          takeWeather(j);
-          try { localStorage.setItem(WX_KEY, JSON.stringify({ key: key, at: Date.now(), j: { current: j.current, daily: j.daily } })); } catch (e) { /* no storage */ }
+      if (!wxFresh) fetch(api + 'locationforecast/2.0/compact' + at)
+        .then(function (r) { return r.ok ? r.json().then(function (j) { return { j: j, until: Date.parse(r.headers.get('Expires') || '') }; }) : null; })
+        .then(function (res) {
+          var ts = res && res.j && res.j.properties && res.j.properties.timeseries, d = ts && ts[0] && ts[0].data;
+          var inst = d && d.instant && d.instant.details, next = d && (d.next_1_hours || d.next_6_hours);
+          if (!inst || typeof inst.air_temperature !== 'number' || !next || !next.summary) return;
+          // MET gives degrees Celsius and meters a second, the faces want the visitor's degrees and km/h
+          kept.now = { temp: Math.round(FAHR ? inst.air_temperature * 9 / 5 + 32 : inst.air_temperature), code: wmoOf(next.summary.symbol_code), wind: (inst.wind_speed || 0) * 3.6 };
+          kept.until = Math.max(Date.now() + WX_TTL, res.until || 0);
+          keep();
         })
         .catch(function () { /* the fixed sample stays */ });
+      if (!sunFresh) fetch(api + 'sunrise/3.0/sun' + at + '&date=' + today + '&offset=' + encodeURIComponent(offsetOf(new Date())))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          var p = j && j.properties, rise = minsOf(p && p.sunrise && p.sunrise.time), set = minsOf(p && p.sunset && p.sunset.time);
+          if (rise == null || set == null) return;
+          kept.sun = { day: today, rise: rise, set: set };
+          keep();
+        })
+        .catch(function () { /* the estimate stays */ });
     };
     var idle = function () { if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 2000 }); else setTimeout(go, 200); };
     if (document.readyState === 'complete') idle(); else addEventListener('load', idle);
@@ -496,7 +542,6 @@
     var since = dm >= set ? dm - set : dm + 1440 - set;
     return { sun: false, f: c01(since / (1440 - set + rise)) };
   }
-  // the moon's phase, 0 new .. .5 full (pw::moonPhase): a mean synodic month from a real new moon
   // the moon's phase as the firmware works it everywhere (clock/Astro.cpp, Meeus: fcMoonPhase with the faces below)
   function moonPhase(ms) { return fcMoonPhase(ms); }
   var CLOCK_COL = { day: hexc('#F2F4FA'), dusk: hexc('#FFE8D2'), night: hexc('#A8B4CC') };
@@ -972,9 +1017,10 @@
   function playingSong() {
     var M = window.MooMusic, tr = M && M.track && M.track();
     if (!tr) return null;
-    var ready = M.ready && M.ready();
+    var ready = M.ready && M.ready(), playing = !!(ready && M.playing());
     // the lyrics run on the radio's lyric clock (the media clock, a lead, the output's latency); bars on the media clock
-    return { tr: tr, tm: M.timing(), pos: ready ? (M.lyricPos || M.pos)() : 0, media: ready ? M.pos() : 0, playing: !!(ready && M.playing()), accent: tr.tint ? hexc(tr.tint) : [119, 237, 215] };
+    return { tr: tr, tm: M.timing(), pos: ready ? (M.lyricPos || M.pos)() : 0, media: ready ? M.pos() : 0, playing: playing,
+      audible: playing && !(M.muted && M.muted()), accent: tr.tint ? hexc(tr.tint) : [119, 237, 215] };
   }
   var ARTS = {};
   function sampleArt(im, n) {
@@ -993,7 +1039,7 @@
     if (!a) {
       a = ARTS[src] = { ok: false };
       var im = new Image(); im.crossOrigin = 'anonymous'; im.decoding = 'async';
-      im.onload = function () { try { a.tex = sampleArt(im, 28); a.t30 = sampleArt(im, 30); a.t20 = sampleArt(im, 20); a.ok = true; } catch (e) { a.bad = true; } };
+      im.onload = function () { try { a.tex = sampleArt(im, 28); a.t30 = sampleArt(im, 30); a.t20 = sampleArt(im, 20); a.ok = true; restill(); } catch (e) { a.bad = true; } };
       im.onerror = function () { a.bad = true; };
       im.src = src;
     }
@@ -1027,7 +1073,7 @@
   // side slots (off the edge) are empty and a line change still rides the wheel up through the panel.
   var LYR = {
     CUR_TOP: 10, WRAP1: 6, WRAP2: 16, PREV_TOP: -4, NEXT_TOP: 28, BOX_X: 2, BOX_W: 124, FIT: [11, 10, 9, 8], WRAP_CAP: 8, MIN_CAP: 7,
-    SIDE_CAP: 8, SIDE_ALPHA: .4, SCROLL_TAU: .16, NEXT_FADE: .12, EDGE_FADE_ROWS: 3, INK_GAP: 1, LIFT: 1, HALO: 1,
+    SIDE_CAP: 8, SIDE_ALPHA: .4, SCROLL_TAU: .16, NEXT_FADE: .12, SHOW_FADE: .3, FADE_ROWS: 5, IN_ROWS: 2.5, INK_GAP: 1, LIFT: 1, HALO: 1,
     GROW_REST: .95, GROW_FOCUS: 1.06, DIM: .4, LIFT_TH: .5, GLOW_MIN_MS: 1000, GLOW_MAX_CHARS: 7, GLOW_RAMP: 500, GLOW_A: .2,
     DOT_SP: 6, DOT_MIN: .3, DOT_RANGE: .7, BREATH: .12, BREATH_RATE: 2.2, INTRO_MIN_MS: 4000, BG_DIM: .45,
     COVER_PX: 20, COVER_Y: 1, COVER_LEVEL: .8, COVER_TIME_TOP: 24, SIDE_BOX_GAP: 3, TIME_CAP: 6, TIME_ALPHA: .85, TIME_TINT: .62, TIME_FADE: .4
@@ -1036,14 +1082,11 @@
   function rowOf(y) { return Math.round(y); }
   function capRowsOf(cap) { return Math.ceil(q4(cap)); }
   function lerpF(a, b, t) { return a + (b - a) * t; }
-  function approachF(cur, to, dt, tau) { return tau <= 0 ? to : cur + (to - cur) * (1 - Math.exp(-dt / tau)); }
-  // the row's capitals on rows y..y+cap-1: how much of it the panel's lit rows (1..30) show, as the board's
-  // lyricEdgeFade does for its own edges
-  function edgeFade(capTop, cap, top, bottom) {
-    var vis = Math.min(capTop + cap, bottom) - Math.max(capTop, top);
-    if (vis >= LYR.EDGE_FADE_ROWS) return 1;
-    if (vis <= 0) return 0;
-    return 1 - Math.pow(1 - vis / LYR.EDGE_FADE_ROWS, 3);
+  // a critically damped glide (its speed in sp[k]) that settles as soon as the board's SCROLL_TAU
+  function glide(cur, to, dt, sp, k) {
+    var w = 1.6 / LYR.SCROLL_TAU, y = cur - to, e = Math.exp(-w * dt), c = (sp[k] + w * y) * dt;
+    sp[k] = (sp[k] - w * c) * e;
+    return to + (y + c) * e;
   }
   // pw::lyrics: the active line, the active word, what has been sung
   function firstSung(sh) { for (var i = 0; i < sh.lines.length; i++) if (!sh.lines[i].interlude) return i; return 0; }
@@ -1149,10 +1192,15 @@
       var g = s.g; if (!g.w) return;
       for (var c = 0; c < g.w; c++) for (var r = 0; r < g.h; r++) { if (!g.a[r * g.w + c]) continue; var x = s.x + g.x + c, y = g.y + r; top[x] = Math.min(top[x] == null ? 1e9 : top[x], y); bot[x] = Math.max(bot[x] == null ? -1e9 : bot[x], y); minT = Math.min(minT, y); maxB = Math.max(maxB, y); }
     });
-    return (L.colInk = { top: top, bot: bot, minTop: minT, maxBottom: maxB });
+    var cols = [];
+    for (var k in top) cols.push([+k, top[k], bot[k]]);
+    return (L.colInk = { top: top, bot: bot, cols: cols, minTop: minT, maxBottom: maxB });
   }
   function RowInk() { this.clear(0, 0); }
-  RowInk.prototype.clear = function (capTop, base) { this.top = new Int16Array(W).fill(32767); this.bot = new Int16Array(W).fill(-32768); this.capTop = capTop; this.base = base; this.minTop = 1e9; this.maxBottom = -1e9; };
+  RowInk.prototype.clear = function (capTop, base) {
+    if (!this.top) { this.top = new Int16Array(W); this.bot = new Int16Array(W); }
+    this.top.fill(32767); this.bot.fill(-32768); this.capTop = capTop; this.base = base; this.minTop = 1e9; this.maxBottom = -1e9;
+  };
   RowInk.prototype.add = function (c, t, b) { if (c < 0 || c >= W) return; this.top[c] = Math.min(this.top[c], t); this.bot[c] = Math.max(this.bot[c], b); this.minTop = Math.min(this.minTop, t); this.maxBottom = Math.max(this.maxBottom, b); };
   RowInk.prototype.any = function () { return this.minTop <= this.maxBottom; };
   function clearance(up, lo) {
@@ -1176,9 +1224,9 @@
   function Wheel(style) {
     this.style = style; this.warp = new Warp(); this.grow = new Spring();
     this.started = false; this.active = -1; this.cur = this.emptyFit(); this.prevF = this.emptyFit(); this.nextF = this.emptyFit();
-    this.wheelT = 1; this.nextFade = 1; this.rowScroll = 0; this.focusRow = 0; this.dt = 0;
+    this.wheelT = 1; this.nextFade = 1; this.rowScroll = 0; this.scrollFrom = this.scrollTo = 0; this.speed = { wheel: 0, scroll: 0 }; this.show = 1;
     this.inkA = new RowInk(); this.inkB = new RowInk();
-    this.timeNow = null; this.timeBefore = null; this.timeFade = 1;
+    this.timeNow = null; this.timeBefore = null; this.timeFade = 1; this.warm = [];
   }
   Wheel.prototype.emptyFit = function () { return { cap: LYR.FIT[0], rows: [], rowStart: [] }; };
   // the geometry: the words alone across the panel, or (Cover) a box beside the cover and its time
@@ -1192,9 +1240,25 @@
     }
     return g;
   };
+  // a line's fit, kept by its text and box
+  var fitCache = new Map();
   Wheel.prototype.fitLine = function (sh, i) {
     if (i < 0 || i >= sh.lines.length || sh.lines[i].interlude) return this.emptyFit();
-    return lyricFit(sh.lines[i].text, this.g.boxW);
+    var key = textGen + '|' + this.g.boxW + '|' + sh.lines[i].text, fitd = fitCache.get(key);
+    if (!fitd) { if (fitCache.size > 200) fitCache.delete(fitCache.keys().next().value); fitCache.set(key, fitd = lyricFit(sh.lines[i].text, this.g.boxW)); }
+    return fitd;
+  };
+  // the next line change's layouts, a piece a frame while the wheel rests (all at once they cost a slow phone a frame)
+  Wheel.prototype.queueWarm = function (sh) {
+    var self = this, q = this.warm = [], i = this.active + 2, ln = sh.lines[i];
+    if (ln && !ln.interlude) {
+      var norm = ln.text.split(/\s+/).filter(Boolean).join(' ');
+      LYR.FIT.concat(LYR.WRAP_CAP).forEach(function (c) { q.push(function () { line(CENTRE, c, norm); }); });
+      q.push(function () { var fd = self.fitLine(sh, i); if (fd.rows.length) rowInkOf(line(SIDE, self.sideCapFor(fd), fd.rows[0])); });
+    }
+    [[this.nextF, CENTRE, this.nextF.cap], [this.cur, SIDE, this.sideCapFor(this.cur)]].forEach(function (w) {
+      w[0].rows.forEach(function (row) { q.push(function () { rowInkOf(line(w[1], w[2], row)); }); });
+    });
   };
   Wheel.prototype.sideCapFor = function (fitd) { return fitd.rows.length ? Math.min(LYR.SIDE_CAP, fitd.cap) : LYR.SIDE_CAP; };
   Wheel.prototype.rowX = function (L) { return this.g.boxX + Math.trunc((this.g.boxW - L.adv) / 2); };
@@ -1202,7 +1266,7 @@
     ink.clear(capTop, base);
     var ci = rowInkOf(L);
     if (ci.minTop > ci.maxBottom) return;
-    for (var k in ci.top) ink.add(x + +k, base + ci.top[k] - lift, base + ci.bot[k]);
+    for (var k = 0; k < ci.cols.length; k++) { var cl = ci.cols[k]; ink.add(x + cl[0], base + cl[1] - lift, base + cl[2]); }
     if (!ln || !ln.words.length) return;
     // a word held long enough to glow wears the halo a pixel round it
     var reach = 2 + LYR.HALO, wi = 0;
@@ -1256,7 +1320,7 @@
     return false;
   };
   Wheel.prototype.placeWheel = function (sh, t, scale, settle) {
-    var self = this, rest = this.rest, cur = this.cur, rows = cur.rows.length, ln = this.centreText(sh), scroll = settle ? 0 : this.rowScroll, count = sh.lines.length;
+    var rest = this.rest, cur = this.cur, rows = cur.rows.length, ln = this.centreText(sh), scroll = settle ? 0 : this.rowScroll, count = sh.lines.length;
     var f = { firstRow: 0, lastRow: 0, windowed: false, rowTop: function (r, s) { return this.anchor + (r - s) * this.pitch; } };
     var capNow = lerpF(this.sideCapFor(cur), cur.cap, t);
     f.centreCap = capNow * scale;
@@ -1282,8 +1346,9 @@
     }
     // the previous line: on its slot, or as far above the centre block as their ink needs; on a line change it rides
     // up whole from where it sat as the centre block, shrinking to its side cap and dimming
+    // an interlude's dots too (an empty fit carries the centre's cap)
     var prevSide = this.sideCapFor(this.prevF);
-    f.prevCap = lerpF(prevRows === 0 ? LYR.SIDE_CAP : this.prevF.cap, prevRows === 0 ? LYR.SIDE_CAP : prevSide, t);
+    f.prevCap = lerpF(this.prevF.cap, prevRows === 0 ? LYR.SIDE_CAP : prevSide, t);
     f.prevAlpha = lerpF(1, LYR.SIDE_ALPHA, t);
     f.prevTop = settle ? this.g.prevCapTop : lerpF(this.fromOutTop, rest.prevTop, t);
     f.prevPitch = settle ? this.g.rowStep : Math.max(1, Math.round(lerpF(this.fromOutPitch, rest.prevPitch, t)));
@@ -1295,7 +1360,6 @@
       else pd = false;
       if (pd && this.edgeInk(this.inkB, sh, f, t, scroll, false)) { var nd = clearance(this.inkA, this.inkB); if (nd > 0) f.prevTop -= nd; }
     }
-    void self;
     return f;
   };
   // the rest the wheel eases toward for the three lines just fitted
@@ -1317,7 +1381,7 @@
   Wheel.prototype.refit = function (sh, active) {
     this.active = active;
     this.cur = this.fitLine(sh, active); this.prevF = this.fitLine(sh, active - 1); this.nextF = this.fitLine(sh, active + 1);
-    this.settleWheel(sh);
+    this.settleWheel(sh); this.queueWarm(sh);
     this.fromOutTop = this.rest.prevTop; this.fromOutPitch = this.rest.prevPitch; this.fromInTop = this.rest.centreTop;
   };
   Wheel.prototype.stepFits = function (sh, active) {
@@ -1325,24 +1389,34 @@
     this.fromOutTop = rest.centreTop + (shownOut >= 2 ? rest.centrePitch : 0);
     this.fromOutPitch = rest.centrePitch; this.fromInTop = rest.nextTop;
     this.active = active; this.prevF = this.cur; this.cur = this.nextF; this.nextF = this.fitLine(sh, active + 1);
-    this.settleWheel(sh);
+    this.settleWheel(sh); this.queueWarm(sh);
   };
   Wheel.prototype.retriggerGrow = function () { this.grow.value = 0; this.grow.velocity = 0; this.grow.target = 1; };
   Wheel.prototype.growScale = function () { return (LYR.GROW_REST + (LYR.GROW_FOCUS - LYR.GROW_REST) * this.grow.value) / LYR.GROW_FOCUS; };
-  Wheel.prototype.followRow = function (ln, ws, pos, dt) {
+  // the scroll a long line's rows follow: the row with the word being sung (untimed, its share of the line) on top
+  Wheel.prototype.scrollFor = function (ln, ws, pos) {
     var rows = this.cur.rows.length, rs = this.cur.rowStart, focus = 0, r;
     if (ln.words.length) { var fb = ws.activeWord >= 0 ? ln.words[ws.activeWord].start : ws.sungTo; for (r = 0; r < rows; r++) if (fb >= rs[r]) focus = r; }
     else if (rows > 1 && ln.endMs > ln.startMs) focus = Math.min(Math.max(Math.floor(c01((pos - ln.startMs) / (ln.endMs - ln.startMs)) * rows), 0), rows - 1);
-    this.focusRow = focus;
-    this.rowScroll = approachF(this.rowScroll, Math.min(focus, rows >= 2 ? rows - 2 : 0), dt, LYR.SCROLL_TAU);
+    return Math.min(focus, rows >= 2 ? rows - 2 : 0);
   };
-  // a row is drawn only while its whole ink is inside the lit rows (1..30) and the clip; it fades as it nears them
-  Wheel.prototype.drawRow = function (f, role, cap, L, x, capTopY, alpha, shade, clipTop, clipBottom) {
+  Wheel.prototype.followRow = function (ln, ws, pos, dt) {
+    var to = this.scrollFor(ln, ws, pos);
+    if (to !== this.scrollTo) { this.scrollFrom = this.scrollTo; this.scrollTo = to; }
+    this.rowScroll = REDUCED ? to : glide(this.rowScroll, to, dt, this.speed, 'scroll');
+  };
+  // how much of a moving row shows: it fades over the rows it had at rest as it nears the ring or leaves the clip,
+  // and comes in through the bottom over IN_ROWS (a new line is lit as soon as on the board)
+  function fadeZone(room) { return room > 0 ? clamp(room, .5, LYR.FADE_ROWS) : LYR.FADE_ROWS; }
+  Wheel.prototype.fadeOf = function (top, bottom, zoneTop, zoneBottom, clipTop, clipBottom) {
+    var out = Math.max(clipTop - top, bottom - clipBottom + 1);
+    return Math.min(c01((top - .5) / zoneTop), c01((30.5 - bottom) / zoneBottom), 1 - c01(out / LYR.FADE_ROWS)) * this.show;
+  };
+  // a row is drawn only while its whole ink is inside the lit rows (1..30), at its fade
+  Wheel.prototype.drawRow = function (f, role, cap, L, x, capTopY, alpha, shade, fade) {
     var base = capBase(capTopY, cap), top = base + L.t, bottom = base + L.b;
-    if (L.empty || top < Math.max(1, clipTop) || bottom > Math.min(30, clipBottom - 1) || x + L.l < 1 || x + L.r > W - 2) return false;
-    var edge = Math.min(edgeFade(rowOf(capTopY), q4(cap), 1, 31), edgeFade(rowOf(capTopY), q4(cap), clipTop, clipBottom));
-    if (edge <= 0) return false;
-    drawText(f, L, x, base, WHITE, alpha * edge, shade);
+    if (L.empty || top < 1 || bottom > 30 || x + L.l < 1 || x + L.r > W - 2 || !(fade > 0)) return false;
+    drawText(f, L, x, base, WHITE, alpha * fade, shade);
     return true;
   };
   Wheel.prototype.drawSideSlot = function (f, sh, index, fitd, previous, monoMs) {
@@ -1351,17 +1425,23 @@
     var cap = previous ? fr.prevCap : (ln.interlude ? LYR.SIDE_CAP : this.sideCapFor(fitd));
     var alpha = previous ? fr.prevAlpha : LYR.SIDE_ALPHA * this.nextFade;
     if (alpha <= 0) return;
-    if (ln.interlude) { var dc = capTop + (cap - 1) * .5; if (rowOf(dc) - 1 >= 1 && rowOf(dc) + 1 <= 30) this.drawDots(f, 0, monoMs, dc, alpha); return; }
+    // an interlude just past leaves with its dots full, as the centre showed them last
+    if (ln.interlude) { this.drawDots(f, previous ? 1 : 0, monoMs, capTop + (cap - 1) * .5, alpha); return; }
     if (!fitd.rows.length) return;
     var self = this, rowsShown = previous ? Math.min(fitd.rows.length, 2) : 1;
     for (var k = 0; k < rowsShown; k++) {
       var r = previous ? fitd.rows.length - rowsShown + k : 0, y = previous ? capTop - (rowsShown - 1 - k) * fr.prevPitch : capTop, L = line(SIDE, cap, fitd.rows[r]);
-      self.drawRow(f, SIDE, cap, L, self.rowX(L), y, alpha, null, this.style === 'cover' ? 0 : 0, 32);
+      // the previous line fades over the room it had where it set off, the next line comes in like the centre
+      var b = capBase(y, cap) + y - rowOf(y), b0 = capBase(this.fromOutTop - (rowsShown - 1 - k) * this.fromOutPitch, cap);
+      var zt = previous ? fadeZone(b0 + L.t - .5) : LYR.FADE_ROWS, zb = previous ? fadeZone(30.5 - b0 - L.b) : LYR.IN_ROWS;
+      self.drawRow(f, SIDE, cap, L, self.rowX(L), y, alpha, null, self.fadeOf(b + L.t, b + L.b, zt, zb, 0, 32));
     }
   };
   Wheel.prototype.drawDots = function (f, p, monoMs, cy0, alpha) {
     var breath = REDUCED ? 1 : 1 + LYR.BREATH * Math.sin(LYR.BREATH_RATE * ((monoMs % (6283.185307179586 / LYR.BREATH_RATE)) / 1000));
     var cx = this.g.boxX + Math.floor(this.g.boxW / 2), cy = rowOf(cy0);
+    if (cy - 1 < 1 || cy + 1 > 30) return;
+    alpha *= this.fadeOf(cy0 - 1, cy0 + 1, LYR.FADE_ROWS, LYR.IN_ROWS, 0, 32);
     for (var k = 0; k < 3; k++) {
       var a = Math.min(1, (LYR.DOT_MIN + LYR.DOT_RANGE * c01(3 * p - k)) * breath) * alpha, x = cx + (k - 1) * LYR.DOT_SP;
       f.blend(x, cy, WHITE, a); f.blend(x - 1, cy, WHITE, a); f.blend(x + 1, cy, WHITE, a); f.blend(x, cy - 1, WHITE, a); f.blend(x, cy + 1, WHITE, a);
@@ -1384,12 +1464,18 @@
     }
     var rows = this.cur.rows.length, fr = this.frame, cap = fr.centreCap, timed = ln.words.length > 0, clipTop = 0, clipBottom = 32;
     if (fr.windowed) { clipTop = fr.windowTop; clipBottom = fr.windowBottom; }
-    var lift = liftAmt(ws.msIntoWord, ws.wordDurMs) >= LYR.LIFT_TH ? LYR.LIFT : 0;
+    // reduced motion: the line being sung is lit whole, with no sweep, lift or glow
+    var whole = REDUCED && pos >= 0, lift = !REDUCED && liftAmt(ws.msIntoWord, ws.wordDurMs) >= LYR.LIFT_TH ? LYR.LIFT : 0;
     var aw = timed && ws.activeWord >= 0 ? ln.words[ws.activeWord] : null;
-    var held = !!aw && ws.wordDurMs >= LYR.GLOW_MIN_MS && aw.end - aw.start <= LYR.GLOW_MAX_CHARS, glow = held ? Math.min(1, ws.msIntoWord / LYR.GLOW_RAMP) : 0;
+    var held = !REDUCED && !!aw && ws.wordDurMs >= LYR.GLOW_MIN_MS && aw.end - aw.start <= LYR.GLOW_MAX_CHARS, glow = held ? Math.min(1, ws.msIntoWord / LYR.GLOW_RAMP) : 0;
     for (var r = fr.firstRow; r <= fr.lastRow && r < rows; r++) {
       var capTop = fr.rowTop(r, this.rowScroll), L = line(CENTRE, cap, this.cur.rows[r]), x = this.rowX(L), base0 = this.cur.rowStart[r];
-      if (!timed) { this.drawRow(f, CENTRE, cap, L, x, capTop, 1, null, clipTop, clipBottom); continue; }
+      // one fade for the row and its lifted and haloed copies, by its ink here and at rest before and after a scroll
+      this.centreInk(this.inkA, ln, r, cap, rowOf(capTop));
+      var ink = this.inkA, off = capTop - ink.capTop, y0 = this.rest.centreTop - ink.capTop + (r - this.scrollFrom) * this.rest.centrePitch, y1 = y0 + (this.scrollFrom - this.scrollTo) * this.rest.centrePitch;
+      var fade = this.fadeOf(ink.minTop + off, ink.maxBottom + off, Math.min(fadeZone(ink.minTop + y0 - .5), fadeZone(ink.minTop + y1 - .5)),
+        Math.min(fadeZone(30.5 - ink.maxBottom - y0), fadeZone(30.5 - ink.maxBottom - y1), LYR.IN_ROWS), clipTop, clipBottom);
+      if (!timed) { this.drawRow(f, CENTRE, cap, L, x, capTop, 1, null, fade); continue; }
       var aS = 0, aE = 0, wl = 0, ww = 0;
       if (aw && aw.start >= base0 && aw.start < base0 + this.cur.rows[r].length) {
         var lo = 1e9, hi = -1e9;
@@ -1400,17 +1486,17 @@
       if (glow > 0 && aE > aS) {
         var ga = LYR.GLOW_A * glow;
         var halo = function (X, Y, i) { var b = base0 + i; return b >= aS && b < aE ? [accent[0], accent[1], accent[2], ga] : null; };
-        [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (o) { self.drawRow(f, CENTRE, cap, L, x + o[0], capTop + o[1] - lift, 1, halo, clipTop, clipBottom); });
+        [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(function (o) { self.drawRow(f, CENTRE, cap, L, x + o[0], capTop + o[1] - lift, 1, halo, fade); });
       }
       var sweep = function (inWord) {
         return function (X, Y, i) {
           var b = base0 + i, iw = b >= aS && b < aE;
           if (iw !== inWord) return null;
-          return sweepAlpha(X, b, sung, wordLeft, ww, aS, aE, prog);
+          return whole ? 1 : sweepAlpha(X, b, sung, wordLeft, ww, aS, aE, prog);
         };
       };
-      this.drawRow(f, CENTRE, cap, L, x, capTop, 1, sweep(false), clipTop, clipBottom);
-      if (aE > aS) this.drawRow(f, CENTRE, cap, L, x, capTop - lift, 1, sweep(true), clipTop, clipBottom);
+      this.drawRow(f, CENTRE, cap, L, x, capTop, 1, sweep(false), fade);
+      if (aE > aS) this.drawRow(f, CENTRE, cap, L, x, capTop - lift, 1, sweep(true), fade);
     }
   };
   // the Cover style's column: the cover at 80% from row 1, the time under it in the accent lifted toward white,
@@ -1422,7 +1508,7 @@
     else for (var y = 0; y < LYR.COVER_PX; y++) for (var x = 0; x < LYR.COVER_PX; x++) f.set(x0 + x, LYR.COVER_Y + y, mul(accent, .12 + .26 * (x + y) / (2 * (LYR.COVER_PX - 1))));
     var txt = clockText(now()), col = mix(accent, WHITE, LYR.TIME_TINT);
     if (this.timeNow !== txt) { this.timeBefore = this.timeNow; this.timeNow = txt; this.timeFade = this.timeBefore ? 0 : 1; }
-    this.timeFade = Math.min(1, this.timeFade + (dt || 0) / LYR.TIME_FADE);
+    this.timeFade = REDUCED ? 1 : Math.min(1, this.timeFade + (dt || 0) / LYR.TIME_FADE);
     var k = smooth(0, 1, this.timeFade), base = capBase(LYR.COVER_TIME_TOP, LYR.TIME_CAP);
     if (k < 1 && this.timeBefore) { var B = line('label', LYR.TIME_CAP, this.timeBefore); drawText(f, B, penCentre(B, g.colCx), base, col, LYR.TIME_ALPHA * (1 - k)); }
     var T = line('label', LYR.TIME_CAP, txt);
@@ -1434,8 +1520,9 @@
     if (!this.rest) this.rest = { prevTop: this.g.prevCapTop, prevPitch: this.g.rowStep, centreTop: this.g.curCapTop, centrePitch: this.g.rowStep, nextTop: this.g.nextCapTop, windowAbove: 0, windowBelow: 0 };
     if (this.fromInTop == null) { this.fromOutTop = this.rest.prevTop; this.fromOutPitch = this.rest.prevPitch; this.fromInTop = this.rest.centreTop; }
     var art = s ? artOf(s.tr) : null, accent = s ? s.accent : [119, 237, 215], sh = s ? sheetOf(s.tm) : null;
-    dt = Math.min(Math.max(dt || 0, 0), .25); this.dt = dt;
+    dt = Math.min(Math.max(dt || 0, 0), .25);
     this.warp.setTexture(art ? art.tex : null);
+    if (REDUCED) this.warp.fade = 1;
     this.warp.update(dt);
     this.warp.render(f, LYR.BG_DIM);
     if (!sh || !sh.lines.length) { this.started = false; this.drawDecor(f, art, accent, dt); return; }
@@ -1443,13 +1530,19 @@
     var pos = s.rest ? -1 : s.pos * 1000, monoMs = t * 1000, idx = s.rest ? firstSung(sh) : activeLineIndex(sh, pos);
     var newSource = !this.started || sh !== this.sheet || this.gen !== textGen || this.boxW !== this.g.boxW;
     if (newSource || idx !== this.active) {
+      // a new song, or a jump in one, comes up from dark rather than all at once
+      if (!this.started || sh !== this.sheet || (!newSource && idx !== this.active + 1)) this.show = 0;
       this.sheet = sh; this.gen = textGen; this.boxW = this.g.boxW; this.started = true;
       if (!newSource && idx === this.active + 1) { this.stepFits(sh, idx); this.wheelT = 0; this.nextFade = 0; this.rowScroll = 0; this.retriggerGrow(); }
       else { this.refit(sh, idx); this.wheelT = 1; this.nextFade = 1; this.rowScroll = 0; this.retriggerGrow(); }
+      // a line change sets off at the board's own speed so the new line is in place on time, a long line's scroll from rest
+      this.speed.wheel = this.wheelT < 1 ? 1 / LYR.SCROLL_TAU : 0; this.speed.scroll = 0; this.scrollFrom = this.scrollTo = 0;
       if (idx >= 0) this.warp.pulse = 1;
     }
-    this.wheelT = approachF(this.wheelT, 1, dt, LYR.SCROLL_TAU);
-    this.nextFade = Math.min(1, this.nextFade + dt / LYR.NEXT_FADE);
+    // reduced motion: the wheel stands at rest
+    this.wheelT = REDUCED ? 1 : glide(this.wheelT, 1, dt, this.speed, 'wheel');
+    this.nextFade = REDUCED ? 1 : Math.min(1, this.nextFade + dt / LYR.NEXT_FADE);
+    this.show = REDUCED ? 1 : Math.min(1, this.show + dt / LYR.SHOW_FADE);
     this.grow.step(REDUCED ? 1 : dt);
     var ws = { activeWord: -1, msIntoWord: 0, wordDurMs: 0, progress: 0, sungTo: 0 }, centre = this.centreText(sh);
     if (centre) { if (centre.words.length) ws = wordState(centre, pos); this.followRow(centre, ws, pos, dt); }
@@ -1458,6 +1551,14 @@
     this.drawSideSlot(f, sh, this.active + 1, this.nextF, false, monoMs);
     this.drawCentre(f, sh, pos, monoMs, ws, accent);
     this.drawDecor(f, art, accent, dt);
+    if (this.warm.length && this.wheelT > .9) this.warm.shift()();
+  };
+  // reduced motion: what a still frame of the lyrics shows, the song at rest or the line and the rows being sung
+  Wheel.prototype.still = function (s) {
+    var sh = s ? sheetOf(s.tm) : null, id = s && s.tr ? s.tr.id : '';
+    if (!sh || !sh.lines.length || s.rest) return id + (sh ? ' rest' : '');
+    var pos = s.pos * 1000, idx = activeLineIndex(sh, pos), ln = idx === this.active ? this.centreText(sh) : null;
+    return id + ' ' + idx + (ln ? ' ' + this.scrollFor(ln, ln.words.length ? wordState(ln, pos) : null, pos) : '');
   };
 
   /* ---------- scenes ---------- */
@@ -1466,7 +1567,7 @@
   // Classic, the owner's clock face: the sky tile, the clock in cells, the temperature, the date and the sky's word
   // (WeatherScene::renderClassic and WeatherLayout.h). The tile runs x 0..47, the clock from x 50 at cap 13.
   function classic(f, st, d, w, dt, fresh, lineCol) {
-    st.sky.setTarget(w.look, w.phase, w.opts, fresh);
+    st.sky.setTarget(w.look, w.phase, w.opts, fresh || REDUCED);
     st.sky.update(dt);
     f.fill(BLACK);
     f.clip(0, 0, 48, 32); st.sky.render(f, 0); f.noclip();
@@ -1508,7 +1609,7 @@
     var WX0 = 84, WW = 43;
     var T = fit('label', [10, 9, 8, 7], w.temp, WW - 8) || line('label', 7, w.temp);
     var tpen = penCentre(T, WX0 + Math.floor(WW / 2)), tbase = 28 - T.b;
-    st.sky.setTarget(w.look, w.phase, w.opts, fresh);
+    st.sky.setTarget(w.look, w.phase, w.opts, fresh || REDUCED);
     st.sky.setSkyTime(w.sky);
     st.sky.setArc(w.arc, { x: tpen + T.l - WX0 - 1, y: tbase + T.t - 1, w: T.inkW + 2, h: T.inkH + 2 });
     st.sky.update(dt);
@@ -1531,18 +1632,21 @@
   };
   S.wx = S.weather;
 
+  // reduced motion: the lyrics go on only while the visitor listens; muted, the song rests on its first line
+  function heardSong() { var sg = playingSong(); if (REDUCED && sg && !sg.audible) sg.rest = true; return sg; }
   // the lyrics: the words alone (the board's "Lyrics" style), sung as the radio plays
   S.song = function () {
     var v = new Wheel('lyrics');
-    return { label: 'Lyrics', dur: 12, draw: function (f, t, s, dt) { v.draw(f, playingSong(), t, dt); } };
+    return { label: 'Lyrics', dur: 12, still: function () { return v.still(heardSong()); }, draw: function (f, t, s, dt) { v.draw(f, heardSong(), t, dt); } };
   };
   // the board's default lyric style, Cover: the cover with the time under it, the lyrics beside. Resting (paused, or a
   // song whose words have not loaded yet): the queued song's cover and its first line, unsung.
   S.combo = function () {
-    var v = new Wheel('cover');
+    var v = new Wheel('cover'), song = function () { var sg = heardSong(); if (sg && !sg.playing) sg.rest = true; return sg; };
     return {
       label: 'All in One', dur: 12,
-      draw: function (f, t, s, dt) { var sg = playingSong(); if (sg && !sg.playing) sg.rest = true; v.draw(f, sg, t, dt); }
+      still: function () { return v.still(song()); },
+      draw: function (f, t, s, dt) { v.draw(f, song(), t, dt); }
     };
   };
   S.cover = function () { var sc = S.combo(); sc.label = 'Lyrics'; return sc; };
@@ -1585,9 +1689,9 @@
     return 0;
   }
   S.art = function () {
-    var notes = 0;
     return {
       label: 'Album art', dur: 7,
+      still: function () { var sg = playingSong(); return sg ? sg.tr.id + (sg.playing ? '' : ' paused') : ''; },
       draw: function (f, t, s, dt) {
         var sg = playingSong(), tr = sg ? sg.tr : { title: 'Night Harbour', artist: 'mooboard' }, accent = sg ? sg.accent : [255, 154, 60];
         var art = sg ? artOf(sg.tr) : null;
@@ -1600,7 +1704,6 @@
             var ph = cyc(t * 1000 + (2 - n) * 230, 1400), lift = ph < .35 ? 1 - p2out(ph / .35) : p2in((ph - .35) / .65), by = 18 - Math.round(lift * 6), nx = 6 + n * 10;
             f.rect(nx - 2, by - 1, 3, 2, nc, .95); f.rect(nx + 1, by - 7, 1, 7, nc, .95); f.blend(nx + 2, by - 6, nc, .95); f.blend(nx + 3, by - 5, nc, .95);
           }
-          notes++;
         }
         var tp = pages('label', [9, 8, 7], tr.title, 126 - 36 + 1), ap = pages('label', [6, 5], tr.artist, 126 - 36 + 1);
         tp.forEach(function (L, k) { var a = pageAlpha(tp.length, t, k); if (a > 0) drawText(f, L, penLeft(L, 36), capBase(5, L.cap), WHITE, a); });
@@ -2053,11 +2156,12 @@
     var cur = null, from = null, at = -9, sc;
     return (sc = {
       label: 'Lights', dur: 7, glow: [119, 237, 215],
+      still: function () { var sg = playingSong(); return sg ? sg.accent.join() : ''; },
       draw: function (f, t) {
         var sg = playingSong(), want = sg ? sg.accent : [119, 237, 215];
         if (!cur) cur = want;
         if (want.join() !== cur.join()) { from = mix(from || cur, cur, 1); cur = want; at = t; }
-        var k = from ? smooth(0, 1, (t - at) / .2) : 1, col = from ? mix(from, cur, k) : cur, bri = .8;
+        var k = from && !REDUCED ? smooth(0, 1, (t - at) / .2) : 1, col = from ? mix(from, cur, k) : cur, bri = .8;
         if (k >= 1) from = null;
         sc.glow = col;
         f.fill(BLACK);
@@ -2235,7 +2339,7 @@
       }
     };
   };
-  // the faces still to come in from the firmware (Flip, Nixie, Weather forward, Words, Day bar, Moon, Agenda, Minimal,
+  // the faces ported from the firmware below (Flip, Nixie, Weather forward, Words, Day bar, Moon, Agenda, Minimal,
   // Word grid, Binary, Matrix rain): each { id, name, draw }
   var FACE_PORTS = [];
 
@@ -3088,7 +3192,7 @@
   }
   FACE_PORTS.push({ id: 'agenda', name: 'Agenda', draw: faceAgenda });
 
-  /* ---------- the faces' shared pieces for Big time and Sky (the replacements in group-c-fixes.js use them) ---------- */
+  /* ---------- the faces' shared pieces for Big time and Sky ---------- */
   // SF Pro's own clock face for Big time, whatever the family (BigClock: SF Pro SemiBold at its display size)
   ROLES.bigClock = { fam: 'sys', w: 590 };
 
@@ -3247,7 +3351,7 @@
     return {
       label: 'Seasons', dur: 8,
       draw: function (f, t, st, dt) {
-        var d = now(), k = seasonNow(d), step = Math.min(dt || .016, .05), i;
+        var d = now(), k = seasonNow(d), step = Math.min(dt || 0, .05), i;
         var P = {
           spring: { sky: [[40, 90, 150], [120, 190, 230]], ground: [60, 150, 70], cols: [[255, 170, 200], [255, 255, 255], [255, 210, 90]], fall: .25, word: 'SPRING' },
           summer: { sky: [[30, 110, 210], [140, 210, 250]], ground: [230, 200, 120], cols: [[255, 255, 255]], fall: 0, word: 'SUMMER' },
@@ -3263,8 +3367,9 @@
         else if (k === 'holiday') { for (i = 0; i < 9; i++) f.rect(20 - i, 6 + i * 2, 1 + i * 2, 2, [40, 150, 70]); f.rect(19, 24, 3, 4, [120, 70, 30]); f.set(20, 5, [255, 220, 60]); }
         else { var tr = k === 'autumn' ? [230, 110, 30] : k === 'spring' ? [255, 170, 210] : k === 'winter' ? [220, 235, 255] : [255, 90, 140]; f.rect(19, 16, 3, 12, [90, 55, 30]); disc(f, 20, 12, 8, tr, .9); disc(f, 15, 15, 5, tr, .9); disc(f, 25, 15, 5, tr, .9); }
         f.rect(0, 28, W, 4, P.ground);
-        if (P.fall && Math.random() < P.fall) parts.push([r() * W, -1, .5 + r(), r() * 6, P.cols[Math.floor(r() * P.cols.length)]]);
-        parts = parts.filter(function (q) { q[1] += q[2] * step * 12; q[0] += Math.sin(t * 2 + q[3]) * .15; f.blend(q[0], q[1], q[4], 1); return q[1] < 28; });
+        // what falls comes and sways by the time a frame took (as at the tiles' 30 fps), the same on any screen
+        if (P.fall && Math.random() < P.fall * step * 30) parts.push([r() * W, -1, .5 + r(), r() * 6, P.cols[Math.floor(r() * P.cols.length)]]);
+        parts = parts.filter(function (q) { q[1] += q[2] * step * 12; q[0] += Math.sin(t * 2 + q[3]) * 4.5 * step; f.blend(q[0], q[1], q[4], 1); return q[1] < 28; });
         // the words: centred in the room right of the picture, fitted by ink, a dark edge under them
         var cx = 82, word = fit('label', [10, 9, 8, 7], P.word, 84) || line('label', 7, P.word), D = line('label', 6, MONS[d.getMonth()] + ' ' + d.getDate());
         var wb = capBase(5, word.cap), db = capBase(19, 6), wp = penCentre(word, cx), dp = penCentre(D, cx);
@@ -3333,6 +3438,9 @@
 
   /* ---------- the board ---------- */
   var boards = [], maskCache = {};
+  // reduced motion: one still frame a scene, drawn again as its size, minute, fonts, cover, weather or still() change
+  var STILL = 2.5, stillVer = 0;
+  function restill() { stillVer++; }
   function masks(s, look) {
     var key = s + (look ? '|' + look.dot + '|' + !!look.crisp : '');
     if (maskCache[key]) return maskCache[key];
@@ -3627,7 +3735,8 @@
     // the owner calls tick() each frame and uses this.dots (W x H LEDs at opts.minScale px each) as its picture
     if (!opts.external) {
       if (window.ResizeObserver) new ResizeObserver(function () { self.resize(); }).observe(el);
-      if (window.IntersectionObserver) new IntersectionObserver(function (e) { self.visible = e[0].isIntersecting; }, { rootMargin: '100px' }).observe(el);
+      // the newest entry is the current one (one callback can bring a leave and an enter)
+      if (window.IntersectionObserver) new IntersectionObserver(function (e) { self.visible = e[e.length - 1].isIntersecting; }, { rootMargin: '100px' }).observe(el);
     }
     if (this.scenes[this.cur].enter) this.scenes[this.cur].enter();
     boards.push(this);
@@ -3638,10 +3747,26 @@
     this.el.style.setProperty('--cell', (w / W).toFixed(2) + 'px');
     if (s === this.s) return;
     this.s = s; this.dots.width = W * s; this.dots.height = H * s; this.mk = masks(s, this.opts.look);
+    // only the masks a board still draws with are kept (a resize sweep would leave a pair at every scale)
+    var used = boards.map(function (b) { return b.mk; }).concat(this.mk);
+    for (var k in maskCache) if (used.indexOf(maskCache[k]) < 0) delete maskCache[k];
   };
+  // the dots follow the screen's pixel density: a window moved to a screen with another one keeps its size, so no
+  // resize says so
+  (function watchDensity() {
+    var mq = matchMedia('(resolution: ' + (window.devicePixelRatio || 1) + 'dppx)');
+    function moved() {
+      if (mq.removeEventListener) mq.removeEventListener('change', moved); else mq.removeListener(moved);
+      boards.forEach(function (b) { if (!b.opts.external) b.resize(); });
+      watchDensity();
+    }
+    if (mq.addEventListener) mq.addEventListener('change', moved); else mq.addListener(moved);
+  })();
   Board.prototype.go = function (name, now2) {
     if (!this.scenes[name]) this.scenes[name] = S[name](this);
-    if (name === this.cur || this.next) return;
+    // mid-crossfade, the latest ask waits for it to end
+    if (this.next) { this.pending = name === this.next ? null : name; return; }
+    if (name === this.cur) return;
     this.next = name; this.tStart = now2 == null ? (performance.now() - t0) / 1000 : now2;
     this.trNow = pickTransition(this);
     if (this.scenes[name].enter) this.scenes[name].enter();
@@ -3650,24 +3775,27 @@
   // keep one scene on the board (the song) until released
   Board.prototype.hold = function (name) {
     if (!this.scenes[name]) this.scenes[name] = S[name](this);
-    this.held = name;
+    this.held = name; this.pending = null;
     if (this.next) { this.cur = this.next; this.start = this.tStart; this.next = null; }
     this.go(name);
   };
   Board.prototype.release = function () {
     var h = this.held; this.held = null;
-    if (h && (this.cur === h || this.next === h)) this.go(this.names[0]);
+    if (!h) return;
+    // the held scene goes wherever it is: on, coming on, asked for next or waiting behind a moo
+    if (this.back === h) this.back = this.names[0];
+    if ((this.pending || this.next || this.cur) === h) this.go(this.names[0]);
   };
   Board.prototype.tick = function (nowMs) {
     var t = ((nowMs == null ? performance.now() : nowMs) - t0) / 1000;
     this.render(t, this.last ? Math.min(Math.max(0, t - this.last), .1) : 0);
     return this.dots;
   };
-  Board.prototype.step = function () { var i = this.names.indexOf(this.cur); this.go(this.names[(i + 1) % this.names.length]); };
+  Board.prototype.step = function () { var i = this.names.indexOf(this.pending || this.next || this.cur); this.go(this.names[(i + 1) % this.names.length]); };
   Board.prototype.moo = function () {
     if (this.cur === 'moo' && !this.next) { this.start = (performance.now() - t0) / 1000; return; }
-    if (this.next === 'moo') return;
-    this.back = this.next || this.cur;
+    if (this.next === 'moo') { this.pending = null; return; }
+    this.back = this.pending || this.next || this.cur; this.pending = null;
     if (this.next) { this.cur = this.next; this.start = this.tStart; this.next = null; }
     this.go('moo');
   };
@@ -3676,17 +3804,25 @@
     var sc = this.scenes[this.cur], st = this.opts.at != null ? this.opts.at : Math.max(0, t - this.start);
     if (!this.start) { this.start = t; st = 0; }
     var TR = REDUCED ? .01 : .7, mooBack = this.cur === 'moo' && this.back;
-    if (!this.next && ((this.auto && !this.held && this.names.length > 1) || mooBack) && st > sc.dur * (REDUCED ? 1.6 : 1)) {
+    // reduced motion: no scene moves on by itself (a moo still goes back to the scene it interrupted)
+    if (!this.next && ((this.auto && !this.held && this.names.length > 1 && !REDUCED) || mooBack) && st > sc.dur * (REDUCED ? 1.6 : 1)) {
       var nm = mooBack ? this.back : this.names[(this.names.indexOf(this.cur) + 1) % this.names.length];
       this.back = null;
       if (nm !== this.cur) this.go(nm, t);
     }
+    var ts = t, ns = Math.max(0, t - this.tStart);
+    if (REDUCED) { ts = ns = STILL; dt = 0; if (this.opts.at == null) st = STILL; }
     var a = this.fa, o = this.fo;
-    a.noclip(); sc.draw(a, t, st, dt); a.noclip();
+    a.noclip(); sc.draw(a, ts, st, dt); a.noclip();
     if (this.next) {
       var p = Math.max(0, (t - this.tStart) / TR), b = this.fb;
-      b.noclip(); this.scenes[this.next].draw(b, t, Math.max(0, t - this.tStart), dt); b.noclip();
-      if (p >= 1) { this.cur = this.next; this.next = null; this.start = this.tStart; o.copy(b); }
+      b.noclip(); this.scenes[this.next].draw(b, ts, ns, dt); b.noclip();
+      if (p >= 1) {
+        this.cur = this.next; this.next = null; this.start = this.tStart; o.copy(b);
+        // what was asked for during the crossfade goes on now
+        var pn = this.pending; this.pending = null;
+        if (pn) this.go(pn, t);
+      }
       else composeFB(this.trNow || 'sparkle', p, a, b, o, this.t8 || (this.t8 = bytes3()));
     } else o.copy(a);
     // the owner's edge rule: the outermost ring of LEDs stays dark on every face
@@ -3697,6 +3833,11 @@
   };
   Board.prototype.render = function (t, dt) {
     this.last = t;
+    if (REDUCED) {
+      var sc = this.scenes[this.cur], key = [this.cur, this.s, Math.floor(now().getTime() / 6e4), textGen, stillVer, sc.still ? sc.still() : ''].join('|');
+      if (!this.next && key === this.key && !(this.cur === 'moo' && this.back && t - this.start > sc.dur * 1.6)) return;
+      this.key = key;
+    }
     var o = this.paint(t, dt), P = o.p, d = this.img.data;
     for (var q = 0, i = 0, k = 0; q < N; q++, i += 3, k += 4) {
       d[k] = P[i]; d[k + 1] = P[i + 1]; d[k + 2] = P[i + 2]; d[k + 3] = 255;
@@ -3708,12 +3849,13 @@
     out.globalCompositeOperation = 'destination-in'; out.drawImage(this.mk.m, 0, 0);
     out.globalCompositeOperation = 'destination-over'; out.drawImage(this.mk.u, 0, 0);
     out.globalCompositeOperation = 'source-over';
+    // a still frame sets the glow straight away
     var named = this.scenes[this.next || this.cur].glow;
-    if (this.opts.onGlow && named && (this.frame++ % 4 === 0)) { this.glow = named.slice(); this.opts.onGlow(this.glow); }
-    else if (this.opts.onGlow && !named && (this.frame++ % 10 === 0)) {
+    if (this.opts.onGlow && named && (REDUCED || this.frame++ % 4 === 0)) { this.glow = named.slice(); this.opts.onGlow(this.glow); }
+    else if (this.opts.onGlow && !named && (REDUCED || this.frame++ % 10 === 0)) {
       var r = 0, g = 0, bl = 0, c = 0;
       for (var j = 0; j < N * 3; j += 12) { var s2 = P[j] + P[j + 1] + P[j + 2]; if (s2 > 60) { r += P[j]; g += P[j + 1]; bl += P[j + 2]; c++; } }
-      if (c) { this.glow = mix(this.glow, [r / c, g / c, bl / c], .35); this.opts.onGlow(this.glow); }
+      if (c) { this.glow = mix(this.glow, [r / c, g / c, bl / c], REDUCED ? 1 : .35); this.opts.onGlow(this.glow); }
     }
   };
 
@@ -3735,6 +3877,19 @@
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
+  // the page's pause (main.js): every board holds a still frame as under reduced motion, and on play each scene goes
+  // on from where it stood, its time on the board kept
+  function setPaused(on) {
+    on = !!on;
+    if (on === paused) return;
+    paused = on; REDUCED = PREFERS_REDUCED || on; acc = 0;
+    var t = (performance.now() - t0) / 1000;
+    boards.forEach(function (b) {
+      b.key = null;
+      if (on) { b.pausedIn = b.cur; b.pausedSt = b.start ? t - b.start : 0; }
+      else if (b.start) b.start = t - (b.cur === b.pausedIn ? b.pausedSt : 0);
+    });
+  }
 
   // the old lyric bounce split words into syllables; kept for the checks (tools/perf.py) and anything that asks
   var DIG = /^(ch|sh|th|ph|wh|ck|ng|qu|gh)$/;
@@ -3773,6 +3928,8 @@
     // for tests and stills: a fake clock, and a scene painted once into a fresh frame (no board needed)
     setNow: function (fn) { nowFn = fn || function () { return new Date(); }; },
     setH12: function (v) { H12 = v == null ? use12h() : !!v; widestTime.gen = -1; },
+    // the page's motion control: setPaused(true) holds every board still until setPaused(false)
+    setPaused: setPaused, paused: function () { return paused; },
     transitions: TRANS.names.slice(), shuffle: SHUFFLE.slice(),
     // tests: one transition frame p of the way from scene a to scene b (each drawn at st), as RGB bytes
     paintTransition: function (name, p, sa, sb, st) {

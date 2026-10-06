@@ -10,7 +10,8 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   function pad(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
-  var DPR = Math.min(devicePixelRatio || 1, 2), PAR = 6;
+  function dpr() { return Math.min(devicePixelRatio || 1, 2); }
+  var PAR = 6;
 
   var loaded = new Promise(function (res) { if (document.readyState === 'complete') res(); else addEventListener('load', res); });
   // the visitor has settled in: first scroll, wheel, touch, key or pointer, or 5 s after load
@@ -23,16 +24,18 @@
 
   function Seq(section, spec) {
     this.section = section; this.spec = spec; this.n = spec.frames;
-    this.cv = $('.seq-canvas', section); this.ctx = this.cv.getContext('2d'); this.shiftProgress = null;
-    this.imgs = new Array(this.n); this.ok = new Uint8Array(this.n); this.want = 0; this.poster = null;
+    this.cv = $('.seq-canvas', section); this.ctx = this.cv.getContext('2d');
+    // imgs holds the image drawn for each frame, reqs each frame's request at the current tier
+    this.imgs = new Array(this.n); this.ok = new Uint8Array(this.n); this.reqs = new Array(this.n); this.want = 0; this.poster = null;
     this.tier = this.pickTier();
   }
-  // Which frame size to fetch, decided once: the full size unless this is a phone or small tablet whose canvas
-  // would draw the frame at no more than ~1.4x the 960 px rendition (a 390 px phone at dpr 2 draws it 1209 px wide).
+  // Which frame size to fetch, looked at again when the window grows (never stepped down): the full size unless this is
+  // a phone or small tablet whose canvas would draw the frame at no more than ~1.4x the 960 px rendition (a 390 px
+  // phone at dpr 2 draws it 1209 px wide).
   Seq.prototype.pickTier = function () {
     var s = this.spec, sizes = s.sizes, full = s.width;
     if (!sizes || sizes.length < 2 || innerWidth > 820) return full;
-    var cw = innerWidth * DPR, ch = innerHeight * DPR, portrait = cw / ch <= 1, pf = s.portrait;
+    var d = dpr(), cw = innerWidth * d, ch = innerHeight * d, portrait = cw / ch <= 1, pf = s.portrait;
     var need = portrait ? (pf ? cw / Math.min(pf.from.w, (pf.to || pf.from).w) : cw * 1.55) : Math.max(cw, ch * 16 / 9);
     var pick = full;
     sizes.slice().sort(function (a, b) { return a - b; }).some(function (z) { if (z >= need * .72) { pick = z; return true; } return false; });
@@ -44,16 +47,24 @@
   };
   Seq.prototype.load = function (i) {
     var self = this;
-    if (this.imgs[i]) return this.imgs[i].p;
+    if (this.reqs[i]) return this.reqs[i].p;
     var img = new Image(); img.decoding = 'async';
     img.p = new Promise(function (res) {
-      img.onload = function () { self.ok[i] = 1; res(true); if (Math.abs(i - self.want) < 3) { self.draw(); self.warm(); } };
+      img.onload = function () {
+        // a late frame from before the window grew never replaces its bigger copy
+        if (self.ok[i] && self.imgs[i].naturalWidth > img.naturalWidth) return res(true);
+        var on = self.drawn;
+        self.imgs[i] = img; self.ok[i] = 1; res(true);
+        // repainted when it beats what is on screen: the poster, a frame further from the wanted one or its smaller copy
+        if (!(on >= 0) || on === i || Math.abs(i - self.want) < Math.abs(on - self.want)) { self.drawn = -1; self.draw(); self.warm(); }
+      };
       img.onerror = function () {
-        if (img.retried) return res(false);
+        // a frame that failed twice is let go, so a later pass asks for it again
+        if (img.retried) { if (self.reqs[i] === img) self.reqs[i] = null; return res(false); }
         img.retried = true; setTimeout(function () { img.src = self.url(i) + '?r=1'; }, 400);
       };
     });
-    img.src = this.url(i); this.imgs[i] = img;
+    img.src = this.url(i); this.reqs[i] = img;
     return img.p;
   };
   // the poster: the first frame at 480 px, drawn until real frames arrive and read for the section tint
@@ -78,21 +89,38 @@
     var self = this;
     if (full) this.fill = true;
     if (this.pump) return this.pump();
-    var order = this.order(), sparse = Math.ceil(this.n / 8), k = 0, active = 0;
+    var order = this.order(), sparse = Math.ceil(this.n / 8), active = 0, miss = {};
+    this.at = 0;
+    // a failed frame is queued again after a pause that doubles each time, and at once when the network is back
+    var get = function (i) {
+      active++;
+      self.load(i).then(function (ok) {
+        active--;
+        if (!ok && (miss[i] = (miss[i] || 0) + 1) < 5) setTimeout(function () { order.push(i); pump(); }, 1000 << miss[i]);
+        pump();
+      });
+    };
     var pump = this.pump = function () {
-      while (active < PAR && k < order.length) {
-        if (k >= sparse && !self.fill) return;
-        active++;
-        self.load(order[k++]).then(function () { active--; pump(); });
+      while (active < PAR && self.at < order.length) {
+        if (self.at >= sparse && !self.fill) return;
+        get(order[self.at++]);
       }
     };
     pump();
     if (!this.fill) settled.then(function () { self.fill = true; pump(); });
+    addEventListener('online', function () { for (var i in miss) if (!self.ok[i]) { miss[i] = 0; order.push(+i); } pump(); });
+  };
+  // a window that grew past its frames (a phone turned, a window maximized) gets bigger ones, swapped in as they land
+  Seq.prototype.grow = function () {
+    var t = this.pickTier();
+    if (t <= this.tier) return;
+    this.tier = t; this.reqs = new Array(this.n);
+    if (this.pump) { this.at = 0; this.pump(); }
   };
   // The canvas backing: the screen's pixels, but never much past the frames' own (a 1600 px frame on a 1440 px window
   // at 2x drew 2880 px of canvas, twice the pixels to fill on every scrub step for no detail the frame has)
   Seq.prototype.size = function () {
-    var w = this.cv.clientWidth, h = this.cv.clientHeight, k = Math.min(DPR, Math.max(1, this.tier * 1.25 / Math.max(1, w)));
+    var w = this.cv.clientWidth, h = this.cv.clientHeight, k = Math.min(dpr(), Math.max(1, this.tier * 1.25 / Math.max(1, w)));
     var bw = Math.round(w * k), bh = Math.round(h * k);
     if (this.cv.width !== bw || this.cv.height !== bh) { this.cv.width = bw; this.cv.height = bh; this.drawn = -1; }
   };
@@ -110,17 +138,15 @@
   Seq.prototype.draw = function () {
     var i = this.want, j = -1;
     for (var d = 0; d < this.n; d++) { if (this.ok[i - d]) { j = i - d; break; } if (this.ok[i + d]) { j = i + d; break; } }
-    var img = j >= 0 ? this.imgs[j] : this.poster, fi = j >= 0 ? j : i;
+    // the poster is the first frame, so it reports frame 0 (the live board never shows over it)
+    var img = j >= 0 ? this.imgs[j] : this.poster, fi = j >= 0 ? j : 0;
     if (!img || !this.cv.clientWidth) return;
     this.size();
     var cw = this.cv.width, ch = this.cv.height, ir = img.naturalWidth / img.naturalHeight;
     var iw = img.naturalWidth, ih = img.naturalHeight, portrait = cw / ch <= 1;
-    var sp = this.shiftProgress;
-    // Pan the crop from a right-side start toward center, with separate framing for phone and landscape views.
-    var shift = sp == null ? 0 : (portrait ? .295 - .386 * sp : .263 - .327 * sp) * cw;
     var key = j >= 0 ? j : -2;
-    if (key === this.drawn && cw === this.lastW && shift === this.lastShift) return;
-    this.drawn = key; this.lastW = cw; this.lastShift = shift;
+    if (key === this.drawn) return;
+    this.drawn = key;
     // landscape: cover. portrait: a little wider than the screen, with the frame's top and bottom rows stretched to fill
     var s = portrait ? cw * 1.55 / iw : Math.max(cw / iw, ch / ih);
     var w = iw * s, h = w / ir, x0 = (cw - w) / 2, y0 = (ch - h) / 2 + ch * (portrait ? 0 : this.spec.shiftY || 0);
@@ -132,38 +158,16 @@
       var fw = L(a.w, b.w), fx = L(a.x, b.x), fy = L(a.y, b.y), at = pf.at || .46;
       w = cw / fw; h = w / ir; x0 = cw / 2 - fx * w; y0 = ch * at - fy * h;
     }
-    x0 += shift;
     var ctx = this.ctx;
     ctx.clearRect(0, 0, cw, ch);
     if (y0 > 0) ctx.drawImage(img, 0, 0, iw, 1, x0, 0, w, y0 + 1);
     if (y0 + h < ch) ctx.drawImage(img, 0, ih - 1, iw, 1, x0, y0 + h - 1, w, ch - y0 - h + 1);
     ctx.drawImage(img, x0, y0, w, h);
-    if (x0 > 0) {
-      // Extend a narrow strip of the scene beyond its left edge and soften the join.
-      var edgeW = Math.min(iw * .05, x0 / s);
-      ctx.save();
-      if ('filter' in ctx) ctx.filter = 'blur(4px)';
-      ctx.translate(x0, 0); ctx.scale(-1, 1);
-      ctx.drawImage(img, 0, 0, edgeW, ih, 0, 0, x0, ch); ctx.restore();
-    }
-    // The last black render has a clipped duplicate board at its right edge; cover that crop area cleanly.
-    if (this.section.id === 'colors' && !portrait && sp != null && sp > .8) {
-      // The black render has a second board at the far-right edge; extend only the clean wall before it.
-      var maskX = x0 + w * .96;
-      if (maskX < cw) {
-        var edgeWidth = cw - maskX;
-        ctx.save();
-        if ('filter' in ctx) ctx.filter = 'blur(4px)';
-        ctx.translate(maskX, 0); ctx.scale(-1, 1);
-        ctx.drawImage(img, iw * .93, 0, iw * .03, ih, -edgeWidth, 0, edgeWidth, ch);
-        ctx.restore();
-      }
-    }
     var q = this.cv.clientWidth / cw;
     this.rect = { x: x0 * q, y: y0 * q, w: w * q, h: h * q };
     if (this.onDraw) this.onDraw(fi);
   };
-  Seq.prototype.redraw = function () { this.drawn = -1; this.draw(); };
+  Seq.prototype.redraw = function () { this.grow(); this.drawn = -1; this.draw(); };
 
   function tint(section, img) {
     try {
@@ -191,6 +195,8 @@
             seqs[name] = s; sec.classList.add('has-frames');
             if (spec.tint !== false) tint(sec, img);
             s.set(0);
+            // redrawn when the canvas box changes size, which scrolltrigger can do after the resize event
+            if (window.ResizeObserver) new ResizeObserver(function () { s.redraw(); }).observe(s.cv);
             // the hero sequence sits right under the fold: sparse set at load, the rest once the visitor settles;
             // the others fetch everything, but only once they are within 1.5 viewports
             var near = function () { loaded.then(function () { s.preload(name !== 'hero'); }); };

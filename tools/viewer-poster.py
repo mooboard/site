@@ -16,7 +16,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from perf import CDP, Page, launch  # noqa: E402
+from perf import CDP, Page, launch, stop  # noqa: E402
 from PIL import Image  # noqa: E402
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -58,7 +58,7 @@ def shoot(url, w, h, dpr, mobile, dst):
         im.save(dst, 'WEBP', quality=78, method=6)
         print(dst, im.size, os.path.getsize(dst), 'bytes')
     finally:
-        proc.terminate()
+        stop(proc, udir)
 
 
 def main():

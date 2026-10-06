@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Markdown before/after table from docs/perf/{before,after}-{desktop,phone}.json (written by tools/perf.py)."""
+"""Markdown before/after table from docs/perf/<before>-{desktop,phone}.json and <after>-{desktop,phone}.json (written by
+tools/perf.py), with the before column labelled by the commit it was measured at.
+
+  python3 tools/perf_table.py                                                  (before-*, after-*, 05ab58d)
+  python3 tools/perf_table.py --before polish-before --after polish-after --label 58b6619"""
+import argparse
 import json
 import os
 import sys
@@ -23,6 +28,7 @@ ROWS = [
     ('Longest task (whole run)', lambda r: '%d ms' % r['long_tasks']['max_total_ms']),
     ('Longest task after load', lambda r: '%d ms' % r['long_tasks']['max_after_load_ms']),
     ('Requests / transfer, load + 3 s', lambda r: '%d / %s KB' % (r['initial']['requests'], r['initial']['kb'])),
+    ('  of which still loading', lambda r: '%d, %d KB so far' % (len(r['initial']['inflight']), sum(k for u, k in r['initial']['inflight']))),
     ('  of which sequence frames', lambda r: '%d frames, %s KB renders' % (r['initial']['seq_frames'], r['initial']['renders_kb'])),
     ('Requests / transfer, load + 12 s, no scroll', lambda r: '%d / %s KB' % (r['idle']['requests'], r['idle']['kb'])),
     ('Transfer after a full scroll', lambda r: '%s KB (renders %s KB)' % (r['full_scroll']['kb'], r['full_scroll']['renders_kb'])),
@@ -32,15 +38,20 @@ ROWS = [
     ('Hero sequence scrub (3.5 s)', lambda r: fr(r['hero_scrub'])),
     ('Colours sequence scrub (3.5 s)', lambda r: fr(r['colors_scrub'])),
     ('Tiles section (3 s)', lambda r: fr(r['tiles_frames']) + ', %s boards' % r['tiles_frames'].get('boards_rendering')),
-    ('Console errors', lambda r: str(len(r['errors']))),
+    ('Console errors', lambda r: str(len(r['console_errors'])) if 'console_errors' in r else '%d (page errors only)' % len(r['errors'])),
 ]
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--before', default='before', help='file prefix of the before runs in docs/perf')
+    ap.add_argument('--after', default='after', help='file prefix of the after runs')
+    ap.add_argument('--label', default='05ab58d', help='the commit the before runs were measured at')
+    o = ap.parse_args()
     for prof in ('desktop', 'phone'):
-        b, a = load('before-' + prof), load('after-' + prof)
+        b, a = load(o.before + '-' + prof), load(o.after + '-' + prof)
         print('\n### %s\n' % ('Desktop 1440x900, no throttling' if prof == 'desktop' else 'Phone 390x844, 4x CPU, slow 4G (1.6 Mbps, 150 ms RTT)'))
-        print('| Metric | Before (05ab58d) | After |\n|---|---|---|')
+        print('| Metric | Before (%s) | After |\n|---|---|---|' % o.label)
         for name, f in ROWS:
             try:
                 print('| %s | %s | %s |' % (name, f(b), f(a)))

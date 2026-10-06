@@ -6,26 +6,30 @@
   python tools/perf.py --checks          --url http://127.0.0.1:8091/
 
 desktop: 1440x900, dpr 1, no throttling.
-phone:   390x844, dpr 3, touch, 4x CPU throttle, Lighthouse "slow 4G" network (1.6 Mbps down, 150 ms RTT).
-Reports: requests and transfer at load+1.5 s quiet ("initial") and at load+8 s ("idle"), LCP, FCP, long tasks,
-TBT (FCP to load+5 s), JS heap, frame intervals while the hero board animates and while the hero / colours
-sequences are scrubbed, and the render payload after a full scroll. --checks loads 390/430/768/1440 and reports
-console errors, horizontal overflow, a few feature probes, and the reduced-motion sequence bypass.
+phone:   390x844, dpr 3, touch, 4x CPU throttle, a slow 4G network at Lighthouse's simulated figures (1.6 Mbps down,
+         150 ms RTT) applied as DevTools throttling, which is lighter than Lighthouse's own DevTools slow 4G and
+         DevTools' Slow 4G preset (562.5 ms RTT, 0.9x the throughput).
+Reports: requests and transfer at load+3 s ("initial") and at load+12 s ("idle"), bytes of requests still loading
+counted as far as they got (listed under "inflight"), LCP, FCP, long tasks, TBT (FCP to load+5 s), JS heap, frame
+intervals while the hero board animates and while the hero / colours sequences are scrubbed, and the render payload
+after a full scroll. Errors are the page's own ("errors": uncaught errors, rejections, failed resources) and what
+the DevTools console shows as errors ("console_errors": exceptions, console.error, failed and 4xx/5xx loads).
+--checks loads 390/430/768/1440 and reports errors, horizontal overflow, a few feature probes, and the
+reduced-motion sequence bypass. --out writes the result of any mode to a file as well.
 Needs the websocket-client package. Set CHROME to the Chrome binary if it is not the default Mac path."""
 import argparse
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
 import time
-import urllib.request
 
 import websocket
 
 CHROME = os.environ.get('CHROME', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
-PORT = int(os.environ.get('PERF_PORT', '9333'))
 
 PROFILES = {
     'desktop': dict(width=1440, height=900, dpr=1, mobile=False, cpu=1, net=None),
@@ -74,7 +78,8 @@ class CDP:
         self.ws = websocket.create_connection(url, suppress_origin=True, max_size=None, timeout=60)
         self.n = 0
         self.events = []
-        self.net = {}
+        self.net = {}    # by session: requestId -> request
+        self.errs = {}   # by session: what the DevTools console shows as errors
 
     def call(self, method, params=None, session=None, timeout=60):
         self.n += 1
@@ -101,21 +106,33 @@ class CDP:
         self.events.append(m)
         meth = m.get('method', '')
         p = m.get('params', {})
+        net = self.net.setdefault(m.get('sessionId'), {})
+        errs = self.errs.setdefault(m.get('sessionId'), [])
         if meth == 'Network.requestWillBeSent':
-            self.net[p['requestId']] = {'url': p['request']['url'], 'type': p.get('type', ''), 'bytes': 0, 'done': False, 'ts': p['timestamp']}
-        elif meth == 'Network.responseReceived' and p['requestId'] in self.net:
-            r = self.net[p['requestId']]
+            net[p['requestId']] = {'url': p['request']['url'], 'type': p.get('type', ''), 'bytes': 0, 'done': False, 'ts': p['timestamp']}
+        elif meth == 'Network.responseReceived' and p['requestId'] in net:
+            r = net[p['requestId']]
             r['mime'] = p['response'].get('mimeType', '')
             r['cache'] = p['response'].get('fromDiskCache') or p['response'].get('fromMemoryCache')
             r['status'] = p['response'].get('status')
-        elif meth == 'Network.loadingFinished' and p['requestId'] in self.net:
-            r = self.net[p['requestId']]
-            r['bytes'] = p.get('encodedDataLength', 0)
+        elif meth == 'Network.dataReceived' and p['requestId'] in net:
+            # a request still loading at a snapshot counts what it has received so far
+            net[p['requestId']]['bytes'] += p.get('encodedDataLength', 0)
+        elif meth == 'Network.loadingFinished' and p['requestId'] in net:
+            r = net[p['requestId']]
+            r['bytes'] = max(r['bytes'], p.get('encodedDataLength', 0))
             r['done'] = True
             r['end'] = p['timestamp']
-        elif meth == 'Network.loadingFailed' and p['requestId'] in self.net:
-            self.net[p['requestId']]['done'] = True
-            self.net[p['requestId']]['failed'] = p.get('errorText')
+        elif meth == 'Network.loadingFailed' and p['requestId'] in net:
+            net[p['requestId']]['done'] = True
+            net[p['requestId']]['failed'] = p.get('errorText')
+        elif meth == 'Runtime.exceptionThrown':
+            d = p['exceptionDetails']
+            errs.append('exception ' + (d.get('exception', {}).get('description') or d.get('text', '')).split('\n')[0])
+        elif meth == 'Runtime.consoleAPICalled' and p.get('type') in ('error', 'assert'):
+            errs.append('console.%s %s' % (p['type'], ' '.join(str(a.get('value', a.get('description', ''))) for a in p.get('args', []))))
+        elif meth == 'Log.entryAdded' and p['entry'].get('level') == 'error':
+            errs.append('%s %s %s' % (p['entry'].get('source', 'log'), p['entry'].get('text', ''), p['entry'].get('url', '')))
 
     def pump(self, seconds):
         end = time.time() + seconds
@@ -146,11 +163,12 @@ class CDP:
         """pump until no request finishes for `idle` seconds"""
         start = time.time()
         last = time.time()
+        reqs = lambda: [r for n in self.net.values() for r in n.values()]
         while time.time() - start < timeout:
-            before = sum(1 for r in self.net.values() if r['done'])
+            before = sum(1 for r in reqs() if r['done'])
             self.pump(.25)
-            after = sum(1 for r in self.net.values() if r['done'])
-            if after != before or any(not r['done'] for r in self.net.values()):
+            after = sum(1 for r in reqs() if r['done'])
+            if after != before or any(not r['done'] for r in reqs()):
                 last = time.time()
             if time.time() - last > idle:
                 return
@@ -159,26 +177,42 @@ class CDP:
 
 def launch(width, height):
     prof = tempfile.mkdtemp(prefix='mooperf-')
-    args = [CHROME, '--headless=new', '--remote-debugging-port=%d' % PORT, '--user-data-dir=' + prof, '--no-first-run',
+    args = [CHROME, '--headless=new', '--remote-debugging-port=0', '--user-data-dir=' + prof, '--no-first-run',
             '--no-default-browser-check', '--disable-extensions', '--hide-scrollbars', '--window-size=%d,%d' % (width, height),
             '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--autoplay-policy=no-user-gesture-required',
             '--enable-gpu-rasterization', '--ignore-gpu-blocklist', 'about:blank']
     proc = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    for _ in range(100):
+    # port 0: this chrome picks a free port and writes it into its own profile, so no other chrome gets measured
+    for _ in range(300):
+        if proc.poll() is not None:
+            break
         try:
-            v = json.load(urllib.request.urlopen('http://127.0.0.1:%d/json/version' % PORT))
-            return proc, prof, v['webSocketDebuggerUrl']
-        except Exception:
+            with open(os.path.join(prof, 'DevToolsActivePort')) as f:
+                port, path = f.read().split()[:2]
+            return proc, prof, 'ws://127.0.0.1:%s%s' % (port, path)
+        except (OSError, ValueError):
             time.sleep(.1)
+    stop(proc, prof)
     raise RuntimeError('chrome did not start')
+
+
+def stop(proc, prof):
+    # chrome still writes to its profile while it shuts down
+    proc.terminate()
+    try:
+        proc.wait(10)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+    shutil.rmtree(prof, ignore_errors=True)
 
 
 class Page:
     def __init__(self, cdp, prof, media=None):
         self.c = cdp
         self.p = prof
-        t = cdp.call('Target.createTarget', {'url': 'about:blank'})
-        self.s = cdp.call('Target.attachToTarget', {'targetId': t['targetId'], 'flatten': True})['sessionId']
+        self.t = cdp.call('Target.createTarget', {'url': 'about:blank'})['targetId']
+        self.s = cdp.call('Target.attachToTarget', {'targetId': self.t, 'flatten': True})['sessionId']
         for d in ('Page', 'Network', 'Runtime', 'Log', 'Performance'):
             self.call(d + '.enable')
         self.call('Network.setCacheDisabled', {'cacheDisabled': True})
@@ -197,6 +231,17 @@ class Page:
     def call(self, m, p=None, timeout=60):
         return self.c.call(m, p, self.s, timeout)
 
+    @property
+    def net(self):
+        return self.c.net.setdefault(self.s, {})
+
+    def errors(self):
+        return self.c.errs.get(self.s, [])
+
+    def close(self):
+        self.c.call('Target.closeTarget', {'targetId': self.t})
+        self.c.net.pop(self.s, None)
+
     def js(self, expr, await_promise=False):
         r = self.call('Runtime.evaluate', {'expression': expr, 'returnByValue': True, 'awaitPromise': await_promise}, timeout=120)
         if 'exceptionDetails' in r:
@@ -204,14 +249,15 @@ class Page:
         return r.get('result', {}).get('value')
 
     def goto(self, url):
-        self.c.net.clear()
+        self.c.net[self.s] = {}
+        self.c.errs[self.s] = []
         self.t_nav = time.time()
         self.call('Page.navigate', {'url': url})
         self.c.wait_event('Page.loadEventFired', 90)
         self.t_load = time.time()
 
     def net_snapshot(self):
-        rs = [r for r in self.c.net.values() if r.get('status') != 0]
+        rs = [r for r in self.net.values() if r.get('status') != 0]
         img = [r for r in rs if '/renders/' in r['url']]
         seqf = [r for r in img if '/seq-' in r['url']]
         by = {}
@@ -223,7 +269,8 @@ class Page:
             by[k][1] += r['bytes']
         top = sorted(rs, key=lambda r: -r['bytes'])[:6]
         return {'requests': len(rs), 'kb': round(sum(r['bytes'] for r in rs) / 1024), 'renders_kb': round(sum(r['bytes'] for r in img) / 1024),
-                'seq_frames': len(seqf), 'failed': [r['url'] for r in rs if r.get('failed')],
+                'seq_frames': len(seqf), 'failed': [r['url'] for r in rs if r.get('failed') or (r.get('status') or 0) >= 400],
+                'inflight': [[r['url'][-70:], round(r['bytes'] / 1024)] for r in rs if not r['done']],
                 'by_type': {k: [v[0], round(v[1] / 1024)] for k, v in sorted(by.items(), key=lambda kv: -kv[1][1])},
                 'top': [[r['url'][-70:], round(r['bytes'] / 1024)] for r in top]}
 
@@ -271,7 +318,7 @@ def cpu_top(profile, n=18):
     return {'total_ms': round(total), 'top': [[k, round(v / 1000)] for k, v in top]}
 
 
-def measure(url, name, out, cpu=False):
+def measure(url, name, cpu=False):
     prof = PROFILES[name]
     proc, udir, ws = launch(prof['width'], prof['height'])
     res = {'profile': name, 'url': url, 'when': time.strftime('%Y-%m-%d %H:%M')}
@@ -304,6 +351,7 @@ def measure(url, name, out, cpu=False):
                              'after_load': [[s, d] for s, d in longs if s > load_ms], 'max_after_load_ms': max([d for s, d in longs if s > load_ms] or [0])}
         res['heap_mb'] = p['heapMB']
         res['errors'] = p['errors']
+        res['console_errors'] = pg.errors()
         # hero board animating at the top, no scroll
         pg.scroll_to(0)
         cdp.pump(.8)
@@ -340,14 +388,11 @@ def measure(url, name, out, cpu=False):
         p = pg.perf()
         res['heap_mb_end'] = p['heapMB']
         res['errors'] = p['errors']
+        res['console_errors'] = pg.errors()
         res['long_tasks']['max_total_ms'] = max([d for s, d in p['long']] or [0])
         res['scrollWidth_overflow'] = pg.js('document.documentElement.scrollWidth > innerWidth')
     finally:
-        proc.terminate()
-        shutil.rmtree(udir, ignore_errors=True)
-    if out:
-        with open(out, 'w') as f:
-            json.dump(res, f, indent=1)
+        stop(proc, udir)
     return res
 
 
@@ -361,17 +406,20 @@ def quick(url, name):
         pg.goto(url)
         while time.time() - pg.t_load < 3:
             cdp.pump(.25)
+        snap = pg.net_snapshot()
+        # the TBT window runs to load+5 s, and a long task is reported once it has finished
+        while time.time() - pg.t_load < 6:
+            cdp.pump(.25)
         p = pg.perf()
         load_ms = pg.js('performance.timing.loadEventStart - performance.timing.navigationStart')
         tbt = sum(max(0, d - 50) for s, d in p['long'] if p['fcp'] <= s <= load_ms + 5000)
-        snap = pg.net_snapshot()
-        return {'url': url, 'fcp': p['fcp'], 'lcp': p['lcp'], 'load': load_ms, 'tbt': round(tbt), 'long': p['long'], 'requests': snap['requests'], 'kb': snap['kb'], 'errors': p['errors']}
+        return {'url': url, 'fcp': p['fcp'], 'lcp': p['lcp'], 'load': load_ms, 'tbt': round(tbt), 'long': p['long'], 'requests': snap['requests'], 'kb': snap['kb'],
+                'inflight': snap['inflight'], 'errors': p['errors'], 'console_errors': pg.errors()}
     finally:
-        proc.terminate()
-        shutil.rmtree(udir, ignore_errors=True)
+        stop(proc, udir)
 
 
-def checks(url, out):
+def checks(url):
     rows = []
     for w, h, mobile in ((390, 844, True), (430, 932, True), (768, 1024, True), (1440, 900, False)):
         proc, udir, ws = launch(w, h)
@@ -400,21 +448,20 @@ def checks(url, out):
             pg.scroll_to(top); cdp.pump(1.2); c0 = centered()
             pg.js('document.querySelector(".cp[data-frame=black]").click()'); cdp.pump(1.5); c1 = centered()
             r['colorsCarousel'] = [c0, c1]
+            r['consoleErrors'] = pg.errors()
+            pg.close()
             # reduced motion: no sequence frames
             pg2 = Page(cdp, prof, media=[{'name': 'prefers-reduced-motion', 'value': 'reduce'}])
             pg2.goto(url)
             cdp.pump(2.5)
             cdp.quiet(1.0, 6)
-            r['reducedSeqFrames'] = sum(1 for x in cdp.net.values() if '/seq-' in x['url'])
+            r['reducedSeqFrames'] = sum(1 for x in pg2.net.values() if '/seq-' in x['url'])
             r['reducedNoAnim'] = pg2.js('document.documentElement.classList.contains("no-anim")')
+            r['reducedErrors'] = pg2.js('__perf.errors.slice()') + pg2.errors()
             r['width'] = w
             rows.append(r)
         finally:
-            proc.terminate()
-            shutil.rmtree(udir, ignore_errors=True)
-    if out:
-        with open(out, 'w') as f:
-            json.dump(rows, f, indent=1)
+            stop(proc, udir)
     return rows
 
 
@@ -444,8 +491,7 @@ def shots(url, outdir, label):
                     f.write(base64.b64decode(png))
                 out.append(fn)
         finally:
-            proc.terminate()
-            shutil.rmtree(udir, ignore_errors=True)
+            stop(proc, udir)
     return out
 
 
@@ -481,12 +527,18 @@ def main():
     ap.add_argument('--label', default='site')
     ap.add_argument('--compare', nargs=3, metavar=('DIR', 'A', 'B'), help='pixel difference between two --shots labels')
     a = ap.parse_args()
+    # a kill or a closed terminal still stops chrome and removes its profile
+    for sig in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(sig, lambda *_: sys.exit(1))
     if a.compare:
         r = compare(*a.compare)
     elif a.shots:
         r = shots(a.url, a.shots, a.label)
     else:
-        r = checks(a.url, a.out) if a.checks else quick(a.url, a.profile) if a.quick else measure(a.url, a.profile, a.out, a.cpu)
+        r = checks(a.url) if a.checks else quick(a.url, a.profile) if a.quick else measure(a.url, a.profile, a.cpu)
+    if a.out:
+        with open(a.out, 'w') as f:
+            json.dump(r, f, indent=1)
     json.dump(r, sys.stdout, indent=1)
     print()
 

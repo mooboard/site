@@ -3,8 +3,9 @@
    in and crossfading into the next like a radio station. The site hosts no audio and no lyrics: previews stream from
    Apple, synced lyrics come from lrclib.net and stay in this browser's localStorage after the first visit.
    Starts playing on load but muted: the lyrics run on the board from the first second, sound comes on only when the
-   visitor unmutes. If the radio can't load, the archived placeholder songs (music/archive/, all original, played live
-   through Web Audio from their "synth" block) play instead. */
+   visitor unmutes. A song whose preview won't play here is skipped. If the radio can't load, or none of its previews
+   play, the archived placeholder songs (music/archive/, all original, played live through Web Audio from their
+   "synth" block) play instead. */
 (function () {
   'use strict';
 
@@ -35,7 +36,7 @@
   }
   function pos() {
     var t = track();
-    // browsers won't start audio before the visitor taps, so until then the radio runs on the clock
+    // muted, or while a preview is still starting, the radio runs on the clock
     if (t && t.src && live) return mediaPos();
     return playing ? (performance.now() - startAt) / 1000 : pausedPos;
   }
@@ -58,15 +59,21 @@
   function lrcText(id) {
     var key = 'moo-lrc-' + id;
     try { var c = localStorage.getItem(key); if (c) return Promise.resolve(c); } catch (e) { /* storage blocked */ }
-    return fetch(LRC_API + id).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    return fetch(LRC_API + id).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (j) {
       var s = j && j.syncedLyrics;
       if (s) try { localStorage.setItem(key, s); } catch (e) { /* storage full or blocked */ }
       return s || null;
     });
   }
   function radioTiming(t, lrc) {
-    var raw = [], m, re = /\[(\d+):(\d+(?:\.\d+)?)\]([^\n\r]*)/g, len = 30;
-    while ((m = re.exec(lrc))) raw.push({ t0: +m[1] * 60 + +m[2] - t.at, text: m[3].trim() });
+    var raw = [], len = 30;
+    lrc.split(/\r\n|\r|\n/).forEach(function (s) {
+      // a line can carry several times (a repeated chorus) and word times, which the onsets stand in for
+      var m, at = [], re = /^\s*\[(\d+):(\d+(?:\.\d+)?)\]/;
+      while ((m = re.exec(s))) { at.push(+m[1] * 60 + +m[2] - t.at); s = s.slice(m[0].length); }
+      s = s.replace(/<\d+:\d+(?:\.\d+)?>/g, '').replace(/\s+/g, ' ').trim();
+      at.forEach(function (t0) { raw.push({ t0: t0, text: s }); });
+    });
     raw.sort(function (a, b) { return a.t0 - b.t0; });
     raw.forEach(function (l, i) { l.t1 = raw[i + 1] ? raw[i + 1].t0 : l.t0 + 5; });
     var on = t.onsets || [], oi = 0, L = [];
@@ -93,12 +100,15 @@
   /* ---------- lyrics timing ---------- */
   function loadTiming(t) {
     if (t && t.lrclib && !timings[t.id]) {
-      return (t._lrc || (t._lrc = lrcText(t.lrclib))).then(function (s) {
-        return s ? (timings[t.id] = radioTiming(t, s)) : null;
-      }).catch(function () { return null; });
+      var lrc = t._lrc || (t._lrc = lrcText(t.lrclib));
+      return lrc.then(function (s) {
+        // only for a song still on the list: the archive reuses the radio's ids
+        return s && list.indexOf(t) >= 0 ? (timings[t.id] = radioTiming(t, s)) : null;
+      }).catch(function () { if (t._lrc === lrc) t._lrc = null; return null; });   // a failed fetch is tried again next time
     }
     if (!t || !t.lyrics || timings[t.id]) return Promise.resolve(timings[t && t.id]);
-    return fetch(t.lyrics).then(function (r) { return r.ok ? r.json() : null; })
+    // one fetch per song, also while it is still on its way
+    return t._tm || (t._tm = fetch(t.lyrics).then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {
         if (!j) return null;
         // Prayer-style timings: lines[].en (or .text) holds the words, words[] carry t0/t1 in seconds
@@ -112,12 +122,12 @@
         L.forEach(function (l, i) { l.t1 = L[i + 1] ? L[i + 1].t0 : l.words[l.words.length - 1].t1 + .6; });
         j.lines = L;
         timings[t.id] = j; return j;
-      }).catch(function () { return null; });
+      }).catch(function () { t._tm = null; return null; }));
   }
 
   /* ---------- Web Audio placeholder synth ---------- */
   function ensureAudio() {
-    if (ac) { if (ac.state === 'suspended') ac.resume(); return true; }
+    if (ac) { if (ac.state === 'suspended' && !document.hidden) ac.resume(); return true; }
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return false;
     ac = new AC();
@@ -225,22 +235,63 @@
   }
 
   /* ---------- transport ---------- */
-  // one <audio> per radio song. The first is made up front so it is buffered when the radio starts; each next one
+  // one <audio> per radio song. The first is made up front so it is buffered when the sound comes on; each next one
   // is made when the song before it starts playing, which leaves a whole preview (30 s) to buffer before the crossfade
-  // instead of fetching all five (about 5 MB) at page load.
+  // instead of fetching all five (about 5 MB) at page load. Muted, the radio plays no audio and runs on the clock.
   function el(t) {
     var a = els[t.id];
     if (a) return a;
-    a = els[t.id] = new Audio(); a.preload = 'auto'; a.src = t.src; a.muted = muted;
+    a = els[t.id] = new Audio(); a.preload = 'auto'; a.src = t.src; a.muted = muted; a._t = t;
     a.addEventListener('ended', function () { if (a === audioEl && playing) play(idx + 1, 0, 0); });
-    a.addEventListener('playing', function () { if (a === audioEl) live = true; });
+    a.addEventListener('playing', function () { onAir(a); });
+    a.addEventListener('error', function () { fail(a); });
+    // a pause or a play from outside the page (media keys, a call, the system's media controls) moves the radio too
+    a.addEventListener('pause', function () { if (a === audioEl && playing && !muted && !a.ended && !a.error) pause(); });
+    a.addEventListener('play', function () {
+      if (a === audioEl && !playing && !muted) { playing = true; startAt = performance.now() - a.currentTime * 1000; emit('state'); }
+    });
     return a;
   }
+  // the next song's audio, made when this one starts
+  function ahead() {
+    var t = track(), nx = list[(idx + 1) % list.length];
+    if (!muted && nx && nx.src && !nx.bad && nx !== t) el(nx);
+  }
+  // a preview that took a moment to start joins the clock where the lyrics got to
+  function onAir(a) {
+    if (a !== audioEl || live || muted || !playing) return;
+    var p = pos();
+    if (Math.abs(p - a.currentTime) > .3) try { a.currentTime = p; } catch (e) { /* ignore */ }
+    live = true;
+  }
+  // a song whose preview won't play here is skipped until the visitor next turns the sound on
+  function fail(a) {
+    var t = a._t;
+    if (els[t.id] === a) delete els[t.id];
+    if (t.bad) return;
+    t.bad = true;
+    if (a === audioEl && playing && !muted) next();
+  }
+  // none of the previews play here, so the archive takes over or the radio goes back to muted
+  var archiving = false;
+  function archive() {
+    if (archiving) return;
+    archiving = true;
+    json('music/archive/playlist.json').then(tracksOf).then(function (tracks) {
+      if (!tracks.length) throw new Error('no archive');
+      Object.keys(els).forEach(function (k) { els[k].pause(); });
+      list = tracks; els = {}; audioEl = null; live = false; timings = {};
+      list.forEach(function (t) { loadTiming(t); });
+      if (playing) play(0, 0, 0);
+      else { idx = 0; pausedPos = 0; emit('track'); }
+    }).catch(function () { archiving = false; if (track().bad) setMuted(true); });
+  }
   // volume ramps (iOS ignores volume; there the songs simply cut over)
+  var fixedVolume = (function () { var a = new Audio(); a.volume = .5; return a.volume !== .5; })();
   function ramp(a, to, dur, done) {
     clearInterval(a._ramp);
     var from = a.volume, t0 = performance.now();
-    if (!dur) { a.volume = to; if (done) done(); return; }
+    if (!dur || fixedVolume) { a.volume = to; if (done) done(); return; }
     a._ramp = setInterval(function () {
       var k = Math.min(1, (performance.now() - t0) / (dur * 1000));
       a.volume = Math.max(0, Math.min(1, from + (to - from) * k));
@@ -249,23 +300,26 @@
   }
   // xf: seconds to crossfade from the song that was playing (the radio hand-over); 0 for a skip or a resume
   function play(i, at, xf) {
+    if (!list.length) return;
     stopSynth();
     var old = audioEl;
     idx = (i + list.length) % list.length; at = at || 0;
+    // with the sound on, songs whose preview won't play are skipped, and if none will the archive comes in
+    for (var n = 0; !muted && n < list.length && track().bad; n++) { idx = (idx + 1) % list.length; at = 0; }
     var t = track();
+    if (t.bad && !muted) archive();
     loadTiming(t).then(function () { emit('timing'); });
     loadTiming(list[(idx + 1) % list.length]);
     playing = true; startAt = performance.now() - at * 1000;
-    var nx = list[(idx + 1) % list.length];
-    if (nx && nx.src && nx !== t) el(nx);
-    if (t.src) {
+    if (t.src && !t.bad && !muted) {
       audioEl = el(t); audioEl.muted = muted;
       try { audioEl.currentTime = at; } catch (e) { /* not seekable yet */ }
       ramp(audioEl, at ? 1 : 0, 0);
       start(audioEl);
       if (!at) ramp(audioEl, 1, xf || .8);
+      ahead();
     } else {
-      audioEl = null;
+      audioEl = null; live = false;
       if (!muted) startSynth(at);
     }
     if (old && old !== audioEl) ramp(old, 0, xf || .25, function () { if (old !== audioEl) { old.pause(); try { old.currentTime = 0; } catch (e) { /* ignore */ } } });
@@ -274,28 +328,33 @@
   function start(a) {
     live = !a.paused;
     var pr = a.play();
-    if (pr && pr.then) pr.then(function () { if (a === audioEl) live = true; }, function () { if (a === audioEl) live = false; });
+    if (pr && pr.then) pr.then(function () { onAir(a); }, function (e) { if (a === audioEl) live = false; if (e && e.name === 'NotSupportedError') fail(a); });
     else live = true;
   }
-  function next() { play(idx + 1, 0, 0); }
+  // a play before the radio is ready starts it there and then, inside the visitor's tap
+  function go() { if (!ready && list.length) { ready = true; play(0, 0, 0); } }
+  function next() { if (ready) play(idx + 1, 0, 0); }
   function pause() {
     if (!playing) return;
     pausedPos = pos(); playing = false; live = false; stopSynth();
     Object.keys(els).forEach(function (k) { els[k].pause(); });
     emit('state');
   }
-  function resume() { if (!playing) play(idx, pausedPos, 0); emit('state'); }
+  function resume() { if (!ready) go(); else if (!playing) play(idx, pausedPos, 0); emit('state'); }
   function setMuted(m) {
+    // muted, the radio goes back to the clock and the preview stops where the lyrics are
+    if (m && live) { startAt = performance.now() - pos() * 1000; live = false; }
     muted = m;
     var t = track();
-    Object.keys(els).forEach(function (k) { els[k].muted = m; });
+    Object.keys(els).forEach(function (k) { els[k].muted = m; if (m) els[k].pause(); });
     if (m) stopSynth();
     else {
       // the unmute tap lets an AudioContext run, and a running one reports the output's latency
       if (ensureAudio() && ac.resume) ac.resume().then(readLatency, readLatency);
+      list.forEach(function (s) { s.bad = false; });
       if (playing && t && !t.src) startSynth(pos());
-      // the unmute tap is what lets the preview start: join the clock where the lyrics are
-      if (playing && t && t.src && !live) { var p = pos(); try { audioEl.currentTime = p; } catch (e) { /* ignore */ } ramp(audioEl, 1, .5); start(audioEl); }
+      // the unmute tap is what lets the preview start: make it and join the clock where the lyrics are
+      if (playing && t && t.src && !live) { var p = pos(); audioEl = el(t); try { audioEl.currentTime = p; } catch (e) { /* ignore */ } ramp(audioEl, 1, .5); start(audioEl); ahead(); }
     }
     emit('state');
   }
@@ -310,6 +369,12 @@
   document.addEventListener('visibilitychange', function () {
     if (ac && !muted) { if (document.hidden) ac.suspend(); else ac.resume(); }
   });
+
+  // the system's media controls play and pause the radio, not just the song's audio
+  if (navigator.mediaSession) try {
+    navigator.mediaSession.setActionHandler('play', function () { if (muted) setMuted(false); resume(); });
+    navigator.mediaSession.setActionHandler('pause', function () { pause(); });
+  } catch (e) { /* action not supported */ }
 
   function json(u) { return fetch(u).then(function (r) { return r.ok ? r.json() : null; }); }
   function tracksOf(j) { return j ? (Array.isArray(j) ? j : (j.tracks || [])) : []; }
@@ -326,10 +391,7 @@
       if (a.readyState >= 3) res(); else { a.addEventListener('canplaythrough', res); a.addEventListener('error', res); }
     });
     var wait = new Promise(function (res) { setTimeout(res, 4000); });
-    return Promise.race([Promise.all([audio, loadTiming(first)]), wait]).then(function () {
-      ready = true;
-      play(0, 0, 0);
-    });
+    return Promise.race([Promise.all([audio, loadTiming(first)]), wait]).then(go);
   }).catch(function () {});
 
   /* ---------- cover art: abstract gradients, soft shapes, grain. No text. ---------- */

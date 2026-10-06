@@ -1,0 +1,19 @@
+# the site's own pages and the files they load, nothing else in the repo
+User-agent: *
+Allow: /$
+Allow: /index.html
+Allow: /hi
+Allow: /privacy
+Allow: /support
+Allow: /css/
+Allow: /js/
+Allow: /fonts/
+Allow: /assets/
+Allow: /renders/
+Allow: /music/
+Allow: /og.png
+Allow: /favicon
+Allow: /apple-touch-icon.png
+Allow: /brand/mark-teal.svg
+Allow: /brand/wordmark-white.svg
+Disallow: /

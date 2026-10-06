@@ -1,0 +1,11 @@
+#!/bin/sh
+# the repo's checks before every commit, turned on once per clone with  git config core.hooksPath tools/hooks
+top=$(git rev-parse --show-toplevel) || exit 1
+cd "$top" || exit 1
+sh tools/check-no-music.sh || exit 1
+out=$(python3 tools/check-lyrics.py) || { echo "$out"; exit 1; }
+if command -v node > /dev/null; then
+  node --test tools/hi.test.mjs > /dev/null 2>&1 || { echo "tools/hi.test.mjs fails: node --test tools/hi.test.mjs"; exit 1; }
+else
+  echo "no node here: tools/hi.test.mjs skipped"
+fi

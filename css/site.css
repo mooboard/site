@@ -14,7 +14,8 @@
   --glow: 119, 237, 215;
   --display: 'Fredoka', 'Nunito', system-ui, sans-serif;
   --body: 'Nunito', system-ui, -apple-system, sans-serif;
-  --gut: clamp(16px, 4vw, 48px);
+  /* the gutter clears the notch on a phone turned sideways (with viewport-fit=cover the page runs under it) */
+  --gut: max(clamp(16px, 4vw, 48px), env(safe-area-inset-left), env(safe-area-inset-right));
   --ease: cubic-bezier(.2, .8, .2, 1);
 }
 * { box-sizing: border-box; }
@@ -27,6 +28,10 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 a { color: inherit; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 :focus-visible { outline: 3px solid var(--accent-lite); outline-offset: 3px; border-radius: 8px; }
+/* a section an in-page link moved the focus to (main.js) is where tab starts from, not a control */
+section[tabindex="-1"]:focus { outline: none; }
+/* the accent is a light color made for the dark sections, so on the light ones the ring is ink */
+.shows :focus-visible, .colors :focus-visible, .viewer :focus-visible, .tech :focus-visible { outline-color: var(--ink); }
 h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; margin: 0; line-height: .95; }
 
 /* ---------- buttons ---------- */
@@ -57,6 +62,8 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 }
 .nav.solid { background: rgba(14, 26, 34, .72); backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4); }
 .nav.hide { transform: translateY(-110%); }
+/* the keyboard focus inside the nav brings it back */
+.nav:has(:focus-visible) { transform: none; }
 .logo { display: flex; align-items: center; gap: 12px; }
 .logo .mark { width: 46px; height: auto; }
 .logo .wordmark { height: 22px; width: auto; }
@@ -115,6 +122,8 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
   background-size: 18px 18px;
   -webkit-mask-image: radial-gradient(60% 55% at 50% 45%, #000 20%, transparent 80%); mask-image: radial-gradient(60% 55% at 50% 45%, #000 20%, transparent 80%);
 }
+/* it drifts with the scroll (main.js), so the browser never measures a restored position from it */
+.dotfield { overflow-anchor: none; }
 .hero-glow {
   position: absolute; left: 50%; top: 56%; width: 120vmax; height: 60vmax; transform: translate(-50%, -50%); pointer-events: none;
   background: radial-gradient(closest-side, rgba(var(--glow), .28), transparent 75%); filter: blur(10px);
@@ -123,9 +132,17 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .pun .w:first-child { color: var(--accent-lite); }
 .pun .d, .pun .gap { display: inline-block; overflow: visible; }
 .pun .d { color: var(--accent-lite); transform-origin: 20% 90%; }
+/* a flex item's lone space collapses, so the gap keeps it for "mood board" (from 360px: narrower, it runs off the edges) */
+@media (min-width: 360px) { .pun .gap { white-space: pre; } }
+/* wherever the intro never runs (no motion, no js) the pun shows as it ends: mooboard */
+.no-anim .pun .d, .no-anim .pun .gap, html:not(.js) .pun .d, html:not(.js) .pun .gap { display: none; }
+/* the intro's words start hidden (the head script's .intro, until main.js holds them), so they never paint and vanish */
+.intro .pun .w, .intro .pun .d, .intro [data-hero] { opacity: 0; }
 .kicker { position: relative; margin: 14px 0 0; font-family: var(--display); font-weight: 500; font-size: clamp(18px, 2.4vw, 26px); color: rgba(255, 255, 255, .7); }
 
-.stage { position: relative; width: min(1180px, 100%, 150vh); margin-top: clamp(40px, 5vh, 60px); perspective: 1600px; }
+.stage { position: relative; width: min(1180px, 100%, 150vh); margin-top: clamp(40px, 5vh, 60px); }
+/* the tilt's perspective is on its parent, the parallax wrapper (on .stage the wrapper flattened it) */
+.stage-par { perspective: 1600px; }
 .tilt { transform-style: preserve-3d; transition: transform .8s var(--ease); cursor: pointer; }
 .floor-shadow { position: absolute; left: 8%; right: 8%; bottom: -46px; height: 40px; border-radius: 50%; background: radial-gradient(closest-side, rgba(var(--glow), .35), transparent); filter: blur(12px); }
 
@@ -151,7 +168,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .buy { position: relative; margin-top: clamp(16px, 3vh, 30px); display: flex; gap: 20px 28px; align-items: center; justify-content: center; flex-wrap: wrap; }
 .price { display: flex; align-items: baseline; gap: 12px; font-family: var(--display); }
 .price .now { font-size: 44px; font-weight: 600; }
-.price s { position: relative; font-size: 22px; color: rgba(255, 255, 255, .45); text-decoration: none; }
+.price s { position: relative; font-size: 22px; color: rgba(255, 255, 255, .6); text-decoration: none; }
 .price s::after { content: ''; position: absolute; left: -6%; right: -6%; top: 50%; height: 2px; border-radius: 2px; background: var(--pink); transform: rotate(-14deg); }
 .scroll-cue { position: absolute; bottom: 22px; left: 50%; width: 24px; height: 38px; margin-left: -12px; border: 2px solid rgba(255, 255, 255, .25); border-radius: 14px; }
 .scroll-cue span { position: absolute; left: 50%; top: 7px; width: 4px; height: 8px; margin-left: -2px; border-radius: 2px; background: var(--accent-lite); animation: cue 1.8s infinite var(--ease); }
@@ -165,6 +182,8 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .seq.has-frames .fallback { display: none; }
 
 .story { background: linear-gradient(var(--ink), var(--ink2)); }
+/* the pin's scroll length (main.js, +=260%) is held from the first paint, so deep links and restored positions land right */
+.js:not(.no-anim) .story { min-height: 360vh; min-height: 360svh; }
 .story .pin::before { content: ''; position: absolute; inset: 0; background: radial-gradient(50% 40% at 50% 50%, rgba(var(--glow), .22), transparent 70%); transition: background 1s; }
 .story .pin::after { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .45; background-image: radial-gradient(circle, rgba(255, 255, 255, .08) 1.3px, transparent 1.6px); background-size: 18px 18px; -webkit-mask-image: radial-gradient(70% 60% at 50% 50%, #000, transparent); mask-image: radial-gradient(70% 60% at 50% 50%, #000, transparent); }
 .stage3d { position: absolute; inset: 0; display: grid; place-items: center; perspective: 1400px; }
@@ -172,7 +191,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .captions { position: absolute; left: 0; right: 0; bottom: 12vh; text-align: center; pointer-events: none; padding: 0 var(--gut); }
 .cap { position: absolute; left: 0; right: 0; bottom: 0; font-size: clamp(40px, 7.5vw, 104px); opacity: 0; text-shadow: 0 6px 40px rgba(0, 0, 0, .6); }
 .cap:first-child { opacity: 1; }
-.no-anim .cap { position: static; opacity: 1; font-size: 32px; }
+.no-anim .cap, html:not(.js) .cap { position: static; opacity: 1; font-size: 32px; }
 .progress { position: absolute; left: 50%; bottom: 5vh; width: 120px; height: 3px; margin-left: -60px; border-radius: 3px; background: rgba(255, 255, 255, .12); overflow: hidden; }
 .progress i { display: block; height: 100%; width: 100%; background: var(--accent-lite); transform-origin: left; transform: scaleX(0); }
 
@@ -180,6 +199,8 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .shows { background: var(--mint); color: var(--ink); padding: clamp(80px, 12vw, 160px) var(--gut); }
 .big { font-size: clamp(52px, 10vw, 150px); color: var(--ink); max-width: 1180px; margin: 0 auto clamp(40px, 6vw, 80px); }
 .big em { font-style: normal; color: var(--deep); }
+/* 'matters.' slides in (main.js), and an inline box can't be moved */
+.shows .big em { display: inline-block; }
 .big.light em { color: var(--deep); }
 .grid { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 16px; }
 .tile {
@@ -280,19 +301,27 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .wl-form { margin: 40px auto 0; max-width: 520px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .wl-form input {
   flex: 1 1 240px; height: 56px; padding: 0 22px; border-radius: 999px; border: 2px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .06);
-  color: #fff; font: 700 17px var(--body); outline: none; transition: border-color .3s, background .3s;
+  color: #fff; font: 700 17px var(--body); transition: border-color .3s, background .3s;
 }
-.wl-form input::placeholder { color: rgba(255, 255, 255, .4); }
+.wl-form input::placeholder { color: rgba(255, 255, 255, .55); }
 .wl-form input:focus { border-color: var(--accent-lite); background: rgba(var(--accent-rgb), .08); }
+/* the focus ring keeps the field's pill shape */
+.wl-form input:focus-visible { border-radius: 999px; }
 .wl-form .btn { flex: 0 0 auto; }
 .wl-msg { flex-basis: 100%; min-height: 24px; margin: 8px 0 0; font-weight: 800; color: var(--accent-lite); }
-.wl-form.soon input, .wl-form.done input { border-color: var(--teal); }
+.wl-form.soon input:not(:focus), .wl-form.done input:not(:focus) { border-color: var(--teal); }
+.wl-note { flex-basis: 100%; margin: 4px 0 0; font-size: 14px; font-weight: 700; color: rgba(255, 255, 255, .55); }
+.wl-note a, .credit a { color: inherit; text-underline-offset: 3px; }
+.wl-note a:hover, .credit a:hover, .foot-links a:hover { color: var(--accent-lite); }
 
 /* ---------- footer ---------- */
 .foot { background: var(--ink2); padding: 70px var(--gut) 50px; text-align: center; }
 .foot-mark .mark { width: 96px; margin: 0 auto; }
 .moo { margin: 16px 0 4px; font-family: var(--display); font-weight: 600; font-size: 28px; color: var(--accent-lite); }
-.legal { margin: 0; font-size: 13px; color: rgba(255, 255, 255, .4); font-weight: 700; }
+.foot-links { display: flex; justify-content: center; gap: 14px; margin: 0 0 4px; font-size: 14px; font-weight: 800; }
+.foot-links a { padding: 6px 4px; color: rgba(255, 255, 255, .7); text-decoration: none; transition: color .3s; }
+.legal { margin: 0; font-size: 13px; color: rgba(255, 255, 255, .55); font-weight: 700; }
+.credit { margin: 6px 0 0; font-size: 12px; color: rgba(255, 255, 255, .5); font-weight: 700; }
 
 .moo-pop {
   position: fixed; z-index: 60; left: 0; top: 0; pointer-events: none; padding: 8px 16px; border-radius: 18px 18px 18px 4px;
@@ -339,10 +368,16 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .no-anim .stage3d .spin { transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .mark.loading { animation: none; }
-  .mark.loading .pupil { animation: pupilFade 2.4s ease-in-out infinite; }
-  @keyframes pupilFade { 0%, 100% { fill: #0E1A22; } 50% { fill: #77EDD7; } }
+  /* (important, or the reset above would cut it to one blip) */
+  .mark.loading .pupil { animation: pupilFade 2.4s ease-in-out infinite !important; }
   .mark.happy .pupil { fill: #FF2E88; }
+  /* the moo bubble fades in and out where it is */
+  .moo-pop { transform: none; }
+  .moo-pop.show { animation: popFade 1.3s ease forwards !important; }
+  @keyframes popFade { 0%, 100% { opacity: 0; } 15%, 80% { opacity: 1; } }
 }
+/* (outside the media query, as a pause uses it too) */
+@keyframes pupilFade { 0%, 100% { fill: #0E1A22; } 50% { fill: #77EDD7; } }
 .on-light .cap { color: var(--ink); text-shadow: 0 4px 30px rgba(255, 255, 255, .6); }
 .on-light .progress { background: rgba(14, 26, 34, .12); }
 .on-light .pin::before, .on-light .pin::after { display: none; }
@@ -350,7 +385,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 /* ---------- music player + now playing ---------- */
 /* the controls sit in the bottom-right corner at every width (they used to float mid-height on the right edge, over
    the boards); the now-playing card keeps the bottom-left */
-.player {
+.player, .motion {
   position: fixed; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); z-index: 55;
   display: flex; flex-direction: row; gap: 4px; padding: 5px;
   border-radius: 999px; background: rgba(14, 26, 34, .82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -368,6 +403,26 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .pl-mute.on .x { display: none; } .pl-mute.on .waves { display: inline; }
 .pl-mute:not(.on) { animation: nudge 3.2s 2.5s ease-in-out 3; }
 @keyframes nudge { 0%, 20%, 100% { transform: none; } 5% { transform: scale(1.15) rotate(-8deg); } 10% { transform: scale(1.15) rotate(8deg); } 15% { transform: scale(1.05); } }
+/* pause motion (main.js): a round button of its own over the player, so it never reads as a music control */
+.motion { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 60px); }
+html:not(.js) .motion { display: none; }
+.motion .pl svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.motion .i-pause { stroke-width: 2.4; }
+.motion .i-play { fill: currentColor; }
+.motion [aria-pressed="true"] .i-play { display: inline; } .motion [aria-pressed="true"] .i-pause { display: none; }
+/* its name shows beside it on hover and on keyboard focus (for the eye only: a screen reader has the button's own) */
+.motion .pl { position: relative; }
+.motion .pl::after {
+  content: attr(data-tip); content: attr(data-tip) / ''; position: absolute; right: calc(100% + 13px); top: 50%; transform: translateY(-50%); padding: 7px 12px; border-radius: 999px;
+  background: rgba(14, 26, 34, .9); font-size: 13px; font-weight: 800; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+.motion .pl:focus-visible::after { opacity: 1; }
+@media (hover: hover) { .motion .pl:hover::after { opacity: 1; } }
+/* paused, every css loop holds still: the band and the spinning cover where they stopped, the rest at rest */
+.motion-paused .track, .motion-paused .np-cover, .motion-paused .np-eq b { animation-play-state: paused; }
+.motion-paused .mark .eyes, .motion-paused .mark.loading, .motion-paused .scroll-cue span, .motion-paused .glass-note::after,
+.motion-paused .sw.on[data-frame="teal"]::before, .motion-paused .cp.on[data-frame="teal"] i::before, .motion-paused .pl-mute:not(.on) { animation: none; }
+.motion-paused .mark.loading .pupil { animation: pupilFade 2.4s ease-in-out infinite; }
 
 .np {
   position: fixed; left: max(14px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); z-index: 55; display: flex; align-items: center; gap: 10px;
@@ -379,8 +434,8 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .np.show { opacity: 1; transform: none; }
 .np.show.linked { pointer-events: auto; cursor: pointer; }
 .np-txt { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
-.np-t { font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--accent-lite); white-space: nowrap; overflow: hidden; text-overflow: clip; }
-.np-a { font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, .62); white-space: nowrap; }
+.np-t { font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--accent-lite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-a { font-size: 12px; font-weight: 700; color: rgba(255, 255, 255, .62); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-eq { display: flex; align-items: flex-end; gap: 2px; height: 14px; flex: none; margin-left: 2px; }
 .np-eq b { width: 3px; height: 100%; border-radius: 2px; background: var(--accent-lite); transform-origin: bottom; animation: eq .6s ease-in-out infinite alternate; }
 .np-eq b:nth-child(2) { animation-delay: -.25s; } .np-eq b:nth-child(3) { animation-delay: -.4s; }
@@ -388,7 +443,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 @keyframes eq { from { transform: scaleY(.3); } to { transform: scaleY(1); } }
 .mark.music .pupil { fill: var(--accent-lite); }
 @media (max-width: 700px) {
-  .player { right: max(12px, env(safe-area-inset-right)); }
+  .player, .motion { right: max(12px, env(safe-area-inset-right)); }
   .pl { width: 40px; height: 40px; }
   /* the card stops 10px short of the controls (150px wide with the 44px phone buttons below) */
   .np { left: max(12px, env(safe-area-inset-left)); max-width: calc(100vw - max(12px, env(safe-area-inset-left)) - max(12px, env(safe-area-inset-right)) - 150px - 10px); padding: 5px 12px 5px 5px; }
@@ -434,7 +489,11 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .an { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .07); box-shadow: 0 0 0 1px rgba(255, 255, 255, .1) inset; transition: background .3s, transform .3s var(--ease); }
 .an:hover { background: var(--accent-solid); color: var(--accent-ink); transform: scale(1.08); }
 .an svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-@media (max-width: 700px) { .app-row li { width: 78vw; } .app-nav { display: none; } }
+/* the row takes keyboard focus (arrow keys scroll it), and the arrows stay wherever there is a mouse */
+.app-row:focus-visible { outline-offset: -3px; }
+@media (prefers-reduced-motion: reduce) { .app-row { scroll-behavior: auto; } }
+@media (max-width: 700px) { .app-row li { width: 78vw; } }
+@media (max-width: 700px) and (hover: none) and (pointer: coarse) { .app-nav { display: none; } }
 
 
 /* the nav and footer marks wear the chosen frame color */
@@ -444,9 +503,11 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 /* ---------- phones: room for the player bar, bigger tap targets ---------- */
 @media (max-width: 700px) {
   :root { --bar: calc(64px + env(safe-area-inset-bottom)); }
-  .foot { padding-bottom: calc(var(--bar) + 36px); }
+  /* (the footer's last line also clears the pause motion button over the player) */
+  .foot { padding-bottom: calc(var(--bar) + 98px); }
   .waitlist { padding-bottom: calc(var(--bar) + 60px); }
   .pl { width: 44px; height: 44px; }
+  .motion { bottom: calc(max(14px, env(safe-area-inset-bottom)) + 62px); }
   .np { min-height: 48px; }
   .chip, .sw, .cp { position: relative; }
   .chip::before, .sw::before { content: ''; position: absolute; inset: -7px -3px; }
@@ -465,6 +526,13 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
   .hero { padding-top: 76px; }
   .kicker { margin-top: 6px; }
   .controls { margin-top: 22px; gap: 10px 16px; }
+}
+/* short laptop screens: no cue, and the headline and the board shrink with the height so the button stays above the fold */
+@media (min-width: 701px) and (min-height: 600px) and (max-height: 899px) {
+  .hero { padding-bottom: 40px; }
+  .scroll-cue { display: none; }
+  .pun { font-size: clamp(64px, min(17vw, 32vh - 99px), 200px); }
+  .stage { width: min(1180px, 100%, 239svh - 831px); }
 }
 @media (max-width: 700px) { .logo { padding: 6px 4px; margin: -6px -4px; } }
 

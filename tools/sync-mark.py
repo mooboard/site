@@ -1,5 +1,8 @@
 """Copy the MooBoard mark from brand/ into index.html (header + footer) as inline SVG,
 grouped so the site can animate it: ears wiggle, eyes blink, pupils look and change colour.
+The variant's frame shows in its own fill until the visitor picks a frame. 404.html and hi/index.html draw their own
+copy of the cow (<symbol id="cow">), so this exits 1 if theirs no longer matches the mark, or if index.html lost its
+markers.
 Run after the mark changes:  python3 tools/sync-mark.py [teal|sky|black|white|orange]"""
 import re, sys, os
 
@@ -36,19 +39,33 @@ for p in pupils:
 pupils = [re.sub(r'\br="[\d.]+"', 'r="2"', p) for p in pupils]
 
 def build(uid):
-    body = ''.join(rest).replace('id="f"', 'id="%s"' % uid).replace('url(#f)', 'url(#%s)' % uid)
+    # the frame-coloured parts follow the picked frame through --mark-frame, never the dots (a white frame matches them)
+    frame = re.search(r'fill="(#[0-9A-Fa-f]{6})"', ''.join(ear_l)).group(1)
+    def mf(els):
+        return ''.join(el if el.startswith('<circle') else el.replace('fill="%s"' % frame, 'class="mf" fill="%s"' % frame)
+                       for el in els)
+    body = mf(rest).replace('id="f"', 'id="%s"' % uid).replace('url(#f)', 'url(#%s)' % uid)
     # the eye dots and pupils live inside the screen's clip group, so close it before adding them
     if body.endswith('</g>'):
         body = body[:-4] + '<g class="eyes">' + ''.join(eyes) + '<g class="pupils">' + ''.join(pupils) + '</g></g></g>'
     else:
         body += '<g class="eyes">' + ''.join(eyes) + '<g class="pupils">' + ''.join(pupils) + '</g></g>'
-    # the frame-coloured parts follow the chosen frame colour through --mark-frame
-    frame = re.search(r'fill="(#[0-9A-Fa-f]{6})"', ''.join(ear_l)).group(1)
-    ears_l = ''.join(ear_l).replace('fill="%s"' % frame, 'class="mf" fill="%s"' % frame)
-    ears_r = ''.join(ear_r).replace('fill="%s"' % frame, 'class="mf" fill="%s"' % frame)
-    body = body.replace('fill="%s"' % frame, 'class="mf" fill="%s"' % frame)
-    return ('<svg class="mark" viewBox="%s" aria-hidden="true"><g class="ear ear-l">%s</g><g class="ear ear-r">%s</g>%s</svg>'
-            % (view, ears_l, ears_r, body))
+    return ('<svg class="mark" viewBox="%s" style="--mark-frame:%s" aria-hidden="true">'
+            '<g class="ear ear-l">%s</g><g class="ear ear-r">%s</g>%s</svg>' % (view, frame, mf(ear_l), mf(ear_r), body))
+
+def shapes(svg):
+    # every shape with its fill, however the fills are grouped and whatever classes or ids it carries
+    out, fills = [], []
+    for el in re.findall(r'<g\b[^>]*>|</g>|<[a-z]+\b[^>]*/>', svg):
+        if el.startswith('<g'):
+            m = re.search(r'fill="([^"]+)"', el)
+            fills.append(m.group(1) if m else fills[-1] if fills else None)
+        elif el == '</g>':
+            fills.pop()
+        else:
+            el = re.sub(r'\s(?:class|id)="[^"]*"', '', el)
+            out.append(el if 'fill=' in el or not fills or not fills[-1] else el[:-2] + ' fill="%s"/>' % fills[-1])
+    return sorted(out)
 
 path = os.path.join(root, 'index.html')
 html = open(path).read()
@@ -57,5 +74,15 @@ def rep(m):
     n[0] += 1
     return m.group(1) + build('mclip%d' % n[0]) + m.group(3)
 html = re.sub(r'(<!--mark-->)(.*?)(<!--/mark-->)', rep, html, flags=re.S)
+if n[0] != 2:
+    sys.exit('index.html has %d <!--mark--> places, not 2 (header and footer): nothing written' % n[0])
 open(path, 'w').write(html)
 print('mark %s -> %d places' % (variant, n[0]))
+stale = []
+for name in ('404.html', 'hi/index.html'):
+    m = re.search(r'<symbol id="cow"[^>]*>(.*?)</symbol>', open(os.path.join(root, name)).read(), flags=re.S)
+    if m and shapes(m.group(1)) != shapes(inner):
+        stale.append(name)
+if stale:
+    sys.exit('%s draw their own cow (<symbol id="cow">), which no longer matches brand/mark-%s.svg: update it there'
+             % (' and '.join(stale), variant))

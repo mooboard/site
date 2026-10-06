@@ -6,25 +6,33 @@
 <title>mooboard</title>
 <meta name="description" content="Put your wall in a good mood.">
 <meta name="theme-color" content="#0E1A22">
-<link rel="canonical" href="https://mooboard.github.io/site/">
+<link rel="canonical" href="https://mooboard.co/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="mooboard">
 <meta property="og:title" content="mooboard">
 <meta property="og:description" content="Put your wall in a good mood.">
-<meta property="og:url" content="https://mooboard.github.io/site/">
-<meta property="og:image" content="https://mooboard.github.io/site/og.png">
+<meta property="og:url" content="https://mooboard.co/">
+<meta property="og:image" content="https://mooboard.co/og.png">
+<meta property="og:image:alt" content="The mooboard logo over a glowing LED board showing a song lyric">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="mooboard">
 <meta name="twitter:description" content="Put your wall in a good mood.">
-<meta name="twitter:image" content="https://mooboard.github.io/site/og.png">
+<meta name="twitter:image" content="https://mooboard.co/og.png">
 <link rel="icon" href="brand/mark-teal.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="css/site.css">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 <script>document.documentElement.classList.add('js');
+// the hero waits hidden for the intro in main.js, 3 s at most, and shows without motion if main.js never takes it over
+(function (r) {
+  if (new URLSearchParams(location.search).has('static') || matchMedia('(prefers-reduced-motion: reduce)').matches) return r.classList.add('no-anim');
+  r.classList.add('intro');
+  setTimeout(function () { r.classList.replace('intro', 'intro-late'); }, 3000);
+  addEventListener('DOMContentLoaded', function () { if (/\bintro/.test(r.className)) { r.classList.add('no-anim'); r.classList.remove('intro', 'intro-late'); } });
+})(document.documentElement);
 if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('error', function (e) { __err.push((e.message || 'load fail') + ' ' + (e.filename || (e.target && (e.target.src || e.target.href)) || '')); }, true); addEventListener('unhandledrejection', function (e) { __err.push('rejection ' + e.reason); }); setTimeout(function () { var o = {}; document.querySelectorAll('main > section, footer').forEach(function (s) { o[s.id || s.className] = Math.round(s.getBoundingClientRect().top + scrollY); }); document.body.setAttribute('data-debug', JSON.stringify({ err: __err, top: o, h: document.documentElement.scrollHeight, w: document.documentElement.scrollWidth })); }, 4000); }</script>
 </head>
 <body>
@@ -36,6 +44,13 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
   </button>
   <a class="btn btn-sm" href="#waitlist">Join waitlist</a>
 </header>
+
+<!-- pause motion (main.js): it sits over the player, and early in the tab order -->
+<div class="motion">
+  <button class="pl" id="motion" type="button" aria-pressed="false" aria-label="Pause motion" data-tip="Pause motion">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.8"/><path class="i-pause" d="M10 9v6M14 9v6"/><path class="i-play" d="M10.4 8.9v6.2l4.9-3.1z"/></svg>
+  </button>
+</div>
 
 <main>
 
@@ -72,7 +87,7 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
   </div>
 
   <div class="buy" data-hero>
-    <div class="price"><span class="now">$129</span><s>$149</s></div>
+    <div class="price"><span class="now"><span class="sr">Now </span>$129</span><s><span class="sr">was </span>$149</s></div>
     <a class="btn" href="#waitlist">Join the waitlist</a>
   </div>
   <div class="scroll-cue" aria-hidden="true"><span></span></div>
@@ -115,7 +130,7 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
 <section class="apps" id="apps">
   <h2 class="apps-h" data-reveal>Apps for your <em>wall.</em></h2>
   <div class="app-wrap">
-    <ul class="app-row" id="app-row">
+    <ul class="app-row" id="app-row" tabindex="0" aria-label="Apps">
       <li data-app="clock" data-scene="time" data-c="#77EDD7" data-bg="teal">Clock</li>
       <li data-app="weather" data-scene="wx" data-c="#6FB8FF" data-bg="white">Weather</li>
       <li data-app="seasons" data-scene="seasons" data-c="#FF9A3C" data-bg="orange">Seasons</li>
@@ -185,6 +200,7 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
 </section>
 
 <section class="tech" id="tech">
+  <h2 class="sr">Specs</h2>
   <div class="cards">
     <figure class="card dark" data-reveal>
       <canvas class="rainbow-leds" role="img" aria-label="Close up of the LEDs glowing in a moving rainbow"></canvas>
@@ -210,18 +226,20 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
 </section>
 
 <section class="waitlist" id="waitlist">
+  <h2 class="sr">Join the waitlist</h2>
   <div class="wl-board" data-reveal>
     <div class="bezel" data-frame="teal"><div class="led" id="wl-board"></div></div>
   </div>
   <div class="wl-price" data-reveal>
     <span class="tag">Launch price</span>
-    <div class="price xl"><span class="now">$129</span><s>$149</s></div>
+    <div class="price xl"><span class="now"><span class="sr">Now </span>$129</span><s><span class="sr">was </span>$149</s></div>
   </div>
   <form class="wl-form" id="wl-form" data-reveal novalidate>
     <label class="sr" for="wl-email">Email</label>
     <input id="wl-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="cows@mooboard.co" required>
     <button class="btn" type="submit">Join the waitlist</button>
     <p class="wl-msg" id="wl-msg" role="status" aria-live="polite"></p>
+    <p class="wl-note">We only email you about mooboard. <a href="/privacy/">Privacy policy</a></p>
   </form>
 </section>
 
@@ -232,7 +250,9 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
     <!--mark--><svg class="mark" viewBox="0 0 136 108" aria-hidden="true"><g class="ear ear-l"><ellipse cx="20" cy="45" rx="19" ry="10" class="mf" fill="#77EDD7"/><ellipse cx="18" cy="45" rx="10" ry="4.6" fill="#FFB7C9"/></g><g class="ear ear-r"><ellipse cx="116" cy="45" rx="19" ry="10" class="mf" fill="#77EDD7"/><ellipse cx="118" cy="45" rx="10" ry="4.6" fill="#FFB7C9"/></g><rect x="41" y="4" width="11" height="24" rx="5.5" fill="#F5E9D6"/><rect x="84" y="4" width="11" height="24" rx="5.5" fill="#F5E9D6"/><rect x="18" y="20" width="100" height="84" rx="30" class="mf" fill="#77EDD7"/><rect x="31" y="33" width="74" height="58" rx="17" fill="#0E1A22"/><circle cx="42" cy="36" r="1.2" fill="#1F2E38"/><circle cx="46" cy="36" r="1.2" fill="#1F2E38"/><circle cx="50" cy="36" r="1.2" fill="#1F2E38"/><circle cx="54" cy="36" r="1.2" fill="#1F2E38"/><circle cx="58" cy="36" r="1.2" fill="#1F2E38"/><circle cx="62" cy="36" r="1.2" fill="#1F2E38"/><circle cx="66" cy="36" r="1.2" fill="#1F2E38"/><circle cx="70" cy="36" r="1.2" fill="#1F2E38"/><circle cx="74" cy="36" r="1.2" fill="#1F2E38"/><circle cx="78" cy="36" r="1.2" fill="#1F2E38"/><circle cx="82" cy="36" r="1.2" fill="#1F2E38"/><circle cx="86" cy="36" r="1.2" fill="#1F2E38"/><circle cx="90" cy="36" r="1.2" fill="#1F2E38"/><circle cx="94" cy="36" r="1.2" fill="#1F2E38"/><circle cx="38" cy="40" r="1.2" fill="#1F2E38"/><circle cx="42" cy="40" r="1.2" fill="#1F2E38"/><circle cx="46" cy="40" r="1.2" fill="#1F2E38"/><circle cx="50" cy="40" r="1.2" fill="#1F2E38"/><circle cx="54" cy="40" r="1.2" fill="#1F2E38"/><circle cx="58" cy="40" r="1.2" fill="#1F2E38"/><circle cx="62" cy="40" r="1.2" fill="#1F2E38"/><circle cx="66" cy="40" r="1.2" fill="#1F2E38"/><circle cx="70" cy="40" r="1.2" fill="#1F2E38"/><circle cx="74" cy="40" r="1.2" fill="#1F2E38"/><circle cx="78" cy="40" r="1.2" fill="#1F2E38"/><circle cx="82" cy="40" r="1.2" fill="#1F2E38"/><circle cx="86" cy="40" r="1.2" fill="#1F2E38"/><circle cx="90" cy="40" r="1.2" fill="#1F2E38"/><circle cx="94" cy="40" r="1.2" fill="#1F2E38"/><circle cx="98" cy="40" r="1.2" fill="#1F2E38"/><circle cx="34" cy="44" r="1.2" fill="#1F2E38"/><circle cx="38" cy="44" r="1.2" fill="#1F2E38"/><circle cx="42" cy="44" r="1.2" fill="#1F2E38"/><circle cx="58" cy="44" r="1.2" fill="#1F2E38"/><circle cx="62" cy="44" r="1.2" fill="#1F2E38"/><circle cx="66" cy="44" r="1.2" fill="#1F2E38"/><circle cx="70" cy="44" r="1.2" fill="#1F2E38"/><circle cx="74" cy="44" r="1.2" fill="#1F2E38"/><circle cx="78" cy="44" r="1.2" fill="#1F2E38"/><circle cx="94" cy="44" r="1.2" fill="#1F2E38"/><circle cx="98" cy="44" r="1.2" fill="#1F2E38"/><circle cx="102" cy="44" r="1.2" fill="#1F2E38"/><circle cx="34" cy="48" r="1.2" fill="#1F2E38"/><circle cx="38" cy="48" r="1.2" fill="#1F2E38"/><circle cx="62" cy="48" r="1.2" fill="#1F2E38"/><circle cx="66" cy="48" r="1.2" fill="#1F2E38"/><circle cx="70" cy="48" r="1.2" fill="#1F2E38"/><circle cx="74" cy="48" r="1.2" fill="#1F2E38"/><circle cx="98" cy="48" r="1.2" fill="#1F2E38"/><circle cx="102" cy="48" r="1.2" fill="#1F2E38"/><circle cx="34" cy="52" r="1.2" fill="#1F2E38"/><circle cx="38" cy="52" r="1.2" fill="#1F2E38"/><circle cx="62" cy="52" r="1.2" fill="#1F2E38"/><circle cx="66" cy="52" r="1.2" fill="#1F2E38"/><circle cx="70" cy="52" r="1.2" fill="#1F2E38"/><circle cx="74" cy="52" r="1.2" fill="#1F2E38"/><circle cx="98" cy="52" r="1.2" fill="#1F2E38"/><circle cx="102" cy="52" r="1.2" fill="#1F2E38"/><circle cx="34" cy="56" r="1.2" fill="#1F2E38"/><circle cx="38" cy="56" r="1.2" fill="#1F2E38"/><circle cx="62" cy="56" r="1.2" fill="#1F2E38"/><circle cx="66" cy="56" r="1.2" fill="#1F2E38"/><circle cx="70" cy="56" r="1.2" fill="#1F2E38"/><circle cx="74" cy="56" r="1.2" fill="#1F2E38"/><circle cx="98" cy="56" r="1.2" fill="#1F2E38"/><circle cx="102" cy="56" r="1.2" fill="#1F2E38"/><circle cx="34" cy="60" r="1.2" fill="#1F2E38"/><circle cx="38" cy="60" r="1.2" fill="#1F2E38"/><circle cx="42" cy="60" r="1.2" fill="#1F2E38"/><circle cx="58" cy="60" r="1.2" fill="#1F2E38"/><circle cx="62" cy="60" r="1.2" fill="#1F2E38"/><circle cx="66" cy="60" r="1.2" fill="#1F2E38"/><circle cx="70" cy="60" r="1.2" fill="#1F2E38"/><circle cx="74" cy="60" r="1.2" fill="#1F2E38"/><circle cx="78" cy="60" r="1.2" fill="#1F2E38"/><circle cx="94" cy="60" r="1.2" fill="#1F2E38"/><circle cx="98" cy="60" r="1.2" fill="#1F2E38"/><circle cx="102" cy="60" r="1.2" fill="#1F2E38"/><circle cx="34" cy="64" r="1.2" fill="#1F2E38"/><circle cx="38" cy="64" r="1.2" fill="#1F2E38"/><circle cx="42" cy="64" r="1.2" fill="#1F2E38"/><circle cx="46" cy="64" r="1.2" fill="#1F2E38"/><circle cx="50" cy="64" r="1.2" fill="#1F2E38"/><circle cx="54" cy="64" r="1.2" fill="#1F2E38"/><circle cx="58" cy="64" r="1.2" fill="#1F2E38"/><circle cx="62" cy="64" r="1.2" fill="#1F2E38"/><circle cx="66" cy="64" r="1.2" fill="#1F2E38"/><circle cx="70" cy="64" r="1.2" fill="#1F2E38"/><circle cx="74" cy="64" r="1.2" fill="#1F2E38"/><circle cx="78" cy="64" r="1.2" fill="#1F2E38"/><circle cx="82" cy="64" r="1.2" fill="#1F2E38"/><circle cx="86" cy="64" r="1.2" fill="#1F2E38"/><circle cx="90" cy="64" r="1.2" fill="#1F2E38"/><circle cx="94" cy="64" r="1.2" fill="#1F2E38"/><circle cx="98" cy="64" r="1.2" fill="#1F2E38"/><circle cx="102" cy="64" r="1.2" fill="#1F2E38"/><circle cx="34" cy="68" r="1.2" fill="#1F2E38"/><circle cx="38" cy="68" r="1.2" fill="#1F2E38"/><circle cx="42" cy="68" r="1.2" fill="#1F2E38"/><circle cx="46" cy="68" r="1.2" fill="#1F2E38"/><circle cx="50" cy="68" r="1.2" fill="#1F2E38"/><circle cx="54" cy="68" r="1.2" fill="#1F2E38"/><circle cx="58" cy="68" r="1.2" fill="#1F2E38"/><circle cx="62" cy="68" r="1.2" fill="#1F2E38"/><circle cx="66" cy="68" r="1.2" fill="#1F2E38"/><circle cx="70" cy="68" r="1.2" fill="#1F2E38"/><circle cx="74" cy="68" r="1.2" fill="#1F2E38"/><circle cx="78" cy="68" r="1.2" fill="#1F2E38"/><circle cx="82" cy="68" r="1.2" fill="#1F2E38"/><circle cx="86" cy="68" r="1.2" fill="#1F2E38"/><circle cx="90" cy="68" r="1.2" fill="#1F2E38"/><circle cx="94" cy="68" r="1.2" fill="#1F2E38"/><circle cx="98" cy="68" r="1.2" fill="#1F2E38"/><circle cx="102" cy="68" r="1.2" fill="#1F2E38"/><circle cx="34" cy="72" r="1.2" fill="#1F2E38"/><circle cx="38" cy="72" r="1.2" fill="#1F2E38"/><circle cx="42" cy="72" r="1.2" fill="#1F2E38"/><circle cx="46" cy="72" r="1.2" fill="#1F2E38"/><circle cx="50" cy="72" r="1.2" fill="#1F2E38"/><circle cx="54" cy="72" r="1.75" fill="#FFB7C9"/><circle cx="58" cy="72" r="1.75" fill="#FFB7C9"/><circle cx="62" cy="72" r="1.75" fill="#FFB7C9"/><circle cx="66" cy="72" r="1.75" fill="#FFB7C9"/><circle cx="70" cy="72" r="1.75" fill="#FFB7C9"/><circle cx="74" cy="72" r="1.75" fill="#FFB7C9"/><circle cx="78" cy="72" r="1.75" fill="#FFB7C9"/><circle cx="82" cy="72" r="1.75" fill="#FFB7C9"/><circle cx="86" cy="72" r="1.2" fill="#1F2E38"/><circle cx="90" cy="72" r="1.2" fill="#1F2E38"/><circle cx="94" cy="72" r="1.2" fill="#1F2E38"/><circle cx="98" cy="72" r="1.2" fill="#1F2E38"/><circle cx="102" cy="72" r="1.2" fill="#1F2E38"/><circle cx="34" cy="76" r="1.2" fill="#1F2E38"/><circle cx="38" cy="76" r="1.2" fill="#1F2E38"/><circle cx="42" cy="76" r="1.2" fill="#1F2E38"/><circle cx="46" cy="76" r="1.2" fill="#1F2E38"/><circle cx="50" cy="76" r="1.75" fill="#FFB7C9"/><circle cx="54" cy="76" r="1.75" fill="#FFB7C9"/><circle class="nostril" cx="58" cy="76" r="1.75" fill="#0E1A22"/><circle cx="62" cy="76" r="1.75" fill="#FFB7C9"/><circle cx="66" cy="76" r="1.75" fill="#FFB7C9"/><circle cx="70" cy="76" r="1.75" fill="#FFB7C9"/><circle cx="74" cy="76" r="1.75" fill="#FFB7C9"/><circle class="nostril" cx="78" cy="76" r="1.75" fill="#0E1A22"/><circle cx="82" cy="76" r="1.75" fill="#FFB7C9"/><circle cx="86" cy="76" r="1.75" fill="#FFB7C9"/><circle cx="90" cy="76" r="1.2" fill="#1F2E38"/><circle cx="94" cy="76" r="1.2" fill="#1F2E38"/><circle cx="98" cy="76" r="1.2" fill="#1F2E38"/><circle cx="102" cy="76" r="1.2" fill="#1F2E38"/><circle cx="34" cy="80" r="1.2" fill="#1F2E38"/><circle cx="38" cy="80" r="1.2" fill="#1F2E38"/><circle cx="42" cy="80" r="1.2" fill="#1F2E38"/><circle cx="46" cy="80" r="1.2" fill="#1F2E38"/><circle cx="50" cy="80" r="1.2" fill="#1F2E38"/><circle cx="54" cy="80" r="1.75" fill="#FFB7C9"/><circle cx="58" cy="80" r="1.75" fill="#FFB7C9"/><circle cx="62" cy="80" r="1.75" fill="#FFB7C9"/><circle cx="66" cy="80" r="1.75" fill="#FFB7C9"/><circle cx="70" cy="80" r="1.75" fill="#FFB7C9"/><circle cx="74" cy="80" r="1.75" fill="#FFB7C9"/><circle cx="78" cy="80" r="1.75" fill="#FFB7C9"/><circle cx="82" cy="80" r="1.75" fill="#FFB7C9"/><circle cx="86" cy="80" r="1.2" fill="#1F2E38"/><circle cx="90" cy="80" r="1.2" fill="#1F2E38"/><circle cx="94" cy="80" r="1.2" fill="#1F2E38"/><circle cx="98" cy="80" r="1.2" fill="#1F2E38"/><circle cx="102" cy="80" r="1.2" fill="#1F2E38"/><circle cx="38" cy="84" r="1.2" fill="#1F2E38"/><circle cx="42" cy="84" r="1.2" fill="#1F2E38"/><circle cx="46" cy="84" r="1.2" fill="#1F2E38"/><circle cx="50" cy="84" r="1.2" fill="#1F2E38"/><circle cx="54" cy="84" r="1.75" fill="#FFB7C9"/><circle cx="58" cy="84" r="1.75" fill="#FFB7C9"/><circle cx="62" cy="84" r="1.75" fill="#FFB7C9"/><circle cx="66" cy="84" r="1.75" fill="#FFB7C9"/><circle cx="70" cy="84" r="1.75" fill="#FFB7C9"/><circle cx="74" cy="84" r="1.75" fill="#FFB7C9"/><circle cx="78" cy="84" r="1.75" fill="#FFB7C9"/><circle cx="82" cy="84" r="1.75" fill="#FFB7C9"/><circle cx="86" cy="84" r="1.2" fill="#1F2E38"/><circle cx="90" cy="84" r="1.2" fill="#1F2E38"/><circle cx="94" cy="84" r="1.2" fill="#1F2E38"/><circle cx="98" cy="84" r="1.2" fill="#1F2E38"/><circle cx="42" cy="88" r="1.2" fill="#1F2E38"/><circle cx="46" cy="88" r="1.2" fill="#1F2E38"/><circle cx="50" cy="88" r="1.2" fill="#1F2E38"/><circle cx="54" cy="88" r="1.2" fill="#1F2E38"/><circle cx="58" cy="88" r="1.2" fill="#1F2E38"/><circle cx="62" cy="88" r="1.2" fill="#1F2E38"/><circle cx="66" cy="88" r="1.2" fill="#1F2E38"/><circle cx="70" cy="88" r="1.2" fill="#1F2E38"/><circle cx="74" cy="88" r="1.2" fill="#1F2E38"/><circle cx="78" cy="88" r="1.2" fill="#1F2E38"/><circle cx="82" cy="88" r="1.2" fill="#1F2E38"/><circle cx="86" cy="88" r="1.2" fill="#1F2E38"/><circle cx="90" cy="88" r="1.2" fill="#1F2E38"/><circle cx="94" cy="88" r="1.2" fill="#1F2E38"/><g class="eyes"><circle cx="46" cy="44" r="1.75" fill="#FFFFFF"/><circle cx="50" cy="44" r="1.75" fill="#FFFFFF"/><circle cx="54" cy="44" r="1.75" fill="#FFFFFF"/><circle cx="82" cy="44" r="1.75" fill="#FFFFFF"/><circle cx="86" cy="44" r="1.75" fill="#FFFFFF"/><circle cx="90" cy="44" r="1.75" fill="#FFFFFF"/><circle cx="42" cy="48" r="1.75" fill="#FFFFFF"/><circle cx="46" cy="48" r="1.75" fill="#FFFFFF"/><circle cx="50" cy="48" r="1.75" fill="#FFFFFF"/><circle cx="54" cy="48" r="1.75" fill="#FFFFFF"/><circle cx="58" cy="48" r="1.75" fill="#FFFFFF"/><circle cx="78" cy="48" r="1.75" fill="#FFFFFF"/><circle cx="82" cy="48" r="1.75" fill="#FFFFFF"/><circle cx="86" cy="48" r="1.75" fill="#FFFFFF"/><circle cx="90" cy="48" r="1.75" fill="#FFFFFF"/><circle cx="94" cy="48" r="1.75" fill="#FFFFFF"/><circle cx="42" cy="52" r="1.75" fill="#FFFFFF"/><circle cx="46" cy="52" r="1.75" fill="#FFFFFF"/><circle cx="54" cy="52" r="1.75" fill="#FFFFFF"/><circle cx="58" cy="52" r="1.75" fill="#FFFFFF"/><circle cx="78" cy="52" r="1.75" fill="#FFFFFF"/><circle cx="82" cy="52" r="1.75" fill="#FFFFFF"/><circle cx="90" cy="52" r="1.75" fill="#FFFFFF"/><circle cx="94" cy="52" r="1.75" fill="#FFFFFF"/><circle cx="42" cy="56" r="1.75" fill="#FFFFFF"/><circle cx="46" cy="56" r="1.75" fill="#FFFFFF"/><circle cx="50" cy="56" r="1.75" fill="#FFFFFF"/><circle cx="54" cy="56" r="1.75" fill="#FFFFFF"/><circle cx="58" cy="56" r="1.75" fill="#FFFFFF"/><circle cx="78" cy="56" r="1.75" fill="#FFFFFF"/><circle cx="82" cy="56" r="1.75" fill="#FFFFFF"/><circle cx="86" cy="56" r="1.75" fill="#FFFFFF"/><circle cx="90" cy="56" r="1.75" fill="#FFFFFF"/><circle cx="94" cy="56" r="1.75" fill="#FFFFFF"/><circle cx="46" cy="60" r="1.75" fill="#FFFFFF"/><circle cx="50" cy="60" r="1.75" fill="#FFFFFF"/><circle cx="54" cy="60" r="1.75" fill="#FFFFFF"/><circle cx="82" cy="60" r="1.75" fill="#FFFFFF"/><circle cx="86" cy="60" r="1.75" fill="#FFFFFF"/><circle cx="90" cy="60" r="1.75" fill="#FFFFFF"/><circle cx="50" cy="52" r="1.75" fill="#FFFFFF"/><circle cx="86" cy="52" r="1.75" fill="#FFFFFF"/><g class="pupils"><circle class="pupil" cx="50" cy="52" r="2" fill="#0E1A22"/><circle class="pupil" cx="86" cy="52" r="2" fill="#0E1A22"/></g></g></svg><!--/mark-->
   </button>
   <p class="moo">moo.</p>
-  <p class="legal">&copy; 2026 mooboard</p>
+  <p class="foot-links"><a href="/support/">Support</a><a href="/privacy/">Privacy</a></p>
+  <p class="legal">&copy; 2026 mooboard co.</p>
+  <p class="credit">Weather data: <a href="https://api.met.no/">MET Norway</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>)</p>
 </footer>
 
 <div class="moo-pop" id="moo-pop" aria-hidden="true">moo</div>
@@ -244,7 +264,7 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
   <button class="pl" id="pl-next" type="button" aria-label="Next track">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 6.3v11.4a.8.8 0 0 0 1.2.7l8.6-5.7a.8.8 0 0 0 0-1.4L6.7 5.6a.8.8 0 0 0-1.2.7z"/><rect x="16.2" y="5.5" width="3" height="13" rx="1.2"/></svg>
   </button>
-  <button class="pl pl-mute" id="pl-mute" type="button" aria-pressed="false" aria-label="Unmute">
+  <button class="pl pl-mute" id="pl-mute" type="button" aria-pressed="false" aria-label="Sound">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M3.5 9.2h3.8L12 5.4v13.2l-4.7-3.8H3.5z"/><g class="waves"><path d="M15.2 9.4a3.8 3.8 0 0 1 0 5.2"/><path d="M17.9 6.8a7.6 7.6 0 0 1 0 10.4"/></g><g class="x"><path d="M15.5 9.5l5 5M20.5 9.5l-5 5"/></g></svg>
   </button>
 </div>

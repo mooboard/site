@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Phone renditions and posters for the scroll sequences, and 1200 px copies of the tech-card stills.
+"""Phone renditions and posters for the scroll sequences, and a 1200 px copy of the tech-card still.
 
   ~/.pixelwall-build/venv/bin/python tools/renditions.py
 
 For every sequence in renders/manifest.json this writes
   renders/<dir>/960/NNNN.webp   960x540, quality 80  (phones and narrow windows pick these)
   renders/<dir>/poster.webp     480x270, quality 70  (first frame, drawn until the real frames land)
-and records "sizes": [960, <full>] in the manifest. Re-running only writes files that are missing or older than
-their source. Needs Pillow (in the build venv)."""
+and records "sizes": [960, <full>] in the manifest, with "src", a digest of the full-size frames they were made from
+(the still's digest goes under "stills"). Re-running only writes files that are missing or whose source changed (file
+times say nothing after a git checkout), and removes 960 px frames the sequence no longer has. Needs Pillow (in the
+build venv)."""
+import hashlib
 import json
 import os
 import sys
@@ -20,8 +23,12 @@ SMALL = 960
 POSTER = 480
 
 
-def newer(dst, src):
-    return os.path.exists(dst) and os.path.getmtime(dst) >= os.path.getmtime(src)
+def digest(paths):
+    h = hashlib.sha1()
+    for p in paths:
+        with open(p, 'rb') as f:
+            h.update(f.read())
+    return h.hexdigest()[:16]
 
 
 def save(im, w, dst, q):
@@ -30,8 +37,9 @@ def save(im, w, dst, q):
 
 
 def main():
-    man = json.load(open(MAN))
-    written = 0
+    with open(MAN) as f:
+        man = json.load(f)
+    written = removed = 0
     for name, s in man['sequences'].items():
         if not s.get('frames'):
             continue
@@ -39,32 +47,45 @@ def main():
         small = os.path.join(d, str(SMALL))
         os.makedirs(small, exist_ok=True)
         pad, ext = s.get('pad', 4), s.get('ext', 'webp')
-        for i in range(1, s['frames'] + 1):
-            fn = str(i).zfill(pad) + '.' + ext
-            src, dst = os.path.join(d, fn), os.path.join(small, fn)
-            if not newer(dst, src):
-                save(Image.open(src).convert('RGB'), SMALL, dst, 80)
+        names = [str(i).zfill(pad) + '.' + ext for i in range(1, s['frames'] + 1)]
+        src = digest(os.path.join(d, fn) for fn in names)
+        same = s.get('src') == src
+        for fn in names:
+            dst = os.path.join(small, fn)
+            if not (same and os.path.exists(dst)):
+                save(Image.open(os.path.join(d, fn)).convert('RGB'), SMALL, dst, 80)
                 written += 1
-        first = os.path.join(d, '1'.zfill(pad) + '.' + ext)
+        # frames left over from a longer render
+        for fn in os.listdir(small):
+            if fn not in names:
+                os.remove(os.path.join(small, fn))
+                removed += 1
         poster = os.path.join(d, 'poster.webp')
-        if not newer(poster, first):
-            save(Image.open(first).convert('RGB'), POSTER, poster, 70)
+        if not (same and os.path.exists(poster)):
+            save(Image.open(os.path.join(d, names[0])).convert('RGB'), POSTER, poster, 70)
             written += 1
         s['sizes'] = [SMALL, s['width']]
         s['poster'] = 'poster.webp'
-        total = sum(os.path.getsize(os.path.join(small, f)) for f in os.listdir(small))
-        print('%s: %d frames at %d px, %d KB (full %d KB)' % (name, s['frames'], SMALL, total // 1024,
-              sum(os.path.getsize(os.path.join(d, f)) for f in os.listdir(d) if f.endswith('.' + ext)) // 1024))
-    # the two tech-card stills get a 1200 px copy for the srcset (they show at most ~700 css px wide)
+        s['src'] = src
+        print('%s: %d frames at %d px, %d KB (full %d KB)' % (name, s['frames'], SMALL,
+              sum(os.path.getsize(os.path.join(small, fn)) for fn in names) // 1024,
+              sum(os.path.getsize(os.path.join(d, fn)) for fn in names) // 1024))
+    # the tech-card still gets a 1200 px copy for the srcset (it shows at most ~700 css px wide)
     stills = os.path.join(ROOT, 'renders', 'stills')
-    for name in ('closeup-led', 'bottom-cable'):
+    done = man.setdefault('stills', {})
+    for name in ('bottom-cable',):
         src, dst = os.path.join(stills, name + '.webp'), os.path.join(stills, name + '-1200.webp')
-        if not newer(dst, src):
+        dig = digest([src])
+        if not (done.get(name) == dig and os.path.exists(dst)):
             save(Image.open(src).convert('RGB'), 1200, dst, 82)
             written += 1
-    json.dump(man, open(MAN, 'w'), indent=2)
-    open(MAN, 'a').write('\n')
-    print('wrote', written, 'files')
+        done[name] = dig
+    tmp = MAN + '.tmp'
+    with open(tmp, 'w') as f:
+        json.dump(man, f, indent=2)
+        f.write('\n')
+    os.replace(tmp, MAN)
+    print('wrote', written, 'files, removed', removed)
     return 0
 
 

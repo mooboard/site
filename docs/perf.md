@@ -13,11 +13,14 @@ Network domain, JS heap, and frame intervals from `requestAnimationFrame` while 
 and colours sequences are scrubbed (a synthesized wheel or touch scroll through the pinned section), and in the tiles
 section. `Performance.getMetrics` adds style-recalc, layout and script time for each recording window.
 
-Two profiles: desktop 1440x900 with no throttling, and phone 390x844 at dpr 3 with touch, 4x CPU throttle and
-Lighthouse's "slow 4G" network (1.6 Mbps down, 150 ms RTT). The GPU in headless was Metal on an M4, so raster and
-compositor cost does not show in these numbers; the main-thread numbers do. The server was `tools/serve.py`, a
-threaded static server with gzip for text, because the plain `http.server` preview sends CSS and JS uncompressed and
-GitHub Pages does not. It is HTTP/1.1 while Pages is HTTP/2, which matters for one decision below (font preloads).
+Two profiles: desktop 1440x900 with no throttling, and phone 390x844 at dpr 3 with touch, 4x CPU throttle and a slow
+4G network at Lighthouse's simulated figures (1.6 Mbps down, 150 ms RTT) applied as DevTools throttling, which is
+lighter than Lighthouse's own DevTools slow 4G and DevTools' Slow 4G preset (562.5 ms RTT, 0.9x the throughput). The
+GPU in headless was Metal on an M4, so raster and compositor cost does not show in these numbers; the main-thread
+numbers do. The server was `tools/serve.py`, a threaded static server with gzip for text, because the plain
+`http.server` preview sends CSS and JS uncompressed and GitHub Pages does not. For these runs it spoke HTTP/1.0, one
+connection per request (it speaks HTTP/1.1 with keep-alive since), while Pages is HTTP/2, which matters for one
+decision below (font preloads).
 
 ```
 # preview servers: the working tree and a worktree of the old commit
@@ -35,6 +38,15 @@ $P tools/perf.py --cpu --profile desktop    # top self-time functions, navigatio
 $P tools/perf.py --quick --profile phone    # load-only numbers, for quick A/B
 $P tools/perf.py --shots /tmp/shots --label after && $P tools/perf.py --compare /tmp/shots before after
 ```
+
+Two corrections to every phone run in this file (found in review, 2026-10-06). perf.py counted a request's bytes only
+once it had finished, and on the throttled phone the two radio previews the page fetches at load (the song that plays
+and the one after it, 1095 and 1061 KB in the desktop runs, which finished them) were still downloading at load + 3 s
+and at load + 12 s. The phone's transfers at those two points count them as 0 KB, so a phone that stays on the page
+fetches about 2.1 MB more than they show. And the "Console errors" rows and the checks count the page's own error
+events only (uncaught errors, rejections, failed resources), not everything the DevTools console shows. perf.py now
+counts bytes as they arrive, lists the requests still loading, and also reports the console's errors and 4xx/5xx
+responses. The tables keep the numbers as they were recorded.
 
 ## Before and after
 
@@ -84,9 +96,10 @@ Reading the table:
 - "Load event" before was 40 s on the phone because the 120 hero frames and the five radio previews were requested
   before `load` fired, and `new Image()` requests started before load hold the event back. The cow's "loading" eyes
   ran the whole time. Everything that waits for load (the sequence fill, `ST.refresh`) now happens at 3.5 s.
-- The transfer at load + 3 s is what a visitor pays before touching the page. The 1324 KB at load + 12 s on the phone
-  is the same plus the hero frames filling in (every 8th frame first, the rest 5 s after load or on the first scroll,
-  whichever comes first), plus the first radio preview.
+- The transfer at load + 3 s is what a visitor pays before touching the page, apart from the two radio previews still
+  downloading on the phone (about 2.1 MB, see the corrections above). The 1324 KB at load + 12 s on the phone is the
+  same plus the hero frames filling in (every 8th frame first, the rest 5 s after load or on the first scroll,
+  whichever comes first), again without the two previews.
 - The full-scroll payload on the phone is the 960 px frame set (hero 1.1 MB, colours 1.4 MB, room 1.5 MB) plus one
   preview per song played (about 1 MB each on Apple's CDN). Renders alone: 9.9 MB before, 4.0 MB after.
 - The hero-board "script" time on the phone depends on which scene the board is in and whether a scene transition
@@ -97,9 +110,9 @@ Reading the table:
   of the scrub, and the section background transition repaints while the frame colour changes. It meets the
   "no worse than 30 fps" bar; the next step would be dropping the blurred strip, which is a visual decision.
 
-Targets from the brief: phone initial transfer under 1 MB and under 40 requests before scrolling (491 KB, 44
-requests: 7 scripts, 4 fonts, 18 frames, the rest is html, css, svg, json, one cover; the first radio preview is
-the biggest single item and is discussed below), LCP under 2.5 s throttled (0.49 s), no long task over 100 ms after
+Targets from the brief: phone initial transfer under 1 MB and under 40 requests before scrolling (not met: 44
+requests, among them 7 scripts, 4 fonts, 18 frames, one cover and the two radio previews, and 491 KB plus about 2.1 MB
+for the previews, the biggest items, discussed below), LCP under 2.5 s throttled (0.49 s), no long task over 100 ms after
 load (none), 60 fps hero scrub and board on desktop (yes), at least 30 fps on the 4x phone (52 to 60), render
 payload over a full phone scroll under 5 MB (4.0 MB).
 
@@ -126,7 +139,7 @@ payload over a full phone scroll under 5 MB (4.0 MB).
    fontTools); Silkscreen and Noto Sans Devanagari 600 are Google's own woff2 files (OFL). GSAP, ScrollTrigger and
    Lenis are served from `js/vendor/` instead of jsdelivr: no third connection on the critical path. Font preloads
    were tried and dropped: on the throttled phone they moved FCP from 520 to 700 ms because they compete with the
-   stylesheet for the 1.6 Mbps (HTTP/1.1 locally; HTTP/2 on Pages would soften this), and with `font-display: swap`
+   stylesheet for the 1.6 Mbps (HTTP/1.0 locally, HTTP/2 on Pages would soften this), and with `font-display: swap`
    the fonts never gate LCP anyway.
 4. **Boards** (`js/board.js`, `js/main.js`). The 20 tile and app-strip boards are built when they come within two
    viewports, one per animation frame (twenty at once was a 100 ms task mid-scroll), and run at 30 fps with their own
@@ -164,9 +177,9 @@ Measured and left alone:
 - Until a sequence's frames arrive, the 480 px poster is drawn in their place (previously the full first frame was
   fetched at startup for every sequence). On a slow connection this is visible for a moment in the Story section if
   the visitor scrolls there within the first seconds.
-- The first radio preview (about 1 MB) is still fetched at load so the sound is there the moment the visitor
-  unmutes, exactly as before. Loading it on unmute instead would bring the phone's initial transfer to about 400 KB
-  with a short buffering wait after the tap; that is a behaviour change and is left for the owner.
+- The first two radio previews (the song that plays and the next one, about 1 MB each) are still fetched at load so
+  the sound is there the moment the visitor unmutes, as before. Loading them on unmute instead would save a phone
+  about 2.1 MB at the cost of a short buffering wait after the tap. That is a behavior change and is left for the owner.
 - Fredoka and Nunito are now served as variable fonts instanced from the brand TTFs rather than Google's static
   instances; same designs and weights, built from the same sources.
 

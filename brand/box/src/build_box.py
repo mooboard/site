@@ -2,8 +2,8 @@
 """MooBoard retail mailer box: dieline + face artwork generator.
 
 All units are millimetres. Run: python3 build_box.py
-Writes ../box-dieline.svg, ../faces/*.svg and src/*.html wrappers used for the PDF,
-the flats PNG and the 3D mockup (rendered with headless Chrome by render.sh).
+Writes ../box-dieline.svg, ../faces/*.svg and src/dieline-print.html, the page render.sh prints to the PDF.
+build_views.py writes the flats and mockup pages, and render.sh renders them.
 """
 import base64, math, os, re
 
@@ -21,11 +21,12 @@ TAB = 6.0                         # lock tab depth
 EAR = 72.0                        # ear (dust flap) length on front and back walls
 DUST = 55.0                       # lid dust flap depth
 BLEED = 3.0
+SAFE = 4.0                        # small art keeps this far from a fold
 
 # ---------------------------------------------------------------- palette
 SKY, DEEP, INK, MIST, CREAM, PINK = '#77EDD7', '#0E6B5E', '#0E1A22', '#E9FBF7', '#F5E9D6', '#FFB7C9'
-SKY_HI = '#56CDE6'
-FRAMES = [('Black', '#17191C'), ('White', '#F5F3EF'), ('Orange', '#FF7A21'), ('Teal', '#77EDD7')]
+SKY_HI = '#62D3BF'
+FRAMES = [('Mint Glow', '#77EDD7'), ('Sunset', '#FF7A21'), ('Midnight', '#17191C'), ('Moonlight', '#F5F3EF')]
 UNLIT, PANEL = '#1B1920', '#0A0A0D'
 WARM, WARM_HALO, MARIGOLD = '#FFF3E2', '#FFD49A', '#FFB81C'
 
@@ -35,7 +36,8 @@ def _inner(path):
     return re.sub(r'^.*?<svg[^>]*>|</svg>\s*$', '', s, flags=re.S).strip()
 
 WORD = {c: _inner(os.path.join(BRAND, f'wordmark-{c}.svg')) for c in ('deep', 'white', 'sky', 'black')}
-MARK = {c: _inner(os.path.join(BRAND, f'mark-{c}.svg')) for c in ('sky', 'black', 'white', 'orange')}
+MARK = {c: _inner(os.path.join(BRAND, f'mark-{c}.svg')) for c in ('teal', 'black', 'white', 'orange')}
+MARK_W, MARK_H = map(float, re.search(r'viewBox="0 0 (\S+) (\S+)"', open(os.path.join(BRAND, 'mark-teal.svg')).read()).groups())
 
 def font_css():
     def b64(f):
@@ -47,24 +49,20 @@ def font_css():
             ".nr{font-family:'Nunito';font-weight:600}"
             ".tab{font-variant-numeric:tabular-nums}") % (b64('Fredoka-SemiBold.ttf'), b64('Nunito.ttf'))
 
-def mark(x, y, h, c='sky'):
-    w = h * 136 / 112
-    return f'<svg x="{x:.2f}" y="{y:.2f}" width="{w:.2f}" height="{h:.2f}" viewBox="0 0 136 112">{MARK[c]}</svg>'
+def mark(x, y, h, c='teal'):
+    w = h * MARK_W / MARK_H
+    return f'<svg x="{x:.2f}" y="{y:.2f}" width="{w:.2f}" height="{h:.2f}" viewBox="0 0 {MARK_W:g} {MARK_H:g}">{MARK[c]}</svg>'
 
 def word(x, y, h, c='deep'):
     w = h * 4483 / 775
     return f'<svg x="{x:.2f}" y="{y:.2f}" width="{w:.2f}" height="{h:.2f}" viewBox="0 0 4483 775">{WORD[c]}</svg>'
 
-def lockup_size(mh):
-    wh = mh * 0.6
-    return mh * 136 / 112 + 0.35 * mh + wh * 4483 / 775, mh
-
-def lockup(x, y, mh, wc='deep', mc='sky'):
+def lockup(x, y, mh, wc='deep', mc='teal'):
     """Mark left of wordmark. Returns (svg, width). y is the top of the mark box."""
     wh = mh * 0.6
-    mw = mh * 136 / 112
+    mw = mh * MARK_W / MARK_H
     gap = 0.35 * mh
-    wy = y + mh * 60 / 112 - wh * 0.635
+    wy = y + mh * 60 / MARK_H - wh * 0.635
     return mark(x, y, mh, mc) + word(x + mw + gap, wy, wh, wc), mw + gap + wh * 4483 / 775
 
 def text(x, y, s, size, cls='nu', fill=INK, anchor='start', extra=''):
@@ -179,9 +177,6 @@ def dots_field(w, h, color, pitch=4.0, r=0.7, uid='df', opacity=1.0):
 
 def moo_led(x, y, pitch, color, halo=None, uid='ml'):
     """'moo' spelled in 5x7-ish LED dots."""
-    glyphs = {
-        'm': ["        ", "## ## ", "# # # #", "# # # #", "# # # #", "#  #  #", "#  #  #"],
-    }
     m = ["         ", "         ", "#### ### ", "#  ##  # ", "#  #   # ", "#  #   # ", "#  #   # "]
     o = ["     ", "     ", " ### ", "#   #", "#   #", "#   #", " ### "]
     pts = []
@@ -208,10 +203,10 @@ def face_lid():
     s = [f'<rect x="-3" y="-3" width="{w+6}" height="{h+6}" fill="{SKY}"/>']
     # soft cast shadow (vector: stacked translucent rounded rects)
     for i, (d, o) in enumerate([(5, .05), (3.5, .06), (2.2, .07), (1.2, .08)]):
-        s.append(f'<rect x="{bx - d + 1:.2f}" y="{by - d + 3.5:.2f}" width="{518.6 + 2*d - 2:.2f}" height="{134.6 + 2*d:.2f}" rx="{3 + d}" fill="#06414D" opacity="{o}"/>')
+        s.append(f'<rect x="{bx - d + 1:.2f}" y="{by - d + 3.5:.2f}" width="{518.6 + 2*d - 2:.2f}" height="{134.6 + 2*d:.2f}" rx="{3 + d}" fill="{DEEP}" opacity="{o}"/>')
     s.append(board(bx, by, uid='lid'))
-    s.append(text(w - bx, h - 2.6, 'actual size', 3.2, 'nu', DEEP, 'end', 'letter-spacing="0.35"'))
-    s.append(mark(bx - 0.5, h - 10.4, 8.4, 'white'))
+    s.append(text(w - bx, h - SAFE, 'actual size', 3.2, 'nu', DEEP, 'end', 'letter-spacing="0.35"'))
+    s.append(mark(bx - 0.5, h - SAFE - 8.1, 8.4, 'white'))
     return w, h, ''.join(s)
 
 def swatches(x, y, d, label_color, box_color, tick=None):
@@ -220,11 +215,11 @@ def swatches(x, y, d, label_color, box_color, tick=None):
     pitch = d * 1.9
     for i, (name, hexc) in enumerate(FRAMES):
         cx = x + i * pitch + d / 2
-        if name == 'Teal':
-            s.append(f'<circle cx="{cx:.2f}" cy="{y + d/2:.2f}" r="{d/2:.2f}" fill="#77EDD7" fill-opacity="0.75" stroke="#FFFFFF" stroke-width="0.6"/>')
+        if name == 'Mint Glow':
+            s.append(f'<circle cx="{cx:.2f}" cy="{y + d/2:.2f}" r="{d/2:.2f}" fill="{hexc}" fill-opacity="0.75" stroke="{label_color}" stroke-width="0.6"/>')
             s.append(f'<circle cx="{cx - d*0.14:.2f}" cy="{y + d*0.36:.2f}" r="{d*0.16:.2f}" fill="#FFFFFF" opacity="0.55"/>')
         else:
-            stroke = ' stroke="#FFFFFF" stroke-width="0.6"' if name != 'White' else f' stroke="{label_color}" stroke-opacity=".25" stroke-width="0.4"'
+            stroke = ' stroke="#FFFFFF" stroke-width="0.6"' if name != 'Moonlight' else f' stroke="{label_color}" stroke-opacity=".25" stroke-width="0.4"'
             s.append(f'<circle cx="{cx:.2f}" cy="{y + d/2:.2f}" r="{d/2:.2f}" fill="{hexc}"{stroke}/>')
         s.append(text(cx, y + d + 4.6, name, 3.4, 'nu', label_color, 'middle'))
         bs = 6.0
@@ -254,7 +249,7 @@ def face_side(which):
     s.append(dots_field(w, h, SKY_HI, uid=f'dfS{which}', r=0.8))
     if which == 'left':
         s.append(f'<rect x="12" y="10" width="{w-24}" height="40" rx="12" fill="{SKY}"/>')
-        s.append(mark((w - 36 * 136 / 112) / 2, 5, 36, 'white'))
+        s.append(mark((w - 36 * MARK_W / MARK_H) / 2, 5, 36, 'white'))
         s.append(word((w - 9 * 4483 / 775) / 2, 43, 9, 'white'))
     else:
         s.append(f'<rect x="10" y="7" width="{w-20}" height="46" rx="12" fill="{SKY}"/>')
@@ -279,7 +274,7 @@ def face_back_wall():
     # centre: made by + placeholder
     cx = w / 2
     s.append(f'<rect x="{cx - 90}" y="5" width="180" height="50" rx="12" fill="{SKY}"/>')
-    s.append(text(cx, 16, 'Designed by mooboard', 5.2, 'fd', '#FFFFFF', 'middle'))
+    s.append(text(cx, 16, 'Designed by mooboard', 5.2, 'fd', DEEP, 'middle'))
     s.append(f'<rect x="{cx - 82}" y="22" width="164" height="28" rx="3" fill="#FFFFFF" fill-opacity=".45" stroke="{INK}" stroke-width="0.4" stroke-dasharray="1.6 1.1"/>')
     s.append(text(cx, 31.5, 'PLACEHOLDER: company name and address', 3.6, 'nu', '#B3261E', 'middle'))
     s.append(text(cx, 38.5, 'country of origin, model number,', 3.0, 'nr', INK, 'middle'))
@@ -288,9 +283,9 @@ def face_back_wall():
     rx = w - 22
     s.append(f'<rect x="{rx - 70}" y="5" width="80" height="50" rx="12" fill="{SKY}"/>')
     s.append(icon('Recycle', rx - 20, 9, 20, INK, 1.6))
-    s.append(text(rx, 38, 'mooboard.com', 4.4, 'nu', INK, 'end'))
+    s.append(text(rx, 38, 'mooboard.co', 4.4, 'nu', INK, 'end'))
     s.append(text(rx, 44.5, 'Recycle the box', 3.2, 'nr', INK, 'end'))
-    s.append(text(rx, 53, 'moo.', 5.0, 'fd', '#FFFFFF', 'end'))
+    s.append(text(rx, 53, 'moo.', 5.0, 'fd', DEEP, 'end'))
     return w, h, ''.join(s)
 
 def face_bottom():
@@ -326,7 +321,7 @@ def face_bottom():
         xx += bw + rnd.choice([0.5, 0.5, 1.0, 1.5])
     s.append(text(bx + 50, 135, 'PLACEHOLDER: UPC / EAN', 3.0, 'nu', '#B3261E', 'middle'))
     s.append(text(bx + 50, 140.5, 'replace with the real code', 2.4, 'nr', INK, 'middle'))
-    lk, lw = lockup(0, 0, 22, 'white', 'sky')
+    lk, lw = lockup(0, 0, 22, 'white', 'teal')
     s.append(f'<g transform="translate({w - 23 - lw:.2f},31)">{lk}</g>')
     return w, h, ''.join(s)
 
@@ -349,12 +344,8 @@ def face_inside_lid():
     mo, mw = moo_led(0, 0, 6, PINK, PINK, uid='ilm')
     s.append(f'<g transform="translate({bx + (bw - mw) / 2 + 3:.2f},{by + 18:.2f})">{mo}</g>')
     # the mark, big, peeking from the lower left
-    s.append(mark(bx - 138, h - 104, 110, 'sky'))
+    s.append(mark(bx - 138, h - 104, 106, 'teal'))
     s.append(text(bx + bw, by + bh + 16, 'Hello from the herd.', 8.0, 'fd', DEEP, 'end'))
-    return w, h, ''.join(s)
-
-def face_inner_wall(w, h, uid):
-    s = [f'<rect x="-3" y="-3" width="{w+6}" height="{h+6}" fill="{CREAM}"/>']
     return w, h, ''.join(s)
 
 FACE_FUNCS = {
@@ -398,8 +389,6 @@ def cut_outline():
     R += [(X + L / 2, yEnd)]
     mirror = lambda p: (2 * X + L - p[0], p[1])
     Lside = [mirror(p) for p in reversed(R)]
-    # tuck flap across the top (left to right), rounded corners handled in path building
-    pts = Lside + [(X + 2, yLid)]
     d = 'M%.2f %.2f ' % R[0]
     d += ' '.join('L%.2f %.2f' % p for p in R[1:])
     d += ' ' + ' '.join('L%.2f %.2f' % p for p in Lside[1:])
@@ -412,10 +401,11 @@ def cut_extras():
     """Internal cuts: thumb notch and lock slots."""
     cx = X + L / 2
     d = f'M{cx - 18:.2f} {yFin:.2f} A18 11 0 0 0 {cx + 18:.2f} {yFin:.2f} A18 11 0 0 0 {cx - 18:.2f} {yFin:.2f} Z '
+    # each slot takes its tab at the root, 0.5 mm clear each side
     for tx in (X + L / 4, X + 3 * L / 4):
-        d += f'M{tx - 20:.2f} {yFront - 5:.2f} h40 v2.2 h-40 Z '
+        d += f'M{tx - 24.5:.2f} {yFront - 5:.2f} h49 v2.2 h-49 Z '
     for sx in (X + 3, X + L - 5.2):
-        d += f'M{sx:.2f} {yBot + W / 2 - 18:.2f} v36 h2.2 v-36 Z '
+        d += f'M{sx:.2f} {yBot + W / 2 - 22.5:.2f} v45 h2.2 v-45 Z '
     return d
 
 def fold_lines():
@@ -431,16 +421,16 @@ def fold_lines():
     ]
     return ''.join(f'M{a:.2f} {b:.2f}L{c:.2f} {d:.2f}' for a, b, c, d in segs)
 
-# face placement on the outside print: (face, x, y, rotation) ; rotation about the panel
+# face placement on the outside print: (face, x, y, rotation, bleed) ; rotation about the panel, bleed past its top and bottom cuts
 def placements():
     xr = X + L
     return [
-        ('lid', X, yLid, 180),
-        ('back-wall', X, yBack, 0),
-        ('bottom', X, yBot, 0),
-        ('front', X, yFront, 180),
-        ('left', X - H, yBot, -90),
-        ('right', xr, yBot, 90),
+        ('lid', X, yLid, 180, 0),
+        ('back-wall', X, yBack, 0, 0),
+        ('bottom', X, yBot, 0, 0),
+        ('front', X, yFront, 180, 0),
+        ('left', X - H, yBot, -90, BLEED),
+        ('right', xr, yBot, 90, BLEED),
     ]
 
 def place(face_svg, fw, fh, x, y, rot):
@@ -459,7 +449,7 @@ def dieline_sheet(inside=False, ox=0.0):
     """One print side of the blank. inside=True draws the reverse side (mirrored)."""
     cut = cut_outline()
     mir = f'translate({FLAT_W:.2f},0) scale(-1,1)' if inside else ''
-    s = [f'<g transform="translate({ox:.2f},0)">' if not inside else f'<g transform="translate({ox:.2f},0)">']
+    s = [f'<g transform="translate({ox:.2f},0)">']
     g_open = f'<g transform="{mir}">' if inside else '<g>'
     # the ground with bleed
     ground = WHITE_KRAFT if inside else SKY
@@ -469,7 +459,11 @@ def dieline_sheet(inside=False, ox=0.0):
                  f'<path d="{cut}" fill="{ground}" stroke="{ground}" stroke-width="{2*BLEED}" stroke-linejoin="round"/></g>')
         fw, fh, art = face_inside_lid()
         # lid on the reverse: mirrored x position, upright (tuck at the top)
-        s.append(f'<clipPath id="clipIL"><rect x="{FLAT_W - X - L - BLEED:.2f}" y="{yLid - TUCK - BLEED:.2f}" width="{L + 2*BLEED}" height="{W + TUCK + BLEED}"/></clipPath>')
+        lx = FLAT_W - X - L
+        # bleed only past the short cuts at the lid's corners, never over the dust flap folds
+        corners = ''.join(f'<rect x="{cx:.2f}" y="{cy:.2f}" width="{BLEED}" height="{ch}"/>'
+                          for cx in (lx - BLEED, lx + L) for cy, ch in ((yLid - BLEED, 4 + BLEED), (yBack - 4, 4)))
+        s.append(f'<clipPath id="clipIL"><rect x="{lx:.2f}" y="{yLid - TUCK - BLEED:.2f}" width="{L}" height="{W + TUCK + BLEED}"/>{corners}</clipPath>')
         s.append(f'<g clip-path="url(#clipIL)">{place(art, fw, fh, FLAT_W - X - L, yLid, 0)}'
                  f'<rect x="{FLAT_W - X - L:.2f}" y="{yT - BLEED:.2f}" width="{L}" height="{TUCK + BLEED}" fill="{CREAM}"/>'
                  f'{text(FLAT_W - X - L / 2, yT + 30, "moo.", 12, "fd", DEEP, "middle")}</g>')
@@ -480,11 +474,14 @@ def dieline_sheet(inside=False, ox=0.0):
         s.append(f'<rect x="{X - H - HI - TAB - BLEED:.2f}" y="{yBot - 1:.2f}" width="{HI + TAB + BLEED}" height="{W + 2}" fill="{CREAM}"/>')
         s.append(f'<rect x="{X + L + H:.2f}" y="{yBot - 1:.2f}" width="{HI + TAB + BLEED}" height="{W + 2}" fill="{CREAM}"/>')
         s.append(f'<g transform="translate({X + L / 2:.2f},{yFin + HI / 2 + 4:.2f})">{text(0, 0, "hi.", 10, "fd", DEEP, "middle")}</g>')
-        # tuck flap reads as the lid's front edge
-        s.append(f'<g transform="translate({X + L / 2:.2f},{yT + 26:.2f}) rotate(180)">{text(0, 0, "open here", 5, "fd", "#FFFFFF", "middle")}</g>')
-        for name, x, y, rot in placements():
+        # tuck flap reads as the lid's front edge, in the thumb notch once closed
+        s.append(f'<g transform="translate({X + L / 2:.2f},{yLid - SAFE - 4:.2f}) rotate(180)">{text(0, 0, "open here", 5, "fd", INK, "middle")}</g>')
+        for name, x, y, rot, b in placements():
             fw, fh, art = FACE_FUNCS[name]()
-            s.append(place(art, fw, fh, x, y, rot))
+            # each face is clipped to its own panel so its bleed never paints across a fold
+            pw, ph = (fh, fw) if rot in (90, -90) else (fw, fh)
+            s.append(f'<clipPath id="clip-{name}"><rect x="{x:.2f}" y="{y - b:.2f}" width="{pw}" height="{ph + 2*b}"/></clipPath>')
+            s.append(f'<g clip-path="url(#clip-{name})">{place(art, fw, fh, x, y, rot)}</g>')
     s.append('</g>')
     # technical layers
     s.append(g_open)
@@ -540,14 +537,13 @@ def build_dieline():
     # dimensions on the outside sheet
     dy = yEnd + TAB + 12
     s.append(dimension(X, dy, X + L, dy, f'L {L:.0f}'))
-    s.append(dimension(X - 8, yBot, X - 8, yBot + W, f'W {W:.0f}', vertical=True) if False else '')
     s.append(dimension(X + L + H + HI + TAB + 10, yBot, X + L + H + HI + TAB + 10, yBot + W, f'W {W:.0f}', vertical=True))
     s.append(dimension(X + L + H + HI + TAB + 10, yFront, X + L + H + HI + TAB + 10, yFin, f'H {H:.0f}', vertical=True))
     # legend
     ly = FLAT_H + 8
     s.append(f'<line x1="{M}" y1="{ly - 4}" x2="{SW - M}" y2="{ly - 4}" stroke="#DDD" stroke-width="0.4"/>')
     lx = M
-    s.append(mark(lx, ly + 6, 30, 'sky'))
+    s.append(mark(lx, ly + 6, 30, 'teal'))
     s.append(word(lx + 44, ly + 12, 14, 'deep'))
     s.append(text(lx + 44, ly + 40, 'Mailer box, roll end front tuck (FEFCO 0427 style)', 6, 'nu', INK))
     s.append(text(lx + 44, ly + 50, 'Draft 1, 2026-09-29. Scale 1:1, units mm.', 5, 'nr', '#555'))
@@ -567,7 +563,7 @@ def build_dieline():
         f'Inside  {L:.0f} x {W:.0f} x {H:.0f} mm',
         'Product  518.6 x 134.6 x 44 mm, ~13 mm clearance each side',
         'Board  E flute, 1.5 mm, white outside, kraft or white inside',
-        'Print  outside CMYK + inside 1 colour area (lid)',
+        'Print  outside CMYK + inside CMYK (lid area)',
         'Insert  moulded pulp or folded E flute cradle, 3 mm pad under the board,',
         '             13 mm accessory layer on top (cable, screw bag, quick-start card)',
     ]
