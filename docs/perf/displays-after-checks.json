@@ -1,0 +1,154 @@
+[
+ {
+  "overflow": false,
+  "overflowers": [
+   "DIV.dotfield",
+   "DIV.hero-glow",
+   "LI",
+   "DIV.bezel",
+   "DIV.led"
+  ],
+  "badge": true,
+  "badgeText": "Special Edition",
+  "hasFrames": true,
+  "chips": 7,
+  "syllables": "kit-chen",
+  "hero": true,
+  "colorsFirst": "teal",
+  "form": "That email looks off.",
+  "errors": [],
+  "colorsCarousel": [
+   [
+    "teal",
+    51,
+    339,
+    390,
+    484
+   ],
+   [
+    "black",
+    51,
+    339,
+    390,
+    484
+   ]
+  ],
+  "reducedSeqFrames": 0,
+  "reducedNoAnim": true,
+  "width": 390
+ },
+ {
+  "overflow": false,
+  "overflowers": [
+   "DIV.dotfield",
+   "DIV.hero-glow",
+   "LI",
+   "DIV.bezel",
+   "DIV.led"
+  ],
+  "badge": true,
+  "badgeText": "Special Edition",
+  "hasFrames": true,
+  "chips": 7,
+  "syllables": "kit-chen",
+  "hero": true,
+  "colorsFirst": "teal",
+  "form": "That email looks off.",
+  "errors": [],
+  "colorsCarousel": [
+   [
+    "teal",
+    56,
+    374,
+    430,
+    492
+   ],
+   [
+    "black",
+    56,
+    374,
+    430,
+    492
+   ]
+  ],
+  "reducedSeqFrames": 0,
+  "reducedNoAnim": true,
+  "width": 430
+ },
+ {
+  "overflow": false,
+  "overflowers": [
+   "DIV.dotfield",
+   "DIV.hero-glow",
+   "LI",
+   "DIV.bezel",
+   "DIV.led"
+  ],
+  "badge": true,
+  "badgeText": "Special Edition",
+  "hasFrames": true,
+  "chips": 7,
+  "syllables": "kit-chen",
+  "hero": true,
+  "colorsFirst": "teal",
+  "form": "That email looks off.",
+  "errors": [],
+  "colorsCarousel": [
+   [
+    "teal",
+    161,
+    607,
+    768,
+    560
+   ],
+   [
+    "black",
+    161,
+    607,
+    768,
+    560
+   ]
+  ],
+  "reducedSeqFrames": 0,
+  "reducedNoAnim": true,
+  "width": 768
+ },
+ {
+  "overflow": false,
+  "overflowers": [
+   "DIV.dotfield",
+   "DIV.hero-glow",
+   "LI",
+   "DIV.bezel",
+   "DIV.led"
+  ],
+  "badge": true,
+  "badgeText": "Special Edition",
+  "hasFrames": true,
+  "chips": 7,
+  "syllables": "kit-chen",
+  "hero": true,
+  "colorsFirst": "teal",
+  "form": "That email looks off.",
+  "errors": [],
+  "colorsCarousel": [
+   [
+    "teal",
+    310,
+    1130,
+    1440,
+    900
+   ],
+   [
+    "black",
+    310,
+    1130,
+    1440,
+    900
+   ]
+  ],
+  "reducedSeqFrames": 0,
+  "reducedNoAnim": true,
+  "width": 1440
+ }
+]

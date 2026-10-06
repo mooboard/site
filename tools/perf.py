@@ -419,7 +419,7 @@ def checks(url, out):
 
 
 SHOT_SPOTS = [('top', None, 0), ('story50', '#story', 1.3), ('story100', '#story', 2.55), ('colors0', '#colors', 0), ('colors50', '#colors', 1.1),
-              ('colors100', '#colors', 2.15), ('room0', '#room', 0), ('shows', '#shows', .4), ('apps', '#apps', 0), ('tech', '#tech', 0), ('waitlist', '#waitlist', 0)]
+              ('colors100', '#colors', 2.15), ('viewer', '#viewer', 0), ('shows', '#shows', .4), ('apps', '#apps', 0), ('tech', '#tech', 0), ('waitlist', '#waitlist', 0)]
 
 
 def shots(url, outdir, label):

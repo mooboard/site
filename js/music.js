@@ -19,12 +19,39 @@
     if (t && t.src && live && audioEl.duration) return audioEl.duration;
     return t ? (t.synth && t.synth.length) || (timings[t.id] && timings[t.id].length) || (t.src ? 30 : 25) : 25;
   }
+  // The media clock. An audio element's currentTime moves in steps a few audio buffers long: on Chrome it reads up to
+  // ~40 ms behind the sound it is sending out. Every reading is behind the true clock, never ahead, so the clock is the
+  // upper envelope of the readings over the last half second, run on from there by the frame clock.
+  var env = [], envEl = null;
+  function mediaPos() {
+    var a = audioEl, now = performance.now(), ct = a.currentTime;
+    if (a !== envEl || a.paused || a.seeking || a.readyState < 3) { env.length = 0; envEl = a; return ct; }
+    env.push([now, ct * 1000 - now * (a.playbackRate || 1)]);
+    while (env.length > 2 && now - env[0][0] > 500) env.shift();
+    var off = -1e15;
+    for (var i = 0; i < env.length; i++) off = Math.max(off, env[i][1]);
+    var p = (off + now * (a.playbackRate || 1)) / 1000;
+    return p - ct > .12 ? ct : p;   // a stall or a seek: trust the reading
+  }
   function pos() {
     var t = track();
     // browsers won't start audio before the visitor taps, so until then the radio runs on the clock
-    if (t && t.src && live) return audioEl.currentTime;
+    if (t && t.src && live) return mediaPos();
     return playing ? (performance.now() - startAt) / 1000 : pausedPos;
   }
+  // Where the lyrics are. Ahead of the media clock by LEAD: measured on these five previews (2026-10-06), the site's
+  // word times (Whisper's onsets) sit a median 200 ms after the LRC's line times; with the sweep's own pre-roll (a
+  // word's first column lights a sixth of the way through it, about 50 ms) a 150 ms lead puts the first word of a line
+  // alight about when the LRC says the line starts, and a frame's drawing is in it. And behind it by the output's
+  // latency while the sound is on: what the visitor hears left the element that long ago (none while muted).
+  var LEAD = .15, outLatency = 0;
+  function readLatency() {
+    if (!ac) return;
+    var l = (ac.outputLatency || 0) + (ac.baseLatency || 0);
+    if (l >= 0 && l < 1) outLatency = l;
+  }
+  setInterval(function () { if (!muted) readLatency(); }, 5000);
+  function lyricPos() { return pos() + LEAD - (muted ? 0 : outLatency); }
 
   /* ---------- radio lyrics: lrclib.net LRC, shifted onto the preview, words placed on Whisper's onsets ---------- */
   var LRC_API = 'https://lrclib.net/api/get/';
@@ -54,7 +81,10 @@
       for (var k = 0; k < rest; k++) got.push(from + step * (had ? k + 1 : k));
       var words = parts.map(function (w, k) { return { text: w, t0: got[k] }; });
       words.forEach(function (w, k) { w.t1 = words[k + 1] ? words[k + 1].t0 : Math.min(l.t1, w.t0 + .7); });
-      L.push({ text: l.text, words: words, t0: words[0].t0, t1: l.t1 });
+      // the line comes up at its LRC time where that is earlier than its first word (as the board does with a timed
+      // sheet), but never before the line before it has started its last word
+      var prevW = L.length ? L[L.length - 1].words : null, floor = prevW ? prevW[prevW.length - 1].t0 + .2 : -1e9;
+      L.push({ text: l.text, words: words, t0: Math.max(floor, Math.min(l.t0, words[0].t0)), t1: l.t1 });
     });
     L.forEach(function (l, i) { if (L[i + 1]) l.t1 = Math.min(l.t1, L[i + 1].t0); });
     return { title: t.title, artist: t.artist, length: len, lines: L };
@@ -261,7 +291,8 @@
     Object.keys(els).forEach(function (k) { els[k].muted = m; });
     if (m) stopSynth();
     else {
-      ensureAudio();
+      // the unmute tap lets an AudioContext run, and a running one reports the output's latency
+      if (ensureAudio() && ac.resume) ac.resume().then(readLatency, readLatency);
       if (playing && t && !t.src) startSynth(pos());
       // the unmute tap is what lets the preview start: join the clock where the lyrics are
       if (playing && t && t.src && !live) { var p = pos(); try { audioEl.currentTime = p; } catch (e) { /* ignore */ } ramp(audioEl, 1, .5); start(audioEl); }
@@ -357,7 +388,8 @@
     muted: function () { return muted; },
     track: track,
     timing: function () { var t = track(); return t && timings[t.id]; },
-    pos: pos, length: length,
+    pos: pos, lyricPos: lyricPos, length: length,
+    sync: function () { return { lead: LEAD, outputLatency: muted ? 0 : outLatency }; },
     play: resume, pause: pause, next: next,
     mute: function () { setMuted(true); }, unmute: function () { setMuted(false); }
   };

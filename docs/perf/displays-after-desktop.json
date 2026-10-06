@@ -1,0 +1,347 @@
+{
+ "profile": "desktop",
+ "url": "http://127.0.0.1:18768/",
+ "when": "2026-10-06 01:57",
+ "nav_to_load_s": 0.1,
+ "initial": {
+  "requests": 40,
+  "kb": 2843,
+  "renders_kb": 336,
+  "seq_frames": 16,
+  "failed": [],
+  "by_type": {
+   "audio-ssl.itunes.apple.com audio/x-m4p": [
+    2,
+    2156
+   ],
+   "127.0.0.1:18768 image/webp": [
+    16,
+    335
+   ],
+   "127.0.0.1:18768 text/javascript": [
+    7,
+    156
+   ],
+   "is1-ssl.mzstatic.com image/jpeg": [
+    1,
+    88
+   ],
+   "127.0.0.1:18768 font/woff2": [
+    2,
+    73
+   ],
+   "lrclib.net application/json": [
+    5,
+    12
+   ],
+   "127.0.0.1:18768 text/css": [
+    1,
+    10
+   ],
+   "127.0.0.1:18768 text/html": [
+    1,
+    6
+   ],
+   "127.0.0.1:18768 image/svg+xml": [
+    2,
+    4
+   ],
+   "127.0.0.1:18768 application/json": [
+    2,
+    3
+   ],
+   "api.open-meteo.com application/json": [
+    1,
+    1
+   ]
+  },
+  "top": [
+   [
+    "6-a6ed-cb4c-f353-23310a7ae9a8/mzaf_10593596652344378873.plus.aac.p.m4a",
+    1095
+   ],
+   [
+    "cb5-5154-2f40-44cc-7cd53003fb08/mzaf_153836703705843645.plus.aac.p.m4a",
+    1061
+   ],
+   [
+    "5389bf4-8074-06c3-11ee-655b5453af68/21UM1IM25046.rgb.jpg/600x600bb.jpg",
+    88
+   ],
+   [
+    "http://127.0.0.1:18768/js/board.js",
+    81
+   ],
+   [
+    "http://127.0.0.1:18768/fonts/nunito.woff2",
+    45
+   ],
+   [
+    "http://127.0.0.1:18768/renders/seq-hero/0065.webp",
+    36
+   ]
+  ]
+ },
+ "lcp_ms": 112,
+ "lcp_el": "SPAN.w",
+ "fcp_ms": 112,
+ "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+ "idle": {
+  "requests": 146,
+  "kb": 5305,
+  "renders_kb": 2710,
+  "seq_frames": 121,
+  "failed": [],
+  "by_type": {
+   "127.0.0.1:18768 image/webp": [
+    121,
+    2709
+   ],
+   "audio-ssl.itunes.apple.com audio/x-m4p": [
+    2,
+    2156
+   ],
+   "is1-ssl.mzstatic.com image/jpeg": [
+    2,
+    175
+   ],
+   "127.0.0.1:18768 text/javascript": [
+    7,
+    156
+   ],
+   "127.0.0.1:18768 font/woff2": [
+    2,
+    73
+   ],
+   "lrclib.net application/json": [
+    5,
+    12
+   ],
+   "127.0.0.1:18768 text/css": [
+    1,
+    10
+   ],
+   "127.0.0.1:18768 text/html": [
+    1,
+    6
+   ],
+   "127.0.0.1:18768 image/svg+xml": [
+    2,
+    4
+   ],
+   "127.0.0.1:18768 application/json": [
+    2,
+    3
+   ],
+   "api.open-meteo.com application/json": [
+    1,
+    1
+   ]
+  },
+  "top": [
+   [
+    "6-a6ed-cb4c-f353-23310a7ae9a8/mzaf_10593596652344378873.plus.aac.p.m4a",
+    1095
+   ],
+   [
+    "cb5-5154-2f40-44cc-7cd53003fb08/mzaf_153836703705843645.plus.aac.p.m4a",
+    1061
+   ],
+   [
+    "5389bf4-8074-06c3-11ee-655b5453af68/21UM1IM25046.rgb.jpg/600x600bb.jpg",
+    88
+   ],
+   [
+    "5389bf4-8074-06c3-11ee-655b5453af68/21UM1IM25046.rgb.jpg/600x600bb.jpg",
+    87
+   ],
+   [
+    "http://127.0.0.1:18768/js/board.js",
+    81
+   ],
+   [
+    "http://127.0.0.1:18768/fonts/nunito.woff2",
+    45
+   ]
+  ]
+ },
+ "load_ms": 57,
+ "dcl_ms": 56,
+ "tbt_ms": 0,
+ "long_tasks": {
+  "count": 0,
+  "max_ms": 0,
+  "after_load": [],
+  "max_after_load_ms": 0,
+  "max_total_ms": 0
+ },
+ "heap_mb": 6.7,
+ "errors": [],
+ "board_frames": {
+  "frames": 182,
+  "elapsed": 3016,
+  "avg": 16.6,
+  "p50": 16.7,
+  "p95": 16.7,
+  "max": 16.8,
+  "over17": 0,
+  "over34": 0,
+  "fps": 60.3,
+  "longMs": 0,
+  "renderMs": 31,
+  "styleRecalcs": 193,
+  "styleMs": 58,
+  "layouts": 19,
+  "layoutMs": 1,
+  "scriptMs": 39,
+  "taskMs": 185
+ },
+ "hero_scrub": {
+  "frames": 211,
+  "elapsed": 3511,
+  "avg": 16.6,
+  "p50": 16.7,
+  "p95": 16.7,
+  "max": 16.8,
+  "over17": 0,
+  "over34": 0,
+  "fps": 60.1,
+  "longMs": 0,
+  "renderMs": 19,
+  "styleRecalcs": 483,
+  "styleMs": 19,
+  "layouts": 26,
+  "layoutMs": 2,
+  "scriptMs": 44,
+  "taskMs": 493,
+  "seq_frames_loaded": 121
+ },
+ "colors_scrub": {
+  "frames": 211,
+  "elapsed": 3512,
+  "avg": 16.6,
+  "p50": 16.7,
+  "p95": 16.8,
+  "max": 16.8,
+  "over17": 0,
+  "over34": 0,
+  "fps": 60.1,
+  "longMs": 0,
+  "renderMs": 57,
+  "styleRecalcs": 294,
+  "styleMs": 37,
+  "layouts": 47,
+  "layoutMs": 3,
+  "scriptMs": 81,
+  "taskMs": 297
+ },
+ "tiles_frames": {
+  "frames": 181,
+  "elapsed": 3010,
+  "avg": 16.6,
+  "p50": 16.7,
+  "p95": 16.7,
+  "max": 16.8,
+  "over17": 0,
+  "over34": 0,
+  "fps": 60.1,
+  "longMs": 0,
+  "renderMs": 60,
+  "styleRecalcs": 192,
+  "styleMs": 28,
+  "layouts": 19,
+  "layoutMs": 2,
+  "scriptMs": 73,
+  "taskMs": 269,
+  "boards_rendering": 9
+ },
+ "full_scroll": {
+  "requests": 155,
+  "kb": 6703,
+  "renders_kb": 2805,
+  "seq_frames": 121,
+  "failed": [],
+  "by_type": {
+   "audio-ssl.itunes.apple.com audio/x-m4p": [
+    3,
+    3149
+   ],
+   "127.0.0.1:18768 image/webp": [
+    123,
+    2804
+   ],
+   "is1-ssl.mzstatic.com image/jpeg": [
+    4,
+    251
+   ],
+   "127.0.0.1:18768 text/javascript": [
+    8,
+    171
+   ],
+   "cdn.jsdelivr.net application/javascript": [
+    2,
+    170
+   ],
+   "127.0.0.1:18768 font/woff2": [
+    2,
+    73
+   ],
+   "127.0.0.1:18768 application/gzip": [
+    1,
+    50
+   ],
+   "lrclib.net application/json": [
+    5,
+    12
+   ],
+   "127.0.0.1:18768 text/css": [
+    1,
+    10
+   ],
+   "127.0.0.1:18768 text/html": [
+    1,
+    6
+   ],
+   "127.0.0.1:18768 image/svg+xml": [
+    2,
+    4
+   ],
+   "127.0.0.1:18768 application/json": [
+    2,
+    3
+   ],
+   "api.open-meteo.com application/json": [
+    1,
+    1
+   ]
+  },
+  "top": [
+   [
+    "6-a6ed-cb4c-f353-23310a7ae9a8/mzaf_10593596652344378873.plus.aac.p.m4a",
+    1095
+   ],
+   [
+    "cb5-5154-2f40-44cc-7cd53003fb08/mzaf_153836703705843645.plus.aac.p.m4a",
+    1061
+   ],
+   [
+    "07-8bb8-48a5-3823-4879af8c1fa1/mzaf_7132282105712143357.plus.aac.p.m4a",
+    993
+   ],
+   [
+    "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+    168
+   ],
+   [
+    "5389bf4-8074-06c3-11ee-655b5453af68/21UM1IM25046.rgb.jpg/600x600bb.jpg",
+    88
+   ],
+   [
+    "5389bf4-8074-06c3-11ee-655b5453af68/21UM1IM25046.rgb.jpg/600x600bb.jpg",
+    87
+   ]
+  ]
+ },
+ "heap_mb_end": 19.6,
+ "scrollWidth_overflow": false
+}
