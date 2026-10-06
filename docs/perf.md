@@ -206,3 +206,64 @@ Measured with the same harness and profiles: before at 58b6619 (the commit above
 - `perf.py --checks`: the colors pan probe is replaced by a carousel probe (opens on Mint Glow, centred and fully in
   view; picking Midnight centres Midnight; the section keeps its height), and the badge probe looks for the hero tag
   as an absolutely placed overlay. All four widths pass, with no overflow and no errors.
+
+## Transitions (2026-10-05)
+
+The live boards now change scenes with the board's own transitions (`TRANS` in `js/board.js`, the firmware's
+`pw::composeTransition` sums, matched LED for LED against frames from the firmware's native build): each change
+shuffles between Sparkle, Pixel rain, Ripple, Mosaic, Curtain, Melt, Glitch, TV and Cow wink, at the site's 0.7 s
+(`opts.transition` pins one, `opts.shuffle` narrows the set). Ported from the `transitions` branch (621a99a) onto the
+displays renderer: the two frames are the board's float buffers rounded to bytes the way the display path rounds
+them, into three byte arrays each board makes on its first change and keeps; the composed frame goes back through
+the dark edge ring and the dots like any other. The faces tile's own changes use the same Sparkle.
+
+Measured with the hero forced through a scene change every 800 ms for 8 s (so it is mid-transition most of the time)
+and steady for 4 s, board render time from the perf hook (`tools/perf.py`'s `__rec` and `__hookBoards`):
+
+| Profile | Before (Sparkle only) | After the port | After the glyph cache |
+|---|---|---|---|
+| Desktop, transitions | 59.9 fps, p95 16.8 ms, max 33.4 ms, boards 220 ms | 59.9 fps, p95 16.8 ms, max 33.3 ms, boards 219 ms | 60.0 fps, p95 16.7 ms, max 16.8 ms, boards 97 ms |
+| Phone (4x CPU), steady 4 s | 57.4 fps, max 167 ms, long tasks 179 ms, boards 350 ms | 57.1 fps, max 200 ms, long tasks 202 ms, boards 395 ms | 60.1 fps, max 16.8 ms, no long task, boards 154 ms |
+| Phone (4x CPU), transitions | 57.3 fps, max 150 ms, long tasks 434 ms, boards 793 ms | 56.9 fps, max 167 ms, long tasks 476 ms, boards 919 ms | 60.0 fps, max 16.8 ms, no long task, boards 363 ms |
+
+The long tasks were not the transitions: a CPU profile put them in the text engine's first draw of each new glyph.
+The lyric face's SF Pro is drawn at 28 px and box-filtered to its size (Chrome cannot reach SF Pro Rounded), and every
+new size of a letter drew and read back the whole 320 x 112 scratch canvas again. The 28 px raster of each letter is
+now kept and filtered to every size from it, and a glyph reads back only the box it can reach. The glyphs come out
+the same, byte for byte (a fingerprint over every role at 14 caps and 60 characters matches before and after).
+
+## 2026-10-06: the boards as the board draws them, and the 3D viewer
+
+Same harness and profiles. Before is the `displays` branch as this work started (2026-10-05, before the board
+rewrite and before main's review polish came in); after is this work. Results are in
+`docs/perf/displays-{before,after}-{desktop,phone}.json` and `displays-after-checks.json`.
+
+| Metric | Phone before | Phone after | Desktop before | Desktop after |
+|---|---|---|---|---|
+| FCP / LCP | 512 / 512 ms | 512 / 512 ms | 544 / 544 ms | 112 / 112 ms |
+| Total blocking time | 52 ms | 33 ms | 0 ms | 0 ms |
+| Longest task | 92 ms | 83 ms | 0 ms | 0 ms |
+| Requests / transfer, load + 3 s | 44 / 491 KB | 40 / 491 KB | 44 / 2843 KB | 40 / 2843 KB |
+| Transfer after a full scroll (renders) | 7610 KB (4042 KB) | 5072 KB (1175 KB) | 13529 KB (9873 KB) | 6703 KB (2805 KB) |
+| JS heap after load / after a full scroll | 8.7 / 5.2 MB | 6.5 / 16.8 MB | 8.3 / 12.2 MB | 6.7 / 19.6 MB |
+| Hero board animating (3 s) | 60.2 fps | 60.3 fps | 60.1 fps | 60.3 fps |
+| Hero sequence scrub (3.5 s) | 60.0 fps, max 33.3 ms | 59.9 fps, max 33.4 ms | 60.2 fps | 60.1 fps |
+| Colors section scroll (3.5 s) | 52.7 fps, max 33.4 ms | 60.1 fps, max 16.8 ms | 60.1 fps | 60.1 fps |
+| Tiles section (3 s) | 60.3 fps | 59.2 fps, max 33.4 ms | 60.1 fps | 60.1 fps |
+| Console errors | 0 | 0 | 0 | 0 |
+
+- The room and its render sequence are gone (1.5 MB of frames on a phone's full scroll). The 3D viewer in its place
+  fetches nothing at load. Once the visitor is a viewport away it fetches the poster (74 KB on desktop, 21 KB on a
+  phone), `js/viewer.mjs` (14 KB, 5 KB gzipped), three.js 0.170.0 from jsDelivr (172 KB brotli), its
+  RoomEnvironment (1.5 KB) and the model, gzipped (51 KB; the plain .glb, 179 KB, only where the browser can't unpack
+  it). Its setup runs as idle-time steps: on the 4x phone that is one 57 ms task (three.js's compile) where it was
+  113 + 60 ms in one go. It draws only while on screen, its face at 30 fps.
+- The heap after a full scroll carries the viewer (three.js, the model, its textures) and the boards' glyph caches.
+- The Devanagari web font (54 KB) no longer loads: the Prayer face draws the board's own pre-rendered strips (4.7 KB
+  inside board.js). board.js itself is 82 KB gzipped (it was 21 KB) with the board's lyric wheel, all 17 faces,
+  the prayer strips and the transitions, so the load's transfer comes out the same.
+- The story's scroll canvas is no bigger than its frames need (at most 1.25x the frame's width): 2000 x 1250 on a
+  1440 px window at 2x, where it was 2880 x 1800, so each scrub step fills about half the pixels. Its live board
+  draws only while it shows (from frame 68, where the camera settles) and its opacity is written only when it changes.
+- `perf.py --checks` at 390, 430, 768 and 1440 px: no console errors, no horizontal overflow, 7 chips, `kit-chen`,
+  the carousel opens on Mint Glow and centres Midnight, reduced motion fetches no sequence frame.
