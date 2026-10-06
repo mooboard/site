@@ -65,7 +65,6 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .mark .ear-l { transform-origin: 36px 45px; }
 .mark .ear-r { transform-origin: 100px 45px; }
 .mark .eyes { transform-box: view-box; transform-origin: 68px 52px; animation: blink 5s infinite; }
-.mark .pupils { transition: transform .12s steps(1); }
 .logo:hover .ear-l, .foot-mark:hover .ear-l, .mark.wiggle .ear-l, .mark.happy .ear-l { animation: earL .9s ease-in-out; }
 .logo:hover .ear-r, .foot-mark:hover .ear-r, .mark.wiggle .ear-r, .mark.happy .ear-r { animation: earR .9s ease-in-out; }
 @keyframes earL { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(16deg); } 40% { transform: rotate(-10deg); } 60% { transform: rotate(10deg); } 80% { transform: rotate(-4deg); } }

@@ -250,23 +250,52 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       if (t < 3) requestAnimationFrame(frame); else cv.remove();
     })(t0);
   }
-  // pupils look toward the pointer, one dot at a time
-  if (matchMedia('(pointer: fine)').matches && !REDUCED) {
-    var raf = 0, px = 0, py = 0;
-    addEventListener('pointermove', function (e) {
-      px = e.clientX; py = e.clientY;
-      if (raf) return;
-      raf = requestAnimationFrame(function () {
-        raf = 0;
-        $$('.mark .pupils').forEach(function (p) {
-          var r = p.ownerSVGElement.getBoundingClientRect();
-          if (r.bottom < 0 || r.top > innerHeight) return;
-          var dx = px - (r.left + r.width / 2), dy = py - (r.top + r.height * .45), d = Math.hypot(dx, dy) || 1;
-          var sx = d < 30 ? 0 : Math.round(dx / d * 1.3), sy = d < 30 ? 0 : Math.round(dy / d * 1.3);
-          p.style.transform = 'translate(' + 4 * Math.max(-1, Math.min(1, sx)) + 'px,' + 4 * Math.max(-1, Math.min(1, sy)) + 'px)';
-        });
-      });
+  // pupils: each eye has one dark LED that looks toward the pointer, in any of the eight directions around the
+  // eye's centre (or straight ahead when the pointer is on the eye itself). It stays on the mark's 4-unit LED grid,
+  // one step out, so the white ring of the eye always shows around it. Touch screens: it follows a finger, and
+  // glances around on its own now and then.
+  var PUPILS = $$('.mark .pupil').map(function (c) { return { el: c, cx: +c.getAttribute('cx'), cy: +c.getAttribute('cy'), at: '0,0' }; });
+  function pupilTo(p, ox, oy) {
+    var k = ox + ',' + oy;
+    if (k === p.at) return;
+    p.at = k; p.el.setAttribute('cx', p.cx + ox * 4); p.el.setAttribute('cy', p.cy + oy * 4);
+  }
+  function lookAt(x, y) {
+    PUPILS.forEach(function (p) {
+      var svg = p.el.ownerSVGElement, m = svg.getScreenCTM();
+      if (!m) return;
+      var r = svg.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return;
+      // the eye's centre on screen, and how far away the pointer is in LED steps
+      var ex = m.a * p.cx + m.c * p.cy + m.e, ey = m.b * p.cx + m.d * p.cy + m.f, step = 4 * Math.hypot(m.a, m.b);
+      var dx = x - ex, dy = y - ey;
+      if (Math.hypot(dx, dy) < step * 2) return pupilTo(p, 0, 0);
+      var s = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * Math.PI / 4;
+      pupilTo(p, Math.round(Math.cos(s)), Math.round(Math.sin(s)));
     });
+  }
+  if (!REDUCED && PUPILS.length) {
+    var eyeRaf = 0, eyeX = 0, eyeY = 0;
+    var aim = function (x, y) {
+      eyeX = x; eyeY = y;
+      if (!eyeRaf) eyeRaf = requestAnimationFrame(function () { eyeRaf = 0; lookAt(eyeX, eyeY); });
+    };
+    if (matchMedia('(pointer: fine)').matches) addEventListener('pointermove', function (e) { aim(e.clientX, e.clientY); });
+    else {
+      var touchedAt = 0, glanceT = 0;
+      var touch = function (x, y) { touchedAt = performance.now(); aim(x, y); };
+      addEventListener('pointerdown', function (e) { touch(e.clientX, e.clientY); }, { passive: true });
+      addEventListener('touchmove', function (e) { var t = e.touches[0]; if (t) touch(t.clientX, t.clientY); }, { passive: true });
+      // idle: every few seconds both eyes glance somewhere (a side more often than up or down) or look back ahead
+      var glance = function () {
+        glanceT = setTimeout(glance, 1800 + Math.random() * 2600);
+        if (document.hidden || performance.now() - touchedAt < 2500) return;
+        if (Math.random() < .4) { PUPILS.forEach(function (p) { pupilTo(p, 0, 0); }); return; }
+        var dirs = [[1, 0], [-1, 0], [1, 0], [-1, 0], [1, -1], [-1, -1], [1, 1], [-1, 1], [0, -1], [0, 1]], d = dirs[Math.floor(Math.random() * dirs.length)];
+        PUPILS.forEach(function (p) { pupilTo(p, d[0], d[1]); });
+      };
+      glanceT = setTimeout(glance, 2500);
+    }
   }
 
   /* ---------- music: playlist player, tint, now playing ---------- */

@@ -28,6 +28,13 @@ for el in re.findall(r'<clipPath.*?</clipPath>|<g [^>]*>|</g>|<[^>]+/>', inner, 
     else:
         rest.append(el)
 
+# On the site each eye is whole: a white dot sits under the pupil too, so a pupil that looks away leaves white behind
+# it instead of a dark hole (the hole plus the moved pupil read as a little line). The pupil is drawn a hair bigger
+# than the LED dots so no white fringe shows around it wherever it sits.
+for p in pupils:
+    eyes.append('<circle cx="%g" cy="%g" r="1.75" fill="#FFFFFF"/>' % (num(p, 'cx'), num(p, 'cy')))
+pupils = [re.sub(r'\br="[\d.]+"', 'r="2"', p) for p in pupils]
+
 def build(uid):
     body = ''.join(rest).replace('id="f"', 'id="%s"' % uid).replace('url(#f)', 'url(#%s)' % uid)
     # the eye dots and pupils live inside the screen's clip group, so close it before adding them
