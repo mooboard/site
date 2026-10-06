@@ -201,7 +201,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .colors { background: var(--cbg, #D5F8EF); color: var(--ink); transition: background .8s var(--ease); overflow: hidden;
   padding: clamp(96px, 11vw, 150px) 0 clamp(64px, 8vw, 110px); }
 .colors .big { margin: 0 auto; padding: 0 var(--gut); text-align: center; font-size: clamp(44px, 8vw, 120px); }
-/* --fw: one frame's width; the row starts with the first frame centred and slides one frame plus a gap per step.
+/* --fw: one frame's width; the row starts with the first frame centered and slides one frame plus a gap per step.
    The top padding is the room the Special Edition tag floats in, so the tag never moves anything */
 .frames { --fw: min(820px, 58vw); --fg: clamp(18px, 2.8vw, 44px); margin-top: clamp(14px, 2.6vw, 40px); padding: 56px 0 clamp(40px, 5vw, 64px); touch-action: pan-y; }
 .frames-track { display: flex; align-items: center; gap: var(--fg); width: max-content; margin-left: calc(50% - var(--fw) / 2);

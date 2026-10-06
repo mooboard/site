@@ -161,7 +161,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       pats = {
         // a lit LED: a disc 62% of the pitch with a soft edge
         dot: tile(cd, function (x, m) { var g = x.createRadialGradient(m, m, 0, m, m, cd * .32); g.addColorStop(0, '#fff'); g.addColorStop(.78, '#fff'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, cd, cd); }),
-        // the unlit panel: dark board, grey dots with a faint rim
+        // the unlit panel: dark board, gray dots with a faint rim
         panel: tile(cd, function (x, m) { x.fillStyle = '#141617'; x.fillRect(0, 0, cd, cd); x.fillStyle = '#25292b'; x.beginPath(); x.arc(m, m, cd * .3, 0, 6.3); x.fill(); x.strokeStyle = 'rgba(255,255,255,.06)'; x.lineWidth = Math.max(1, cd * .03); x.beginPath(); x.arc(m, m - cd * .02, cd * .29, 3.6, 5.8); x.stroke(); }),
         // each LED cap catches a little light at its upper left
         sheen: tile(cd, function (x, m) { var g = x.createRadialGradient(m - cd * .1, m - cd * .11, 0, m - cd * .1, m - cd * .11, cd * .16); g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, cd, cd); })
@@ -341,7 +341,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     })(t0);
   }
   // pupils: each eye has one dark LED that looks toward the pointer, in any of the eight directions around the
-  // eye's centre (or straight ahead when the pointer is on the eye itself). It stays on the mark's 4-unit LED grid,
+  // eye's center (or straight ahead when the pointer is on the eye itself). It stays on the mark's 4-unit LED grid,
   // one step out, so the white ring of the eye always shows around it. Touch screens: it follows a finger, and
   // glances around on its own now and then.
   var PUPILS = $$('.mark .pupil').map(function (c) { return { el: c, cx: +c.getAttribute('cx'), cy: +c.getAttribute('cy'), at: '0,0' }; });
@@ -356,7 +356,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       if (!m) return;
       var r = svg.getBoundingClientRect();
       if (r.bottom < 0 || r.top > innerHeight) return;
-      // the eye's centre on screen, and how far away the pointer is in LED steps
+      // the eye's center on screen, and how far away the pointer is in LED steps
       var ex = m.a * p.cx + m.c * p.cy + m.e, ey = m.b * p.cx + m.d * p.cy + m.f, step = 4 * Math.hypot(m.a, m.b);
       var dx = x - ex, dy = y - ey;
       if (Math.hypot(dx, dy) < step * 2) return pupilTo(p, 0, 0);
