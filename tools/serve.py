@@ -7,7 +7,7 @@ import io
 import os
 import sys
 
-TEXT = ('.html', '.css', '.js', '.json', '.svg', '.txt', '.map')
+TEXT = ('.html', '.css', '.js', '.mjs', '.json', '.svg', '.txt', '.map')
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):

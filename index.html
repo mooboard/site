@@ -23,6 +23,7 @@
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="css/site.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
 <script>document.documentElement.classList.add('js');
 if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('error', function (e) { __err.push((e.message || 'load fail') + ' ' + (e.filename || (e.target && (e.target.src || e.target.href)) || '')); }, true); addEventListener('unhandledrejection', function (e) { __err.push('rejection ' + e.reason); }); setTimeout(function () { var o = {}; document.querySelectorAll('main > section, footer').forEach(function (s) { o[s.id || s.className] = Math.round(s.getBoundingClientRect().top + scrollY); }); document.body.setAttribute('data-debug', JSON.stringify({ err: __err, top: o, h: document.documentElement.scrollHeight, w: document.documentElement.scrollWidth })); }, 4000); }</script>
 </head>
@@ -98,7 +99,7 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
 <section class="shows" id="shows">
   <h2 class="big" data-reveal>Shows what<br><em>matters.</em></h2>
   <div class="grid" id="grid">
-    <figure class="tile t-wide" data-scene="faces" data-frame="black"><figcaption>16 clock faces</figcaption></figure>
+    <figure class="tile t-wide" data-scene="faces" data-frame="black"><figcaption>17 clock faces</figcaption></figure>
     <figure class="tile" data-scene="lyrics" data-frame="orange"><figcaption>Lyrics</figcaption></figure>
     <figure class="tile" data-scene="weather" data-frame="white"><figcaption>Weather</figcaption></figure>
     <figure class="tile" data-scene="tv" data-frame="teal"><figcaption>TV</figcaption></figure>
@@ -160,26 +161,25 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
   </div>
 </section>
 
-<section class="room seq" data-seq="room" id="room">
-  <div class="pin">
-    <canvas class="seq-canvas" aria-hidden="true"></canvas>
-    <div class="fallback stills room-stills" aria-hidden="true">
-      <div class="f169">
-        <img class="on" data-place="wall" src="renders/stills/room-wall.webp" alt="" loading="lazy" decoding="async" width="2400" height="1350">
-        <div class="live-over"><div class="led" id="room-live"></div></div>
-      </div>
+<!-- the board in 3D: drag to turn it, pick a frame. js/viewer.mjs (three.js, lazy) draws assets/3d/board.glb with a
+     live board.js face; the poster stands in until it has drawn, and wherever WebGL is missing -->
+<section class="viewer" id="viewer" aria-labelledby="viewer-h">
+  <h2 class="big" id="viewer-h" data-reveal>Take it for a<br><em>spin.</em></h2>
+  <div class="v-stage">
+    <picture><source media="(max-width: 700px)" srcset="renders/stills/viewer-poster-phone.webp"><img class="v-poster" src="renders/stills/viewer-poster.webp" alt="mooboard one in Mint Glow, from the front left, showing the time and the weather" loading="lazy" decoding="async" width="1440" height="662"></picture>
+    <canvas class="v-canvas" tabindex="0" role="img" aria-label="mooboard one in 3D, playing the song that's on. Drag to turn it, pinch to zoom, double-click for a close-up."></canvas>
+    <p class="v-hint" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4"/></svg><span>Drag to turn it</span></p>
+  </div>
+  <div class="v-bar">
+    <div class="v-pick" role="radiogroup" aria-label="Frame color">
+      <button class="cp on" role="radio" aria-checked="true" data-frame="teal"><i></i><span>Mint Glow</span></button>
+      <button class="cp" role="radio" aria-checked="false" data-frame="orange"><i></i><span>Sunset</span></button>
+      <button class="cp" role="radio" aria-checked="false" data-frame="black"><i></i><span>Midnight</span></button>
+      <button class="cp" role="radio" aria-checked="false" data-frame="white"><i></i><span>Moonlight</span></button>
     </div>
-    <div class="fallback scene" aria-hidden="true">
-      <div class="wall"></div>
-      <div class="lamp"><i></i></div>
-      <div class="plant"><i></i><i></i><i></i><i></i><b></b></div>
-      <div class="hang">
-        <div class="bezel" data-frame="white"><div class="led" id="room-board"></div></div>
-      </div>
-      <div class="desk"><div class="mug"></div><div class="books"><i></i><i></i><i></i></div></div>
-    </div>
-    <div class="room-tabs">
-      <button class="rt" id="room-zoom" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><path d="M8 10.5h5"/><path class="zv" d="M10.5 8v5"/></svg><span>On the wall</span></button>
+    <div class="v-acts">
+      <button class="v-btn v-spin" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="v-pause" d="M9 6v12M15 6v12"/><path class="v-play" d="M8 5.5v13l10.5-6.5z"/></svg><span>Pause</span></button>
+      <button class="v-btn v-close" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><path d="M8 10.5h5"/><path class="zv" d="M10.5 8v5"/></svg><span>Close up</span></button>
     </div>
   </div>
 </section>

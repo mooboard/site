@@ -40,8 +40,9 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
 
   // ask the browser for the board fonts so the canvas can use them
   if (document.fonts && document.fonts.load) {
-    ['500 30px Fredoka', '600 30px Fredoka', '700 28px Fredoka', '600 30px "Noto Sans Devanagari"']
-      .forEach(function (f) { document.fonts.load(f, f.indexOf('Devanagari') > -1 ? 'ॐ' : 'A1').catch(function () {}); });
+    // (the Prayer face's Devanagari is pre-rendered, the board's own strips, so no Devanagari font loads)
+    ['500 30px Fredoka', '600 30px Fredoka', '700 28px Fredoka']
+      .forEach(function (f) { document.fonts.load(f, 'A1').catch(function () {}); });
   }
 
   /* ---------- boards ---------- */
@@ -69,10 +70,12 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
 
   function tileGlow(el) { return function (c) { el.style.setProperty('--glow', (c[0] | 0) + ', ' + (c[1] | 0) + ', ' + (c[2] | 0)); }; }
   var boards = { hero: hero };
-  var story = new MB.Board($('#story-board'), { scenes: ['time', 'lyrics', 'weather'], auto: false, minScale: 10, onGlow: tileGlow($('#story')) });
+  // the story's board: once the camera settles it is the board's Cover lyric view of the song that's on (the album art,
+  // the time under it, the lyrics beside); with nothing playing, the next song's cover and its first line, unsung. It
+  // draws only while it shows (storyLive)
+  var storyLive = 1;
+  var story = new MB.Board($('#story-board'), { scenes: ['combo', 'time', 'weather'], auto: false, minScale: 10, onGlow: tileGlow($('#story')), when: function () { return storyLive > 0; } });
   boards.story = story;
-  boards.room = new MB.Board($('#room-board'), { scenes: ['time', 'art', 'weather'], when: function () { return !$('#room').classList.contains('has-stills'); } });
-  boards.roomLive = new MB.Board($('#room-live'), { scenes: ['song', 'time', 'weather'], onGlow: tileGlow($('#room')) });
   boards.wl = new MB.Board($('#wl-board'), { scenes: ['moo', 'time', 'calendar'], onGlow: tileGlow($('#waitlist')) });
 
   // the tiles and the app strip are far below the fold: their boards are built when they come within two
@@ -125,7 +128,8 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     var ghost = li.dataset.bg === 'ghost';
     return '<svg viewBox="0 0 126 126" aria-hidden="true"><defs><linearGradient id="' + id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + bg[1] + '"/><stop offset=".5" stop-color="' + bg[0] + '"/></linearGradient></defs>' +
       '<rect width="126" height="126" rx="30" fill="url(#' + id + ')"' + (ghost ? ' stroke="rgba(255,255,255,.3)" stroke-dasharray="8 7" stroke-width="3"' : '') + '/>' +
-      (ghost ? '' : '<rect x="16" y="16" width="94" height="94" rx="20" fill="#0E1A22"/>') + dots + '</svg>';
+      // the coloured frame 9 units of the 126 (it was 16): a thin rim round the dark tile, the same colours and corners
+      (ghost ? '' : '<rect x="9" y="9" width="108" height="108" rx="23" fill="#0E1A22"/>') + dots + '</svg>';
   }
   var FRAME_OF = { orange: 'orange', white: 'white', black: 'black', teal: 'teal', ghost: 'black' };
   $$('#app-row li').forEach(function (li, n) {
@@ -246,10 +250,14 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     slides.forEach(function (sl) { sl.classList.toggle('on', sl.dataset.frame === f); });
     $$('.cp').forEach(function (c) { c.classList.toggle('on', c.dataset.frame === f); c.setAttribute('aria-checked', c.dataset.frame === f); });
     setRadioTabStop('.color-pick .cp', f);
+    setRadioTabStop('.v-pick .cp', f);
+    if (viewer) viewer.setFrame(f);
     if (fromUser) setHeroFrame(f);
   }
+  var viewer = null;
   $$('.cp').forEach(function (c) { c.addEventListener('click', function () { setColor(FRAMES.indexOf(c.dataset.frame), true); }); });
   bindRadioKeys('.color-pick .cp');
+  bindRadioKeys('.v-pick .cp');
   setColor(0);
   // a sideways swipe or drag steps one frame (the row is touch-action: pan-y, so vertical drags still scroll the page)
   var swipeAt = null;
@@ -262,6 +270,44 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     swiped = true; setTimeout(function () { swiped = false; }, 0);
     setColor(Math.max(0, Math.min(FRAMES.length - 1, colorIdx + (dx < 0 ? 1 : -1))), true);
   });
+  /* ---------- the board in 3D: js/viewer.mjs and three.js load only when the section is a viewport away ---------- */
+  // Until then (and wherever WebGL or the import fails) the poster stands in. The LED face is a board.js board drawn
+  // by the viewer itself: the Cover lyric view (album art, small clock, lyrics) of the song that's on, as on the board
+  (function () {
+    var sec = $('#viewer');
+    if (!sec) return;
+    var cv = $('.v-canvas', sec), spinBtn = $('.v-spin', sec), closeBtn = $('.v-close', sec), hint = $('.v-hint span', sec);
+    if (TOUCH && hint) hint.textContent = 'Swipe to turn it';
+    var started = false;
+    // (a browser that has WebGL but can't make a context fails in the viewer's start and keeps the poster)
+    function gl() { return !!window.WebGLRenderingContext; }
+    function begin() {
+      if (started) return; started = true;
+      if (!gl() || params.has('static')) return;
+      var led = new MB.Board(document.createElement('div'), { scenes: ['combo'], auto: false, external: true, minScale: 8, maxScale: 8, look: { crisp: true } });
+      busy(import(new URL('js/viewer.mjs', document.baseURI).href).then(function (m) {
+        return m.start({
+          canvas: cv, led: led, frame: colorsSec.dataset.frame || 'teal', reduced: REDUCED, model: 'assets/3d/board.glb',
+          onSpin: function (on) { spinBtn.setAttribute('aria-pressed', on); $('span', spinBtn).textContent = on ? 'Pause' : 'Spin'; spinBtn.setAttribute('aria-label', on ? 'Pause the spin' : 'Spin it'); },
+          onClose: function (on) { closeBtn.setAttribute('aria-pressed', on); },
+          onTouch: function () { sec.classList.add('v-touched'); }
+        });
+      }).then(function (v) {
+        viewer = v; sec.classList.add('v-live');
+      }).catch(function (e) { sec.classList.add('v-failed'); if (window.console) console.warn('3D viewer:', e && e.message); }));
+    }
+    spinBtn.addEventListener('click', function () { if (viewer) viewer.setSpin(!viewer.spinning()); });
+    closeBtn.addEventListener('click', function () { if (viewer) viewer.closeUp(!viewer.close()); });
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (e) {
+        if (!e[0].isIntersecting) return;
+        io.disconnect();
+        if (document.readyState === 'complete') begin(); else addEventListener('load', begin);
+      }, { rootMargin: '100% 0px' });
+      io.observe(sec);
+    } else begin();
+  })();
+
   function pulse(el) {
     if (!ANIM || REDUCED) return;
     gsap.fromTo(el, { scale: .97 }, { scale: 1, duration: .6, ease: 'elastic.out(1, .5)' });
@@ -480,20 +526,6 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   var seqs = {};
   addEventListener('resize', function () { Object.keys(seqs).forEach(function (k) { seqs[k].redraw(); }); });
 
-  // room: loads zoomed out (the whole room); the toggle zooms into the wall board and back out
-  var roomZoomed = false, roomTween = null, roomState = { p: 0 };
-  function roomZoom(on) {
-    roomZoomed = on;
-    var btn = $('#room-zoom'), sec = $('#room');
-    btn.setAttribute('aria-pressed', on); sec.classList.toggle('zoomed', on);
-    var sq = seqs.room;
-    if (!sq) return;
-    if (roomTween) roomTween.kill();
-    if (gsap && !REDUCED) roomTween = gsap.to(roomState, { p: on ? 1 : 0, duration: 1.8, ease: 'power2.inOut', onUpdate: function () { sq.set(roomState.p); } });
-    else { roomState.p = on ? 1 : 0; sq.set(roomState.p); }
-  }
-  $('#room-zoom').addEventListener('click', function (e) { e.stopPropagation(); roomZoom(!roomZoomed); });
-  $('#room .pin').addEventListener('click', function () { roomZoom(!roomZoomed); });
 
   /* ---------- motion ---------- */
   function initMotion() {
@@ -553,7 +585,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     }
 
     // story
-    var storySeq = seqs.hero, caps = $$('#story .cap'), bar = $('#story .progress i'), lastScene = 'time';
+    var storySeq = seqs.hero, caps = $$('#story .cap'), bar = $('#story .progress i'), lastScene = 'combo';
     var scr = storySeq && storySeq.spec.screen;
     if (scr) {
       // the live board takes over the rendered LED face once the camera settles
@@ -568,7 +600,10 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
           live.style.left = (r.x + q[0] * r.w) + 'px'; live.style.top = (r.y + q[1] * r.h) + 'px';
           live.style.width = ((q[2] - q[0]) * r.w) + 'px'; live.style.height = ((q[3] - q[1]) * r.h) + 'px';
         }
-        live.style.opacity = Math.max(0, Math.min(1, (j - scr.from + 4) / 8));
+        // over the render's own LED text from the frame the camera settles (manifest screen.from), faded in over 4
+        // frames; written only when it changes, and the board stops drawing while it is hidden
+        var op = Math.max(0, Math.min(1, (j - scr.from + 2) / 4));
+        if (op !== storyLive) { storyLive = op; live.style.opacity = op; }
       };
       storySeq.redraw();
     }
@@ -580,7 +615,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
           var p = self.progress;
           if (storySeq) storySeq.set(p);
           bar.style.transform = 'scaleX(' + p.toFixed(3) + ')';
-          var sc = scr ? 'time' : p < .36 ? 'time' : p < .7 ? 'lyrics' : 'weather';
+          var sc = scr ? 'combo' : p < .36 ? 'time' : p < .7 ? 'combo' : 'weather';
           if (sc !== lastScene) { lastScene = sc; story.go(sc); }
         }
       }
