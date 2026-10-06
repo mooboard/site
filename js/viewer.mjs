@@ -17,7 +17,7 @@ const FINISH = {
 };
 const SPIN = 0.12;                 // rad/s: one turn in about 52 s
 const HOME = { az: -0.42, pol: 1.36 };  // front left, a little above
-const R_FIT = 269;                 // mm: the board's bounding sphere (518.6 x 134.6 x 44)
+const MARGIN = 1.08;               // the camera stands this much past the tightest fit so the board keeps clear of every edge
 
 // ---- the model: a plain glTF 2.0 binary (no extensions, no textures), read without GLTFLoader ------------------
 const COMP = { 5121: Uint8Array, 5123: Uint16Array, 5125: Uint32Array, 5126: Float32Array };
@@ -126,6 +126,13 @@ export async function start(o) {
   await idle();
   const { root, mats } = readGLB(buf);
   scene.add(root);
+  // the bounding sphere round the point the camera circles + no turn or tilt takes the board outside it
+  const box = new THREE.Box3().setFromObject(root), corner = new THREE.Vector3();
+  let radius = 0;
+  for (let i = 0; i < 8; i++) {
+    corner.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z);
+    radius = Math.max(radius, corner.length());
+  }
 
   // the LED face: the live board's dot picture, 8 px per LED; glTF's v runs down, so no flip
   const tex = new THREE.CanvasTexture(led.dots);
@@ -158,9 +165,9 @@ export async function start(o) {
     const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1, aspect = w / h;
     renderer.setSize(w, h, false);
     cam.aspect = aspect;
-    const hHalf = Math.atan(Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * aspect);
-    // the whole board at any angle across the width, and its height with room to spare
-    fitD = Math.max(R_FIT / Math.sin(hHalf) * (aspect < 1.6 ? 1.08 : 1.22), 120 / Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)));
+    const vHalf = THREE.MathUtils.degToRad(cam.fov / 2), hHalf = Math.atan(Math.tan(vHalf) * aspect);
+    // the sphere fits inside the narrower half angle so landscape or portrait the whole board stays in frame at any angle
+    fitD = radius / Math.sin(Math.min(vHalf, hHalf)) * MARGIN;
     cam.updateProjectionMatrix();
     dirty = true;
   }
