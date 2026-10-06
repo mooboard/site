@@ -40,7 +40,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
 
   // ask the browser for the board fonts so the canvas can use them
   if (document.fonts && document.fonts.load) {
-    ['8px Silkscreen', '800 27px Nunito', '900 13px Nunito', '600 30px Fredoka', '700 28px Fredoka', '600 30px "Noto Sans Devanagari"']
+    ['500 30px Fredoka', '600 30px Fredoka', '700 28px Fredoka', '600 30px "Noto Sans Devanagari"']
       .forEach(function (f) { document.fonts.load(f, f.indexOf('Devanagari') > -1 ? 'ॐ' : 'A1').catch(function () {}); });
   }
 
