@@ -4,6 +4,9 @@ gsap.min.js and ScrollTrigger.min.js
 GSAP 3.12.5 (npm gsap@3.12.5) by GreenSock. Copyright 2024, GreenSock. All rights reserved.
 Subject to the terms at https://gsap.com/standard-license, as the header each file keeps says.
 
+three/
+three.js r170 (npm three@0.170.0) by the three.js authors, under the MIT License, in three/LICENSE.
+
 lenis.min.js
 Lenis 1.1.13 (npm lenis@1.1.13) by darkroom.engineering, under the MIT License, copied below from the package.
 
