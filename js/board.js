@@ -1693,7 +1693,7 @@
       label: 'Album art', dur: 7,
       still: function () { var sg = playingSong(); return sg ? sg.tr.id + (sg.playing ? '' : ' paused') : ''; },
       draw: function (f, t, s, dt) {
-        var sg = playingSong(), tr = sg ? sg.tr : { title: 'Night Harbour', artist: 'mooboard' }, accent = sg ? sg.accent : [255, 154, 60];
+        var sg = playingSong(), tr = sg ? sg.tr : { title: 'Night Harbor', artist: 'mooboard' }, accent = sg ? sg.accent : [255, 154, 60];
         var art = sg ? artOf(sg.tr) : null;
         f.fill(BLACK);
         if (art) blitArt(f, art.t30, 30, 1, 1, 1);
@@ -3483,7 +3483,7 @@
         var P = {
           spring: { sky: [[40, 90, 150], [120, 190, 230]], ground: [60, 150, 70], cols: [[255, 170, 200], [255, 255, 255], [255, 210, 90]], fall: .25, word: 'SPRING' },
           summer: { sky: [[30, 110, 210], [140, 210, 250]], ground: [230, 200, 120], cols: [[255, 255, 255]], fall: 0, word: 'SUMMER' },
-          autumn: { sky: [[60, 40, 70], [240, 150, 90]], ground: [110, 60, 30], cols: [[255, 120, 30], [230, 60, 40], [255, 190, 60]], fall: .5, word: 'AUTUMN' },
+          autumn: { sky: [[60, 40, 70], [240, 150, 90]], ground: [110, 60, 30], cols: [[255, 120, 30], [230, 60, 40], [255, 190, 60]], fall: .5, word: 'FALL' },
           winter: { sky: [[14, 24, 60], [60, 90, 150]], ground: [230, 240, 255], cols: [[255, 255, 255]], fall: .6, word: 'WINTER' },
           halloween: { sky: [[20, 10, 40], [70, 30, 80]], ground: [40, 30, 50], cols: [[255, 140, 0]], fall: 0, word: 'HALLOWEEN' },
           holiday: { sky: [[10, 20, 50], [40, 60, 110]], ground: [235, 245, 255], cols: [[255, 255, 255]], fall: .6, word: 'HOLIDAYS' },
