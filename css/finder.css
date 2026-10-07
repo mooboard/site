@@ -29,8 +29,9 @@ a{color:#77EDD7}
 .steps{margin:24px 0 0;font-size:.875rem;color:#7F9792}
 .steps b{display:block;color:#A9BDB8}
 .share{width:1.3em;height:1.3em;vertical-align:-.3em;fill:none;stroke:#77EDD7;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-/* the install the portal leads with after the board's setup + a hint at safari's share button below on an iphone and top right on an ipad */
-.lead__go{margin:0 0 28px}
+/* the install the portal leads with after the board's setup right above the setup guide + a hint at safari's share button below on an iphone and top right on an ipad */
+.lead__go{margin:24px 0 0}
+.lead__go+.foot{margin-top:16px}
 .lead__go .quiet{margin:12px 0 0}
 .tip{position:fixed;z-index:5;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);margin:0;padding:12px 18px;border-radius:16px;background:#15262F;border:1px solid #23404A;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:.875rem;line-height:1.45;color:#A9BDB8;text-align:center}
 .tip b{display:block;color:#fff}

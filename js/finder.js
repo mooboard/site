@@ -37,6 +37,7 @@
   var installLead = false;    // the board's setup sent ?install=1 so the page leads with the install and opens nothing by itself
   var leadHelp = false;       // the lead button was tapped before the browser offered its prompt so it shows the menu step
   var appInstalled = false;   // the browser said the app is installed now
+  var leadGo = null;          // the add to home screen button the page leads with + right above the setup guide
   var retry = null;           // the last list or lookup the page asked for + try again asks for it again
 
   function validCode(c) {
@@ -148,6 +149,7 @@
     setTop(board || null);
     lightUp();
     offerInstall(false);
+    if (onPortal) renderLead();   // the lead button goes with the view's setup guide
   }
   // fn runs on the next key pressed anywhere + once
   function onKey(fn) {
@@ -611,16 +613,16 @@
     if (/iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ipad';
     return /iPhone|iPod/.test(ua) ? 'iphone' : '';
   }
-  // The install the page leads with (the owner: "an add to home screen button that pops up the prompt to add
-  // automatically"). Where the browser offered its prompt, one tap opens it: a browser opens it only from a tap, never
-  // by itself. Chrome offers it only after a first tap and some time on the site, so a tap before then shows its menu
-  // step. Safari on an iPhone or iPad has no prompt a page can open, so a hint points at its Share button instead,
-  // below on an iPhone and top right on an iPad. Nothing once installed.
+  // the install the page leads with as the owner asked + one tap opens the prompt the browser offered and a tap before
+  // it shows the menu step + safari gets a hint at its share button below on an iphone and top right on an ipad + the
+  // button sits right above the setup guide as the owner asked + nothing once installed
   function renderLead() {
     var box = document.getElementById('lead');
     if (!box) return;
     box.textContent = '';
     tipBelow(false);
+    if (leadGo && leadGo.parentNode) leadGo.parentNode.removeChild(leadGo);
+    leadGo = null;
     if (!installLead || appInstalled || installed()) return;
     var apple = installPrompt ? '' : appleDevice();
     if (apple) {
@@ -632,6 +634,8 @@
       return;
     }
     if (!installPrompt && !/Android/.test(navigator.userAgent || '')) return;
+    var foot = viewFoot();
+    if (!foot) return;   // it waits for a view with the setup guide
     var wrap = el('div', 'lead__go');
     wrap.appendChild(button('btn', 'Add to home screen', function () {
       var p = installPrompt;
@@ -645,7 +649,15 @@
       renderLead();
     }));
     if (leadHelp) wrap.appendChild(el('p', 'quiet', 'Tap the ⋮ menu, then Add to Home screen.'));
-    box.appendChild(wrap);
+    view.insertBefore(wrap, foot);
+    leadGo = wrap;
+  }
+  // the setup guide at the foot of the view on screen + null on a view with none
+  function viewFoot() {
+    for (var i = 0; i < view.children.length; i++) {
+      if (view.children[i].className === 'foot') return view.children[i];
+    }
+    return null;
   }
   // room under the page for the hint at the bottom of an iphone screen
   function tipBelow(on) {

@@ -53,6 +53,27 @@ export class El {
     return child;
   }
 
+  get parentNode() {
+    return this.parent;
+  }
+
+  // ref is a child of this element as the dom asks + child goes in just before it
+  insertBefore(child, ref) {
+    const at = this.children.indexOf(ref);
+    if (at < 0) throw new Error('insertBefore: the reference is not a child');
+    child.parent = this;
+    this.children.splice(at, 0, child);
+    return child;
+  }
+
+  removeChild(child) {
+    const at = this.children.indexOf(child);
+    if (at < 0) throw new Error('removeChild: not a child');
+    this.children.splice(at, 1);
+    child.parent = null;
+    return child;
+  }
+
   setAttribute(k, v) {
     this.attrs[k] = String(v);
   }

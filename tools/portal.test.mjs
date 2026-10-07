@@ -302,19 +302,32 @@ test('on an iPhone the share steps show instead, and nothing shows once it runs 
 // the board's setup opens mooboard.co/portal/?install=1 from its Add to home screen button
 const INSTALL = { search: '?install=1' };
 const lead = (page) => page.lead.children;
+// the add to home screen button the portal leads with + in the view right above its setup guide
+const leadGo = (page) => page.view.children.find((e) => e.className === 'lead__go');
+const aboveGuide = (page) => {
+  const kids = page.view.children;
+  const at = kids.indexOf(leadGo(page));
+  return at >= 0 && at + 1 < kids.length && kids[at + 1].className === 'foot' &&
+    kids[at + 1].children[0].textContent === 'Setup guide';
+};
 
-test('the portal page has a place for the install it leads with, under the logo and above the view', () => {
-  assert.match(portal, /<div id="hero" class="hero"><\/div><\/div>\n<div id="lead" class="lead"><\/div>\n<div id="view">/);
+test('the portal page keeps the iPhone hint after the view, where the install it leads with is', () => {
+  assert.match(portal, /<\/noscript><\/div>\n<div id="lead" class="lead"><\/div>\n<div id="install" class="install"><\/div>/);
+  assert.match(portal, /<div id="hero" class="hero"><\/div><\/div>\n<div id="view">/);
 });
 
-test('with ?install=1 the portal leads with Add to home screen, one tap opens the prompt the browser offered, and the address drops the query', async () => {
+test('with ?install=1 the portal leads with Add to home screen right above the setup guide, one tap opens the prompt the browser offered, and the address drops the query', async () => {
   const page = openPortal(nearbyOf([KITCHEN]), INSTALL);
   assert.deepEqual(page.addresses, ['/portal/'], 'so the app starts at the portal and a reload is the everyday portal');
+  assert.equal(leadGo(page), undefined, 'none while it looks: no setup guide yet');
+  await page.settle();
   const e = promptEvent();
   page.fire('beforeinstallprompt', e);
   assert.equal(e.prevented, 1, 'the browser keeps its own banner back');
-  const go = lead(page)[0];
+  const go = leadGo(page);
   assert.equal(go.className, 'lead__go');
+  assert.ok(aboveGuide(page), 'the owner: right above the setup guide button');
+  assert.deepEqual(lead(page), [], 'nothing at the top');
   assert.equal(go.children.length, 1, 'one button and no steps to read');
   const button = go.children[0];
   assert.equal(button.tagName, 'BUTTON');
@@ -325,21 +338,45 @@ test('with ?install=1 the portal leads with Add to home screen, one tap opens th
   await page.settle();
   assert.deepEqual(installBox(page), [], 'the lead has the install, not the foot');
   page.fire('appinstalled');
-  assert.deepEqual(lead(page), [], 'nothing once installed');
+  assert.equal(leadGo(page), undefined, 'nothing once installed');
+  assert.deepEqual(lead(page), []);
 });
 
-test('with ?install=1 before the browser offers its prompt, a tap shows the menu step, and the prompt takes over once offered', () => {
+test('with ?install=1 before the browser offers its prompt, a tap shows the menu step, and the prompt takes over once offered', async () => {
   const page = openPortal(nearbyOf([KITCHEN]), INSTALL);
-  const button = () => lead(page)[0].children[0];
+  await page.settle();
+  const button = () => leadGo(page).children[0];
   assert.equal(button().textContent, 'Add to home screen');
   button().click();
-  assert.equal(lead(page)[0].children[1].className, 'quiet');
-  assert.equal(lead(page)[0].children[1].textContent, 'Tap the ⋮ menu, then Add to Home screen.');
+  assert.equal(leadGo(page).children[1].className, 'quiet');
+  assert.equal(leadGo(page).children[1].textContent, 'Tap the ⋮ menu, then Add to Home screen.');
+  assert.ok(aboveGuide(page), 'still right above the setup guide');
   const e = promptEvent();
   page.fire('beforeinstallprompt', e);
-  assert.equal(lead(page)[0].children.length, 1, 'the step goes once the prompt is there');
+  assert.equal(leadGo(page).children.length, 1, 'the step goes once the prompt is there');
+  assert.equal(page.view.children.filter((c) => c.className === 'lead__go').length, 1, 'one button');
   button().click();
   assert.equal(e.prompted, 1);
+});
+
+test('with ?install=1 the button sits right above the setup guide on every view that has one, and on none without it', async () => {
+  const views = [
+    ['two boards', nearbyOf([BEDROOM, KITCHEN]), 'Pick your mooboard'],
+    ['no board', nearbyOf([]), SAME_WIFI],
+    ['the api down', () => { throw new Error('offline'); }, 'Could not reach mooboard.co'],
+  ];
+  for (const [name, answer, h1] of views) {
+    const page = openPortal(answer, INSTALL);
+    await page.settle();
+    assert.equal(page.h1(), h1, name);
+    assert.ok(aboveGuide(page), name);
+    assert.equal(page.view.children.at(-1).className, 'foot', `${name}: the setup guide stays last`);
+  }
+  const opening = openPortal(nearbyOf([KITCHEN]), INSTALL);
+  await opening.settle();
+  opening.cards()[0].click();
+  assert.equal(opening.h1(), 'Opening Kitchen…');
+  assert.equal(leadGo(opening), undefined, 'opening a board shows no button');
 });
 
 test('with ?install=1 an iPhone gets a hint at the Share button below and an iPad at the top right, and nothing once it runs from the home screen', async () => {
@@ -393,7 +430,9 @@ test('from the home screen ?install=1 changes nothing: the remembered board open
 test('only install=1 asks for the lead, the portal leads with nothing without it, and /hi never leads or touches the address', async () => {
   for (const [search, leads] of [['?install=1', true], ['?ref=board&install=1', true], ['?install=10', false], ['?install=0', false], ['', false]]) {
     const page = openPortal(nearbyOf([KITCHEN]), { search });
-    assert.equal(lead(page).length, leads ? 1 : 0, search);
+    await page.settle();
+    assert.equal(leadGo(page) ? 1 : 0, leads ? 1 : 0, search);
+    assert.deepEqual(lead(page), [], search);
   }
   const page = openPortal(nearbyOf([BEDROOM, KITCHEN]));
   page.fire('beforeinstallprompt', promptEvent());
