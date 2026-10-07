@@ -205,6 +205,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 @media (min-width: 701px) { .shows .big { font-size: clamp(52px, 8.8vw, 140px); max-width: none; } }
 /* 'matters.' slides in (main.js), and an inline box can't be moved */
 .shows .big em { display: inline-block; }
+.shows .big { text-align: center; }
 .big.light em { color: var(--deep); }
 .grid { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 16px; }
 .tile {
