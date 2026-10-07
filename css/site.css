@@ -550,6 +550,16 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6), inset 0 -5px 8px rgba(14, 107, 94, .28), 0 0 14px rgba(119, 237, 215, .55);
   backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
 }
+/* the hero's dots are the color pick's circles (owner): Mint Glow on the chip's own light base, so nothing dark
+   behind it (the hero, or its chip's dark pill once picked) shows through, and Sunset and Moonlight with the chips'
+   thin rim */
+[data-frame="teal"].sw, .cp[data-frame="teal"] i {
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .95) 0 10%, rgba(255, 255, 255, 0) 32%),
+    linear-gradient(140deg, rgba(210, 255, 245, .95), rgba(119, 237, 215, .7) 45%, rgba(119, 237, 215, .42) 100%),
+    #F5FAF8;
+}
+[data-frame="orange"].sw, [data-frame="white"].sw { box-shadow: 0 0 0 1px rgba(0, 0, 0, .12) inset; }
 .glass-note {
   position: relative; display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 14px 0 10px; border-radius: 999px; overflow: hidden;
   font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: .01em; white-space: nowrap; color: #eafffa;
