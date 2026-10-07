@@ -316,6 +316,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     var railDots = $$('.v-dot', sec), rail = 'black';
     function setRail(r) {
       rail = r === 'white' ? 'white' : 'black';
+      sec.dataset.rail = rail;   // the buttons take the rail's color
       railDots.forEach(function (d) { var on = d.dataset.rail === rail; d.classList.toggle('on', on); d.setAttribute('aria-checked', on); d.tabIndex = on ? 0 : -1; });
       if (viewer) viewer.setRail(rail);
     }

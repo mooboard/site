@@ -199,6 +199,10 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .shows { background: var(--mint); color: var(--ink); padding: clamp(80px, 12vw, 160px) var(--gut); }
 .big { font-size: clamp(52px, 10vw, 150px); color: var(--ink); max-width: 1180px; margin: 0 auto clamp(40px, 6vw, 80px); }
 .big em { font-style: normal; color: var(--deep); }
+/* one line on a desktop + the break only on a phone */
+.big br.m { display: none; }
+@media (max-width: 700px) { .big br.m { display: inline; } }
+@media (min-width: 701px) { .shows .big { font-size: clamp(52px, 8.8vw, 140px); max-width: none; } }
 /* 'matters.' slides in (main.js), and an inline box can't be moved */
 .shows .big em { display: inline-block; }
 .big.light em { color: var(--deep); }
@@ -254,13 +258,13 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .v-canvas:focus-visible { outline-offset: -3px; }
 .viewer.v-live .v-canvas { opacity: 1; }
 .viewer.v-live .v-poster { opacity: 0; }
-/* the hint sits in the bar beside the buttons + outside the stage so the board never passes over it */
+/* the hint sits under the buttons + outside the stage so the board never passes over it */
 .v-hint { margin: 0; display: flex; align-items: center; gap: 8px;
   font-weight: 800; font-size: 14px; color: rgba(14, 26, 34, .55); pointer-events: none; opacity: 0; transition: opacity .6s var(--ease); white-space: nowrap; }
 .v-hint svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .viewer.v-live .v-hint { opacity: 1; }
 .viewer.v-touched .v-hint { opacity: 0; }
-.v-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 18px; padding: 0 var(--gut); margin-top: clamp(8px, 1.6vw, 20px); }
+.v-bar { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0 var(--gut); margin-top: clamp(8px, 1.6vw, 20px); }
 .v-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .v-btn { display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 20px 0 16px; border-radius: 999px; background: var(--ink); color: #fff;
   font-weight: 800; font-size: 15px; white-space: nowrap; transition: transform .3s var(--ease), background .3s, color .3s, box-shadow .3s; }
@@ -273,13 +277,18 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .viewer:not(.v-live) .v-acts { visibility: hidden; }
 /* the rail and hooks pick: black or white petg + a pill like the buttons beside it */
 .v-rail { display: inline-flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px 0 18px; border-radius: 999px; background: var(--ink); color: #fff;
-  font-weight: 800; font-size: 15px; white-space: nowrap; }
+  font-weight: 800; font-size: 15px; white-space: nowrap; transition: background .3s, color .3s, box-shadow .3s; }
 .v-dot { width: 22px; height: 22px; border-radius: 50%; position: relative; box-shadow: 0 0 0 1px rgba(255, 255, 255, .35) inset; transition: transform .3s var(--ease); }
 .v-dot[data-rail="black"] { background: #1F2023; }
 .v-dot[data-rail="white"] { background: #F2F2EF; }
 .v-dot::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid transparent; transition: border-color .3s; }
 .v-dot.on::after { border-color: #fff; }
 .v-dot:hover { transform: scale(1.12); }
+/* a white rail turns the buttons white with a black outline + black stays as it is */
+.viewer[data-rail="white"] .v-btn, .viewer[data-rail="white"] .v-rail { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+.viewer[data-rail="white"] .v-close[aria-pressed="true"] { background: var(--accent-solid); color: var(--accent-ink); box-shadow: 0 0 24px rgba(var(--accent-rgb), .5); }
+.viewer[data-rail="white"] .v-dot { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.viewer[data-rail="white"] .v-dot.on::after { border-color: var(--ink); }
 @media (max-width: 700px) {
   /* the buttons stay clear of the player bar fixed at the bottom */
   .viewer { padding-bottom: calc(clamp(16px, 3vh, 32px) + var(--bar)); padding-bottom: calc(clamp(16px, 3svh, 32px) + var(--bar)); }
@@ -305,7 +314,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 @keyframes marq { to { transform: translateX(-50%); } }
 
 /* ---------- waitlist ---------- */
-.waitlist { position: relative; padding: clamp(110px, 14vw, 180px) var(--gut) clamp(90px, 12vw, 150px); text-align: center; background: radial-gradient(80% 60% at 50% 30%, #123c37, var(--ink) 70%); overflow: hidden; }
+.waitlist { position: relative; padding: clamp(110px, 14vw, 180px) var(--gut) clamp(48px, 6vw, 80px); text-align: center; background: radial-gradient(80% 60% at 50% 30%, #123c37, var(--ink) 70%); overflow: hidden; }
 .wl-board { width: min(640px, 100%); margin: 0 auto; }
 .wl-price { margin-top: 56px; }
 .tag { display: inline-block; padding: 6px 14px; border-radius: 999px; background: var(--pink); color: var(--ink); font-weight: 900; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
