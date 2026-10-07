@@ -9,11 +9,12 @@
   var AUTO_GO_MS = 3000;
   var TICK_MS = 100;   // the panel's startup card gives the pupils a new colour every 100 ms
   var DOT_MS = 400;    // the board's loading dots + none then . .. ... each for 400 ms as on its updating card
-  var PORTAL_GO_MS = 1500;          // how long the portal says it is opening the board it remembers
+  var PORTAL_GO_MS = 1500;          // how long the portal says it is opening a board before it goes
   var MINE = 'mooboard.portal';     // where the portal keeps the board it opened last
   var view = document.getElementById('view');
   var start = route(location.pathname);
   var onPortal = start.kind === 'portal';
+  var keeps = onPortal || start.keep === true;   // the portal and a board link under it remember the board they open
   // each eye's middle three by three dots by their place round its centre + a pupil lights some and the rest stay
   // eye white + the board's pupils are a plus and an x where something went wrong
   var PLUS = ['', '-n', '-e', '-s', '-w'];
@@ -60,6 +61,11 @@
   function route(pathname) {
     var path = String(pathname).replace(/\/index\.html$/, '/');
     if (/^\/portal\/?$/i.test(path)) return { kind: 'portal' };   // the everyday way in
+    // a board code under /portal from the card on the board + it opens that board as /hi does and the portal keeps it
+    var p = /^\/portal\/([A-Za-z0-9]{4})\/?$/i.exec(path);
+    if (p && validCode(p[1].toUpperCase())) return { kind: 'code', code: p[1].toUpperCase(), keep: true };
+    // the buttons tour lives in its own folder + another spelling of it goes there + never round again to itself
+    if (/^\/hi\/buttons\/?$/i.test(path)) return path === '/hi/buttons/' ? { kind: 'missing' } : { kind: 'buttons' };
     var m = /^\/(?:(?:hi|hello|wall|my|moo|go|open)\/)?([A-Za-z0-9]{4})\/?$/i.exec(path);
     if (m && validCode(m[1].toUpperCase())) return { kind: 'code', code: m[1].toUpperCase() };
     var w = /^\/(hi|hello|wall|my|moo|go|open)\/?$/i.exec(path);
@@ -477,21 +483,28 @@
   }
 
   // the boards on this network + pick shows one board to tap rather than opening it
+  // + the portal lists the board it opened last on top and opens a lone board itself
+  // + with no board it looks up the one it opened last as a phone on a vpn needs
   function nearby(pick) {
     retry = function () { nearby(pick); };
     showLoading('Looking for your mooboard');
     getJSON('/nearby').then(function (data) {
+      var mine = onPortal ? remembered() : null;
       var list = data && Array.isArray(data.boards) ? data.boards : [];
       var named = list.filter(function (b) { return b && typeof b.name === 'string' && b.name !== ''; });
-      if (data && data.shared === true) {
-        var shared = named.filter(function (b) { return validCode(b.code); });
-        return shared.length ? showShared(shared) : showNone();
-      }
-      var boards = named.filter(function (b) { return privateIPv4(b.localIp); });
-      if (boards.length === 0) return showNone();
-      if (boards.length === 1) return pick ? showPicked(boards[0]) : showOne(boards[0]);
-      showList(boards);
+      var shared = data && data.shared === true;
+      var boards = named.filter(function (b) { return shared ? validCode(b.code) : privateIPv4(b.localIp); });
+      if (boards.length === 0) return mine && !pick ? showOpening(mine) : showNone();
+      if (shared) return showShared(mineFirst(boards, mine));
+      if (boards.length === 1) return pick ? showPicked(boards[0]) : onPortal ? showOpening(boards[0]) : showOne(boards[0]);
+      showList(mineFirst(boards, mine));
     }, showDown);
+  }
+  // the board the portal opened last goes on top + the rest keep the order the api gave
+  function mineFirst(boards, mine) {
+    if (!mine) return boards;
+    var top = boards.filter(function (b) { return b.code === mine.code; });
+    return top.concat(boards.filter(function (b) { return b.code !== mine.code; }));
   }
 
   // the board the portal opened last + its code and name and frame but never its address
@@ -504,25 +517,23 @@
     }
   }
   function remember(code, name, color) {
-    if (!onPortal || !validCode(code)) return;
+    if (!keeps || !validCode(code)) return;
     try {
       localStorage.setItem(MINE, JSON.stringify({ code: code, name: name || '', frameColor: isFrame(color) ? color : '' }));
     } catch (e) { /* a browser with no storage opens the list next time */ }
   }
 
-  // the portal opens the board it remembers after a moment + pick another lists the boards instead
-  // + while it leads with the install it lists the boards and opens none by itself
-  function portal() {
-    var mine = remembered();
-    if (!mine || installLead) return nearby(installLead);
+  // the portal opens a board after a moment + pick another lists the boards instead
+  // + the address comes from the list or else a lookup by its code
+  function showOpening(board) {
     face('rest');
     show([
-      el('h1', '', 'Opening ' + (mine.name || 'your mooboard') + '…'),
+      el('h1', '', 'Opening ' + (board.name || 'your mooboard') + '…'),
       button('link', 'Pick another', function () { nearby(true); }),
       sameNetwork('Didn\u2019t open?')
-    ], mine);
-    var here = screen, found = null, due = false;
-    var open = function () { go(found.localIp, found.name, found.frameColor, mine.code); };
+    ], board);
+    var here = screen, found = privateIPv4(board.localIp) ? board : null, due = false;
+    var open = function () { go(found.localIp, found.name, found.frameColor, board.code); };
     // a key pressed before it opens means pick so keyboard users get to choose
     onKey(function () {
       if (here === screen) nearby(true);
@@ -532,17 +543,18 @@
       due = true;
       if (found) open();
     }, PORTAL_GO_MS);
-    getJSON('/lookup/' + mine.code).then(function (data) {
+    if (found) return;
+    getJSON('/lookup/' + board.code).then(function (data) {
       if (here !== screen) return;
-      if (!data || data.found !== true || !privateIPv4(data.localIp)) return nearby();
+      if (!data || data.found !== true || !privateIPv4(data.localIp)) return showNone();
       found = {
         localIp: data.localIp,
-        name: typeof data.name === 'string' && data.name !== '' ? data.name : mine.name,
-        frameColor: isFrame(data.frameColor) ? data.frameColor : mine.frameColor
+        name: typeof data.name === 'string' && data.name !== '' ? data.name : board.name,
+        frameColor: isFrame(data.frameColor) ? data.frameColor : board.frameColor
       };
       if (due) open();
     }, function () {
-      if (here === screen) nearby();
+      if (here === screen) showDown();
     });
   }
 
@@ -697,10 +709,12 @@
       if (navigator.serviceWorker) navigator.serviceWorker.register('/portal/sw.js').catch(function () {});
     });
     renderLead();
-    portal();
+    // while it leads with the install it lists the boards and opens none by itself
+    nearby(installLead);
   }
   else if (start.kind === 'code') direct(start.code);
   else if (start.kind === 'nearby') nearby();
   else if (start.kind === 'toHi') location.replace('/hi/');
+  else if (start.kind === 'buttons') location.replace('/hi/buttons/' + location.search);
   else showMissing();
 })();

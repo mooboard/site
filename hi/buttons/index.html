@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- mooboard.co/hi/buttons + the two buttons as a short tour in 3d + the board's setup opens it with its frame in
+     ?frame= + js/tour.mjs and css/tour.css on top of the finder look + the steps stay plain text without javascript -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0E1A22">
+<title>mooboard</title>
+<script>document.documentElement.className = 'js';</script>
+<script nomodule>document.documentElement.className = '';</script>
+<script type="importmap">{"imports":{"three":"/js/vendor/three/build/three.module.min.js","three/addons/":"/js/vendor/three/examples/jsm/"}}</script>
+<link rel="stylesheet" href="/css/finder.css">
+<link rel="stylesheet" href="/css/tour.css">
+<link rel="modulepreload" href="/js/vendor/three/build/three.module.min.js">
+<link rel="preload" href="/assets/tour/panel.png" as="image">
+</head>
+<body class="tour">
+<main>
+<div class="stage" id="stage" aria-hidden="true"><canvas id="board"></canvas></div>
+<ol class="dots" id="dots" aria-hidden="true"><li class="on"></li><li></li><li></li></ol>
+<section class="step on"><h1>Tap BOOT</h1><p>Shows the guide.</p></section>
+<section class="step"><h1>Hold BOOT 1 to 5 seconds</h1><p>Shows mooboard.co/portal.</p></section>
+<section class="step"><h1>Press RESET</h1><p>Restarts the board.</p></section>
+<div class="nav" id="nav"></div>
+<p class="warn">Holding BOOT for 10 seconds or more factory resets the board.</p>
+</main>
+<script type="module" src="/js/tour.mjs"></script>
+</body>
+</html>

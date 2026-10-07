@@ -105,6 +105,24 @@ test('routing: /hi asks for the boards near you, the other words go to /hi', asy
   }
 });
 
+test('routing: the buttons tour is never a board code, and another spelling of its address goes to its folder with its frame', async () => {
+  for (const [path, search, to] of [['/hi/buttons', '', '/hi/buttons/'], ['/hi/Buttons/', '', '/hi/buttons/'],
+    ['/HI/BUTTONS', '?frame=red', '/hi/buttons/?frame=red'], ['/hi/Buttons/index.html', '?frame=mint', '/hi/buttons/?frame=mint']]) {
+    const page = load(path, undefined, { search });
+    await page.settle();
+    assert.deepEqual(page.replaced, [to], path);
+    assert.deepEqual(page.fetches, [], path);
+  }
+  // the folder itself only reaches this page when it is missing + not found rather than round and round
+  for (const path of ['/hi/buttons/', '/hi/buttons/index.html', '/hi/buttons/x', '/hi/buttonss', '/buttons']) {
+    const page = load(path);
+    await page.settle();
+    assert.equal(page.h1(), 'Page not found', path);
+    assert.deepEqual(page.replaced, [], path);
+    assert.deepEqual(page.fetches, [], path);
+  }
+});
+
 test('routing: everything else is the not-found page with a link home', async () => {
   const paths = ['/guide', '/wall/5KA', '/wall/5KASX', '/wall/5KA0', '/team/5KAS', '/LOVE', '/blog', '/', '/hi/OOPS', '/hi/5KAS/x',
     '/wall/5KAS/x', '/5KAS.html', '/hii', '/hi5KAS'];

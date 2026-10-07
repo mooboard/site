@@ -9,12 +9,13 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 // the four frames (sRGB), as the model's README gives them; the site's names for them on the left
-const FINISH = {
+export const FINISH = {
   teal: { color: '#77EDD7', rough: 0.28, opacity: 0.5, emissive: '#1FAE95', ei: 0.28 },   // Mint Glow, translucent
   orange: { color: '#F2762E', rough: 0.5 },                                                  // Sunset
   black: { color: '#262B30', rough: 0.6 },                                                   // Midnight
   white: { color: '#EEF1EE', rough: 0.55 },                                                  // Moonlight
 };
+const RAIL = { color: '#1F2023', rough: 0.82 };   // the wall rail and hooks stay black petg matte under every finish
 const SPIN = 0.12;                 // rad/s: one turn in about 52 s
 const HOME = { az: -0.42, pol: 1.50098 };  // front left, 4 degrees above
 const MARGIN = 0.12;               // the spin's reach keeps this share of each half of the frame clear, across and up and down
@@ -22,7 +23,7 @@ const MARGIN = 0.12;               // the spin's reach keeps this share of each 
 // ---- the model: a plain glTF 2.0 binary (no extensions, no textures), read without GLTFLoader ------------------
 const COMP = { 5121: Uint8Array, 5123: Uint16Array, 5125: Uint32Array, 5126: Float32Array };
 const SIZE = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
-function readGLB(buf) {
+export function readGLB(buf) {
   const dv = new DataView(buf);
   if (dv.getUint32(0, true) !== 0x46546c67) throw new Error('not a glb');
   let off = 12, json = null, bin = null;
@@ -77,9 +78,8 @@ function readGLB(buf) {
   return { root, mats };
 }
 
-// the model travels gzipped (51 KB, not 179 KB: static hosts send .glb uncompressed) and is unpacked here; a browser
-// without DecompressionStream, or a host that already unpacked it, gets the plain file's bytes
-async function loadModel(url) {
+// the model travels gzipped as hosts send glb plain + used as is when the host unpacked it or the browser cannot
+export async function loadModel(url) {
   const get = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error('model ' + r.status); return r; };
   if ('DecompressionStream' in window) {
     try {
@@ -142,6 +142,8 @@ export async function start(o) {
   const frameMat = mats.find((m) => m.name === 'frame');
   const dot = mats.find((m) => m.name === 'status_dot');
   if (dot) { dot.emissive = new THREE.Color('#3aa8ff'); dot.emissiveIntensity = 0.9; }
+  const rail = mats.find((m) => m.name === 'rail');
+  if (rail) { rail.color.set(RAIL.color); rail.roughness = RAIL.rough; rail.metalness = 0; }
 
   function setFrame(name) {
     const f = FINISH[name] || FINISH.teal, m = frameMat;

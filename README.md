@@ -3,9 +3,12 @@
 The website for mooboard. It is plain static files with no build step: `index.html`, `css/`, `js/` (plain scripts,
 plus the ES module `js/viewer.mjs` for the 3D viewer), `fonts/`, `renders/`, `assets/` and `music/`, and the
 `privacy/` and `support/` pages. `hi/index.html` and `404.html` are the same page, served at `/hi` and at every
-unknown path: it finds the boards on the phone's network and opens one. `portal/` is the everyday way in: it opens the
-board it opened last and installs as an app. Both run `js/finder.js` and `css/finder.css`. GitHub Pages serves the
-repository as it is, at the domain in `CNAME`.
+unknown path: it finds the boards on the phone's network and opens one. `portal/` is the everyday way in. It opens the
+only board on the phone's network or lists them with the last one opened on top. It installs as an app. A board's
+`/portal/<code>` link opens that board. Both run `js/finder.js` and `css/finder.css`. `hi/buttons/` is the short
+tour of the two buttons that the board's setup links to, with its frame in `?frame=`: `js/tour.mjs`, `css/tour.css`,
+`assets/3d/board-tour.glb` and the panel's frames in `assets/tour/`. GitHub Pages serves the repository as it is, at
+the domain in `CNAME`.
 
 ## Preview
 
@@ -45,6 +48,7 @@ the top of its file.
   save a screenshot as `og.png`
 - `icon.html`: the mark at the touch icon size, and at the favicon size with `#fav`
 - `portal-icons.py`: the portal's app icons, made from the brand kit's app icon (Pillow)
+- `tour-frames.py`: the panel's frames for the buttons tour in `assets/tour/`, from the firmware's own renders (Pillow)
 
 ## Publishing
 

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { API, BEDROOM, CROSS, IPAD, IPHONE, KITCHEN, PLUS, json, load, nearbyOf, read, script } from './finder-harness.mjs';
+import { API, BEDROOM, CROSS, FOUND, IPAD, IPHONE, KITCHEN, PLUS, SHARED, json, load, nearbyOf, read, script, sharedNet } from './finder-harness.mjs';
 
 const portal = read('portal/index.html');
 const hi = read('hi/index.html');
@@ -22,6 +22,14 @@ const homeWith = (lookup, boards = [KITCHEN]) => (url) => {
   if (url === `${API}/nearby`) return json({ boards, shared: false });
   throw new Error(`unexpected ${url}`);
 };
+// a third board for the lists
+const PANTRY = { code: 'M7RX', name: 'Pantry', localIp: '192.168.0.112', version: '1.4.0', lastSeen: 1 };
+const DONT_SEE = `Don\u2019t see your board? ${SAME_NETWORK}`;
+const DOWN = 'Could not reach mooboard.co';
+// the view from top to bottom by class or tag + the home network lines in it
+const layout = (page) => page.view.children.map((c) => c.className || c.tagName.toLowerCase());
+const hints = (page) => page.view.children.filter((c) => c.className === 'hint').map((c) => c.textContent);
+const names = (page) => page.cards().map((c) => c.textContent);
 const installBox = (page) => page.install.children;
 const promptEvent = () => {
   const e = { prevented: 0, prompted: 0 };
@@ -114,17 +122,27 @@ test('nothing on the portal mentions a guest network', () => {
   assert.doesNotMatch(script, /guest/i);
 });
 
-test('a first visit with one board counts down like /hi and remembers the board once it opens, never its address', async () => {
-  const page = openPortal(nearbyOf([{ ...KITCHEN, frameColor: 'midnight' }]));
-  await page.settle();
-  assert.equal(page.h1(), 'Opening Kitchen…');
-  assert.equal(page.top.className, 'top', 'the logo on top, as on /hi');
-  assert.deepEqual(page.frames(page.cards()[0]), ['black'], 'the board in its card in its own frame');
-  assert.equal(mine(page), null, 'nothing kept until it opens');
-  page.timers.advance(3000);
-  assert.deepEqual(page.replaced, ['http://192.168.0.110/']);
-  assert.deepEqual(mine(page), { code: '5KAS', name: 'Kitchen', frameColor: 'midnight' });
-  assert.doesNotMatch(page.store.get(MINE), /192\.168/);
+test('one board on the network opens after a short Opening with Pick another, kept or not, and is kept once it opens, never its address', async () => {
+  for (const storage of [{}, remembered({ code: 'T8QP', name: 'bedroom' })]) {
+    const why = storage[MINE] ? 'another board kept' : 'a first visit';
+    const page = openPortal(nearbyOf([{ ...KITCHEN, frameColor: 'moonlight' }]), { storage });
+    assert.equal(page.h1(), 'Looking for your mooboard', `${why}: it asks which boards are on this network first`);
+    await page.settle();
+    assert.equal(page.h1(), 'Opening Kitchen…', why);
+    assert.deepEqual(layout(page), ['h1', 'link', 'hint'], `${why}: the opening view as it was`);
+    assert.deepEqual(page.buttons().map((b) => b.textContent), ['Pick another'], why);
+    assert.deepEqual(hints(page), [DIDNT_OPEN], why);
+    assert.equal(page.top.className, 'top lit', `${why}: the board on top`);
+    assert.deepEqual(page.frames(page.hero), ['white'], why);
+    assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/nearby`], `${why}: no lookup needed`);
+    assert.equal(page.store.get(MINE), storage[MINE], `${why}: nothing new kept until it opens`);
+    page.timers.advance(1499);
+    assert.deepEqual(page.replaced, [], why);
+    page.timers.advance(1);
+    assert.deepEqual(page.replaced, ['http://192.168.0.110/'], why);
+    assert.deepEqual(mine(page), { code: '5KAS', name: 'Kitchen', frameColor: 'moonlight' }, why);
+    assert.doesNotMatch(page.store.get(MINE), /192\.168/, why);
+  }
 });
 
 test('several boards: the pick list, and the board tapped is the one remembered', async () => {
@@ -136,28 +154,103 @@ test('several boards: the pick list, and the board tapped is the one remembered'
   assert.deepEqual(mine(page), { code: '5KAS', name: 'Kitchen', frameColor: '' });
 });
 
-test('a remembered board opens after a short Opening with Pick another, looked up by its code', async () => {
-  const page = openPortal(homeWith(() => json({ found: true, localIp: '192.168.0.130', name: 'Kitchen', frameColor: 'moonlight' })), {
-    storage: remembered({ code: '5KAS', name: 'Kitchen', frameColor: 'moonlight' }),
+test('two or more boards: the list with names, codes and Identify, the board opened last on top', async () => {
+  const page = openPortal(nearbyOf([BEDROOM, { ...PANTRY, frameColor: 'sunset' }, { ...KITCHEN, frameColor: 'mint' }]), {
+    storage: remembered({ code: '5KAS', name: 'Kitchen', frameColor: 'mint' }),
   });
-  assert.equal(page.h1(), 'Opening Kitchen…');
-  assert.ok(page.buttons().some((b) => b.textContent === 'Pick another'));
-  assert.ok(page.view.children.some((c) => c.className === 'hint' && c.textContent === DIDNT_OPEN));
-  assert.equal(page.top.className, 'top lit');
-  assert.deepEqual(page.frames(page.hero), ['white']);
   await page.settle();
-  assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/lookup/5KAS`], 'no list needed');
-  page.timers.advance(1499);
-  assert.deepEqual(page.replaced, []);
-  page.timers.advance(1);
-  assert.deepEqual(page.replaced, ['http://192.168.0.130/']);
-  assert.deepEqual(mine(page), { code: '5KAS', name: 'Kitchen', frameColor: 'moonlight' });
+  assert.equal(page.h1(), 'Pick your mooboard');
+  assert.equal(page.view.children[1].textContent, 'Tap a board to open it.');
+  assert.deepEqual(names(page), ['Kitchen5KAS', 'bedroomT8QP', 'PantryM7RX'], 'the rest in the order the api gave');
+  assert.deepEqual(page.cards().map((c) => page.frames(c)), [['teal'], ['black'], ['orange']]);
+  const rows = page.view.all().filter((e) => e.className === 'row');
+  assert.deepEqual(rows.map((r) => r.children.map((c) => c.className)), [['card', 'ident'], ['card', 'ident'], ['card', 'ident']]);
+  assert.deepEqual(page.idents().map((a) => [a.tagName, a.textContent, a.getAttribute('href'), a.getAttribute('aria-label')]), [
+    ['A', 'Identify', 'http://192.168.0.110/identify', 'Identify Kitchen'],
+    ['A', 'Identify', 'http://192.168.0.111/identify', 'Identify bedroom'],
+    ['A', 'Identify', 'http://192.168.0.112/identify', 'Identify Pantry'],
+  ]);
+  assert.deepEqual(hints(page), [DONT_SEE]);
+  assert.equal(page.top.className, 'top', 'the cow on top');
+  assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/nearby`]);
+  page.timers.advance(10000);
+  assert.deepEqual(page.replaced, [], 'nothing opens by itself');
+  page.cards()[2].click();
+  assert.deepEqual(page.replaced, ['http://192.168.0.112/']);
+  assert.deepEqual(mine(page), { code: 'M7RX', name: 'Pantry', frameColor: 'sunset' });
+  const next = openPortal(nearbyOf([BEDROOM, KITCHEN, PANTRY]), { storage: Object.fromEntries(page.store) });
+  await next.settle();
+  assert.deepEqual(names(next), ['PantryM7RX', 'bedroomT8QP', 'Kitchen5KAS'], 'the next visit puts it on top');
+  const gone = openPortal(nearbyOf([BEDROOM, PANTRY]), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
+  await gone.settle();
+  assert.deepEqual(names(gone), ['bedroomT8QP', 'PantryM7RX'], 'a list without it keeps the api order');
 });
 
-test('a remembered board that answers late still opens as soon as it answers', async () => {
-  let answer;
-  const page = openPortal(homeWith(() => new Promise((r) => { answer = r; })), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
+test('a shared connection: the shared list with the board opened last on top, an Identify button on each, and nothing opens by itself', async () => {
+  const page = openPortal((url) => {
+    if (url === `${API}/nearby`) return json({ boards: SHARED, shared: true });
+    if (url === `${API}/lookup/5KAS`) return json({ found: false });
+    if (url === `${API}/lookup/T8QP`) return FOUND();
+    throw new Error(`unexpected ${url}`);
+  }, { storage: remembered({ code: 'T8QP', name: 'Kitchen' }) });
   await page.settle();
+  assert.equal(page.h1(), 'Pick your mooboard');
+  assert.equal(page.view.children[1].textContent, 'This internet connection is shared.');
+  assert.deepEqual(names(page), ['KitchenT8QP', 'Kitchen5KAS'], 'the api gave 5KAS first');
+  assert.deepEqual(page.idents().map((b) => [b.tagName, b.textContent]), [['BUTTON', 'Identify'], ['BUTTON', 'Identify']]);
+  page.timers.advance(10000);
+  assert.deepEqual(page.replaced, [], 'nothing opens by itself');
+  assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/nearby`], 'no lookup until a tap');
+  page.cards()[1].click();
+  await page.settle();
+  assert.equal(page.h1(), 'Could not reach Kitchen');
+  assert.deepEqual(names(page), ['KitchenT8QP', 'Kitchen5KAS'], 'the list stays in its order');
+  page.cards()[0].click();
+  await page.settle();
+  assert.deepEqual(page.replaced, ['http://192.168.0.120/']);
+  assert.equal(mine(page).code, 'T8QP');
+  // one board on a shared connection is listed too + it may be a neighbor board
+  const one = openPortal(nearbyOf([{ code: '5KAS', name: 'Kitchen' }], true), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
+  await one.settle();
+  assert.equal(one.h1(), 'Pick your mooboard');
+  assert.deepEqual(names(one), ['Kitchen5KAS']);
+  one.timers.advance(10000);
+  assert.deepEqual(one.replaced, []);
+  assert.deepEqual(one.fetches.map((f) => f.url), [`${API}/nearby`]);
+});
+
+test('no board on this network: the board opened last is looked up by its code and opens after a short Opening with Pick another', async () => {
+  for (const shared of [false, true]) {
+    const why = shared ? 'a shared connection' : 'a vpn';
+    const page = openPortal((url) => {
+      if (url === `${API}/nearby`) return json({ boards: [], shared });
+      if (url === `${API}/lookup/5KAS`) return json({ found: true, localIp: '192.168.0.130', name: 'Kitchen', frameColor: 'moonlight' });
+      throw new Error(`unexpected ${url}`);
+    }, { storage: remembered({ code: '5KAS', name: 'Kitchen', frameColor: 'moonlight' }) });
+    await page.settle();
+    assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/nearby`, `${API}/lookup/5KAS`], why);
+    assert.equal(page.h1(), 'Opening Kitchen…', why);
+    assert.deepEqual(layout(page), ['h1', 'link', 'hint'], why);
+    assert.deepEqual(page.buttons().map((b) => b.textContent), ['Pick another'], why);
+    assert.equal(page.top.className, 'top lit', why);
+    assert.deepEqual(page.frames(page.hero), ['white'], why);
+    page.timers.advance(1499);
+    assert.deepEqual(page.replaced, [], why);
+    page.timers.advance(1);
+    assert.deepEqual(page.replaced, ['http://192.168.0.130/'], why);
+    assert.deepEqual(mine(page), { code: '5KAS', name: 'Kitchen', frameColor: 'moonlight' }, why);
+  }
+  const first = openPortal(nearbyOf([]));
+  await first.settle();
+  assert.equal(first.h1(), SAME_WIFI, 'nothing kept: the same-Wi-Fi page');
+  assert.deepEqual(first.fetches.map((f) => f.url), [`${API}/nearby`], 'and nothing to look up');
+});
+
+test('a board looked up by its code that answers late still opens as soon as it answers', async () => {
+  let answer;
+  const page = openPortal(homeWith(() => new Promise((r) => { answer = r; }), []), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
+  await page.settle();
+  assert.equal(page.h1(), 'Opening Kitchen…');
   page.timers.advance(5000);
   assert.deepEqual(page.replaced, []);
   answer(json({ found: true, localIp: '192.168.0.110', name: 'Kitchen' }));
@@ -165,36 +258,55 @@ test('a remembered board that answers late still opens as soon as it answers', a
   assert.deepEqual(page.replaced, ['http://192.168.0.110/']);
 });
 
-test('a remembered board that is not on this network falls back to the boards near you and stays remembered', async () => {
-  for (const lookup of [() => json({ found: false }), () => Promise.reject(new TypeError('offline')), () => json({ found: true, localIp: '8.8.8.8' })]) {
+test('a board the lookup cannot find shows the same-Wi-Fi page and stays kept, and a failed lookup says mooboard.co could not be reached', async () => {
+  for (const lookup of [() => json({ found: false }), () => json({ found: true, localIp: '8.8.8.8' })]) {
     const page = openPortal(homeWith(lookup, []), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
     await page.settle();
-    assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/lookup/5KAS`, `${API}/nearby`]);
+    assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/nearby`, `${API}/lookup/5KAS`]);
     assert.equal(page.h1(), SAME_WIFI);
     page.timers.advance(10000);
     assert.deepEqual(page.replaced, []);
     assert.equal(mine(page).code, '5KAS');
   }
+  let lookups = 0;
+  const lookup = () => (lookups++ ? json({ found: true, localIp: '192.168.0.110', name: 'Kitchen' }) : Promise.reject(new TypeError('offline')));
+  const page = openPortal(homeWith(lookup, []), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
+  await page.settle();
+  assert.equal(page.h1(), DOWN);
+  assert.deepEqual(page.buttons().map((b) => b.textContent), ['Try again']);
+  assert.deepEqual(page.eyes(), [{ lit: CROSS, colours: ['#0E1A22'] }, { lit: CROSS, colours: ['#0E1A22'] }], 'x pupils');
+  page.timers.advance(10000);
+  assert.deepEqual(page.replaced, [], 'nothing opens once it has failed');
+  page.buttons()[0].click();
+  await page.settle();
+  assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/nearby`, `${API}/lookup/5KAS`, `${API}/nearby`, `${API}/lookup/5KAS`], 'Try again asks for both again');
+  page.timers.advance(1500);
+  assert.deepEqual(page.replaced, ['http://192.168.0.110/']);
 });
 
 test('Pick another stops the open and lists the boards, and never opens one by itself', async () => {
-  let answer;
-  const one = openPortal(homeWith(() => new Promise((r) => { answer = r; })), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
+  const one = openPortal(nearbyOf([KITCHEN]));
+  await one.settle();
   one.timers.advance(500);
   one.buttons().find((b) => b.textContent === 'Pick another').click();
+  assert.equal(one.h1(), 'Looking for your mooboard', 'it asks again');
   await one.settle();
   assert.equal(one.h1(), 'mooboard', 'one board to tap');
-  answer(json({ found: true, localIp: '192.168.0.110', name: 'Kitchen' }));
-  await one.settle();
   one.timers.advance(10000);
-  assert.deepEqual(one.replaced, [], 'the late answer opens nothing');
+  assert.deepEqual(one.replaced, [], 'nothing opens by itself');
   one.cards()[0].click();
   assert.deepEqual(one.replaced, ['http://192.168.0.110/']);
-  // a slow lookup that answers after the moment has passed and the list is up opens nothing and reloads nothing
+  // a lookup that answers after the list is up opens nothing + the list keeps the board opened last on top
   for (const late of [json({ found: true, localIp: '192.168.0.110', name: 'Kitchen' }), json({ found: false })]) {
     let reply;
-    const slow = openPortal(homeWith(() => new Promise((r) => { reply = r; }), [BEDROOM, KITCHEN]), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
+    let asks = 0;
+    const slow = openPortal((url) => {
+      if (url === `${API}/lookup/5KAS`) return new Promise((r) => { reply = r; });
+      if (url === `${API}/nearby`) return json({ boards: asks++ ? [BEDROOM, KITCHEN] : [], shared: false });
+      throw new Error(`unexpected ${url}`);
+    }, { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
     await slow.settle();
+    assert.equal(slow.h1(), 'Opening Kitchen…');
     slow.timers.advance(2000);
     slow.buttons().find((b) => b.textContent === 'Pick another').click();
     await slow.settle();
@@ -202,22 +314,22 @@ test('Pick another stops the open and lists the boards, and never opens one by i
     await slow.settle();
     slow.timers.advance(10000);
     assert.deepEqual(slow.replaced, [], 'nothing opens by itself');
-    assert.equal(slow.fetches.filter((f) => f.url === `${API}/nearby`).length, 1, 'the list is asked for once');
     assert.equal(slow.h1(), 'Pick your mooboard');
+    assert.deepEqual(names(slow), ['Kitchen5KAS', 'bedroomT8QP']);
   }
-  const many = openPortal(homeWith(() => new Promise(() => {}), [BEDROOM, KITCHEN]), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
-  many.buttons().find((b) => b.textContent === 'Pick another').click();
-  await many.settle();
-  assert.equal(many.h1(), 'Pick your mooboard');
-  assert.equal(many.cards().length, 2);
+  // nothing on the network when picking shows the same wifi page + no second lookup
+  const none = openPortal(homeWith(() => new Promise(() => {}), []), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
+  await none.settle();
+  none.buttons().find((b) => b.textContent === 'Pick another').click();
+  await none.settle();
+  assert.equal(none.h1(), SAME_WIFI);
+  assert.equal(none.fetches.filter((f) => f.url === `${API}/lookup/5KAS`).length, 1);
 });
 
-test('a key pressed before the remembered board opens lists the boards instead, so keyboard users get to choose', async () => {
-  const page = openPortal(homeWith(() => json({ found: true, localIp: '192.168.0.110', name: 'Kitchen' })), {
-    storage: remembered({ code: '5KAS', name: 'Kitchen' }),
-  });
-  assert.equal(page.focused()?.textContent, 'Opening Kitchen…', 'focus starts on the heading, so it is read out');
+test('a key pressed before a board opens lists the boards instead, so keyboard users get to choose', async () => {
+  const page = openPortal(nearbyOf([KITCHEN]));
   await page.settle();
+  assert.equal(page.focused()?.textContent, 'Opening Kitchen…', 'focus on the heading, so it is read out');
   page.timers.advance(600);
   page.key('Tab');
   await page.settle();
@@ -245,7 +357,8 @@ test('when the api cannot be reached the portal says so, and Try again asks agai
   page.buttons()[0].click();
   await page.settle();
   assert.equal(page.h1(), 'Pick your mooboard');
-  assert.equal(page.cards().length, 2);
+  assert.deepEqual(names(page), ['Kitchen5KAS', 'bedroomT8QP'], 'the board opened last on top');
+  assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/nearby`, `${API}/nearby`], 'no lookup while the api is down');
   assert.deepEqual(page.replaced, []);
   assert.equal(mine(page).code, '5KAS', 'still remembered');
 });
@@ -276,8 +389,10 @@ test('the install button shows where the browser offers its prompt, only on page
   assert.equal(installBox(page).length, 1);
   page.fire('appinstalled');
   assert.deepEqual(installBox(page), []);
-  const opening = openPortal(homeWith(() => new Promise(() => {})), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
+  const opening = openPortal(nearbyOf([KITCHEN]));
   opening.fire('beforeinstallprompt', promptEvent());
+  await opening.settle();
+  assert.equal(opening.h1(), 'Opening Kitchen…');
   assert.deepEqual(installBox(opening), [], 'not while it opens a board');
 });
 
@@ -415,15 +530,13 @@ test('with ?install=1 the portal opens no board by itself: a lone board and a re
   assert.deepEqual(back.fetches.map((f) => f.url), [`${API}/nearby`]);
 });
 
-test('from the home screen ?install=1 changes nothing: the remembered board opens as every day', async () => {
-  const app = openPortal(homeWith(() => json({ found: true, localIp: '192.168.0.130', name: 'Kitchen' })), {
-    ...INSTALL, displayStandalone: true, storage: remembered({ code: '5KAS', name: 'Kitchen' }),
-  });
+test('from the home screen ?install=1 changes nothing: a lone board opens as every day', async () => {
+  const app = openPortal(nearbyOf([KITCHEN]), { ...INSTALL, displayStandalone: true, storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
   assert.deepEqual(app.addresses, ['/portal/']);
-  assert.equal(app.h1(), 'Opening Kitchen…');
   await app.settle();
+  assert.equal(app.h1(), 'Opening Kitchen…');
   app.timers.advance(1500);
-  assert.deepEqual(app.replaced, ['http://192.168.0.130/']);
+  assert.deepEqual(app.replaced, ['http://192.168.0.110/']);
   assert.deepEqual(lead(app), []);
 });
 
@@ -464,10 +577,95 @@ test('the portal registers its service worker once the page has loaded, and /hi 
 
 test('a remembered name is text, never markup, and the portal draws nothing through innerHTML', async () => {
   const name = '<img src=x onerror=alert(1)>';
-  const page = openPortal(homeWith(() => new Promise(() => {})), { storage: remembered({ code: '5KAS', name }) });
+  const page = openPortal(homeWith(() => new Promise(() => {}), []), { storage: remembered({ code: '5KAS', name }) });
+  await page.settle();
   assert.equal(page.h1(), `Opening ${name}…`);
   assert.ok([page.view, page.hero, page.install].flatMap((r) => r.all()).every((e) => e.html === null));
   const bad = openPortal(nearbyOf([]), { storage: { [MINE]: '{not json' } });
   await bad.settle();
   assert.equal(bad.h1(), SAME_WIFI, 'a broken memory is a first visit');
+  assert.deepEqual(bad.fetches.map((f) => f.url), [`${API}/nearby`], 'with nothing to look up');
+});
+
+test('/portal/<code> from the card on the board opens that board as /hi/<code> does, and the portal keeps it', async () => {
+  for (const path of ['/portal/5KAS', '/portal/5kas/', '/PORTAL/5KAS', '/Portal/5Kas', '/portal/5KAS/index.html']) {
+    const page = load(path, () => json({ found: true, localIp: '192.168.0.110', name: 'Kitchen', frameColor: 'mint' }));
+    assert.equal(page.h1(), 'Finding your mooboard', path);
+    await page.settle();
+    assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/lookup/5KAS`], path);
+    assert.equal(page.h1(), 'Opening Kitchen…', path);
+    assert.deepEqual(page.frames(page.hero), ['teal'], path);
+    assert.deepEqual(hints(page), [DIDNT_OPEN], path);
+    assert.deepEqual(page.replaced, ['http://192.168.0.110/'], path);
+    assert.deepEqual(mine(page), { code: '5KAS', name: 'Kitchen', frameColor: 'mint' }, path);
+    assert.doesNotMatch(page.store.get(MINE), /192\.168/, path);
+  }
+  const card = load('/portal/5KAS', () => json({ found: true, localIp: '192.168.0.110', name: 'Kitchen' }));
+  card.fire('load');
+  card.fire('beforeinstallprompt', promptEvent());
+  await card.settle();
+  assert.deepEqual(card.registered, [], 'the page of a board link registers no service worker');
+  assert.deepEqual(card.addresses, []);
+  const next = openPortal(nearbyOf([BEDROOM, KITCHEN]), { storage: Object.fromEntries(card.store) });
+  await next.settle();
+  assert.deepEqual(names(next), ['Kitchen5KAS', 'bedroomT8QP'], 'the portal lists it on top next time');
+  const away = load('/portal/5KAS', () => json({ found: false }));
+  await away.settle();
+  assert.equal(away.h1(), SAME_WIFI);
+  assert.equal(away.store.size, 0, 'nothing kept when it does not open');
+  const down = load('/portal/5KAS', () => Promise.reject(new TypeError('offline')));
+  await down.settle();
+  assert.equal(down.h1(), DOWN);
+  for (const path of ['/portal/OOPS', '/portal/5KA', '/portal/5KASX', '/portal/5KA0', '/portal/5KAS/x', '/portals/5KAS', '/portal5KAS']) {
+    const page = load(path);
+    await page.settle();
+    assert.equal(page.h1(), 'Page not found', path);
+    assert.deepEqual(page.fetches, [], path);
+  }
+});
+
+test('/hi stays as it was: the api order, the countdown for one board, no lookup and nothing kept, even with a board the portal kept', async () => {
+  const storage = remembered({ code: '5KAS', name: 'Kitchen' });
+  const list = load('/hi', nearbyOf([BEDROOM, KITCHEN]), { storage });
+  await list.settle();
+  assert.deepEqual(names(list), ['bedroomT8QP', 'Kitchen5KAS']);
+  const shared = load('/hi', sharedNet(FOUND), { storage: remembered({ code: 'T8QP', name: 'Kitchen' }) });
+  await shared.settle();
+  assert.deepEqual(names(shared), ['Kitchen5KAS', 'KitchenT8QP']);
+  const one = load('/hi', nearbyOf([KITCHEN]), { storage });
+  await one.settle();
+  assert.equal(one.h1(), 'Opening Kitchen…');
+  assert.deepEqual(layout(one), ['h1', 'cards', 'link', 'hint'], 'the countdown with its card');
+  assert.deepEqual(one.buttons().filter((b) => b.className === 'link').map((b) => b.textContent), ['Stay here']);
+  assert.equal(one.top.className, 'top');
+  one.timers.advance(2999);
+  assert.deepEqual(one.replaced, []);
+  one.timers.advance(1);
+  assert.deepEqual(one.replaced, ['http://192.168.0.110/']);
+  assert.equal(one.store.get(MINE), storage[MINE], 'nothing kept');
+  const none = load('/hi', nearbyOf([]), { storage });
+  await none.settle();
+  assert.equal(none.h1(), SAME_WIFI);
+  assert.deepEqual(none.fetches.map((f) => f.url), [`${API}/nearby`], 'no lookup');
+  const code = load('/hi/5KAS', () => json({ found: true, localIp: '192.168.0.110', name: 'Kitchen' }));
+  await code.settle();
+  assert.deepEqual(code.replaced, ['http://192.168.0.110/']);
+  assert.equal(code.store.size, 0, '/hi/<code> keeps nothing');
+});
+
+test('no em dashes or semicolons in any copy the portal shows', async () => {
+  const kept = { storage: remembered({ code: '5KAS', name: 'Kitchen' }) };
+  const states = [
+    openPortal(nearbyOf([KITCHEN])),
+    openPortal(nearbyOf([BEDROOM, KITCHEN]), { ...kept, ua: IPHONE }),
+    openPortal(sharedNet(FOUND), kept),
+    openPortal(homeWith(() => new Promise(() => {}), []), kept),
+    openPortal(nearbyOf([])),
+    openPortal(() => Promise.reject(new TypeError('offline'))),
+    load('/portal/5KAS', () => json({ found: true, localIp: '192.168.0.110', name: 'Kitchen' })),
+  ];
+  for (const page of states) {
+    await page.settle();
+    assert.doesNotMatch(page.text() + page.install.textContent, /—|;/, page.h1());
+  }
 });
