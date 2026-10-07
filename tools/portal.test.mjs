@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { API, BEDROOM, CROSS, IPHONE, KITCHEN, PLUS, json, load, nearbyOf, read, script } from './finder-harness.mjs';
+import { API, BEDROOM, CROSS, IPAD, IPHONE, KITCHEN, PLUS, json, load, nearbyOf, read, script } from './finder-harness.mjs';
 
 const portal = read('portal/index.html');
 const hi = read('hi/index.html');
@@ -297,6 +297,115 @@ test('on an iPhone the share steps show instead, and nothing shows once it runs 
     await app.settle();
     assert.deepEqual(installBox(app), [], JSON.stringify(opts));
   }
+});
+
+// the board's setup opens mooboard.co/portal/?install=1 from its Add to home screen button
+const INSTALL = { search: '?install=1' };
+const lead = (page) => page.lead.children;
+
+test('the portal page has a place for the install it leads with, under the logo and above the view', () => {
+  assert.match(portal, /<div id="hero" class="hero"><\/div><\/div>\n<div id="lead" class="lead"><\/div>\n<div id="view">/);
+});
+
+test('with ?install=1 the portal leads with Add to home screen, one tap opens the prompt the browser offered, and the address drops the query', async () => {
+  const page = openPortal(nearbyOf([KITCHEN]), INSTALL);
+  assert.deepEqual(page.addresses, ['/portal/'], 'so the app starts at the portal and a reload is the everyday portal');
+  const e = promptEvent();
+  page.fire('beforeinstallprompt', e);
+  assert.equal(e.prevented, 1, 'the browser keeps its own banner back');
+  const go = lead(page)[0];
+  assert.equal(go.className, 'lead__go');
+  assert.equal(go.children.length, 1, 'one button and no steps to read');
+  const button = go.children[0];
+  assert.equal(button.tagName, 'BUTTON');
+  assert.equal(button.className, 'btn');
+  assert.equal(button.textContent, 'Add to home screen');
+  button.click();
+  assert.equal(e.prompted, 1);
+  await page.settle();
+  assert.deepEqual(installBox(page), [], 'the lead has the install, not the foot');
+  page.fire('appinstalled');
+  assert.deepEqual(lead(page), [], 'nothing once installed');
+});
+
+test('with ?install=1 before the browser offers its prompt, a tap shows the menu step, and the prompt takes over once offered', () => {
+  const page = openPortal(nearbyOf([KITCHEN]), INSTALL);
+  const button = () => lead(page)[0].children[0];
+  assert.equal(button().textContent, 'Add to home screen');
+  button().click();
+  assert.equal(lead(page)[0].children[1].className, 'quiet');
+  assert.equal(lead(page)[0].children[1].textContent, 'Tap the ⋮ menu, then Add to Home screen.');
+  const e = promptEvent();
+  page.fire('beforeinstallprompt', e);
+  assert.equal(lead(page)[0].children.length, 1, 'the step goes once the prompt is there');
+  button().click();
+  assert.equal(e.prompted, 1);
+});
+
+test('with ?install=1 an iPhone gets a hint at the Share button below and an iPad at the top right, and nothing once it runs from the home screen', async () => {
+  for (const [ua, where] of [[IPHONE, 'iphone'], [IPAD, 'ipad']]) {
+    const page = openPortal(nearbyOf([KITCHEN]), { ...INSTALL, ua });
+    const tip = lead(page)[0];
+    assert.equal(tip.className, `tip tip--${where}`, ua);
+    assert.equal(tip.getAttribute('role'), 'note');
+    assert.equal(tip.children[0].textContent, 'Add mooboard to your Home Screen');
+    assert.equal(tip.children.find((c) => c.tagName === 'SVG').getAttribute('class'), 'share');
+    assert.equal(tip.textContent, 'Add mooboard to your Home ScreenTap  Share, then Add to Home Screen.');
+    await page.settle();
+    assert.deepEqual(installBox(page), [], 'the hint is the only one');
+  }
+  const app = openPortal(nearbyOf([KITCHEN]), { ...INSTALL, ua: IPHONE, standalone: true });
+  assert.deepEqual(lead(app), []);
+  const mac = openPortal(nearbyOf([KITCHEN]), { ...INSTALL, ua: IPAD, touchPoints: 0 });
+  assert.deepEqual(lead(mac), [], 'a mac has no share button to point at and no prompt to open');
+});
+
+test('with ?install=1 the portal opens no board by itself: a lone board and a remembered one wait for a tap', async () => {
+  const lone = openPortal(nearbyOf([KITCHEN]), INSTALL);
+  await lone.settle();
+  assert.equal(lone.h1(), 'mooboard');
+  lone.timers.advance(10000);
+  assert.deepEqual(lone.replaced, []);
+  lone.cards()[0].click();
+  assert.deepEqual(lone.replaced, ['http://192.168.0.110/']);
+  const back = openPortal(homeWith(() => json({ found: true, localIp: '192.168.0.130', name: 'Kitchen' })), {
+    ...INSTALL, storage: remembered({ code: '5KAS', name: 'Kitchen' }),
+  });
+  await back.settle();
+  assert.equal(back.h1(), 'mooboard', 'the board to tap, not Opening');
+  back.timers.advance(10000);
+  assert.deepEqual(back.replaced, []);
+  assert.deepEqual(back.fetches.map((f) => f.url), [`${API}/nearby`]);
+});
+
+test('from the home screen ?install=1 changes nothing: the remembered board opens as every day', async () => {
+  const app = openPortal(homeWith(() => json({ found: true, localIp: '192.168.0.130', name: 'Kitchen' })), {
+    ...INSTALL, displayStandalone: true, storage: remembered({ code: '5KAS', name: 'Kitchen' }),
+  });
+  assert.deepEqual(app.addresses, ['/portal/']);
+  assert.equal(app.h1(), 'Opening Kitchen…');
+  await app.settle();
+  app.timers.advance(1500);
+  assert.deepEqual(app.replaced, ['http://192.168.0.130/']);
+  assert.deepEqual(lead(app), []);
+});
+
+test('only install=1 asks for the lead, the portal leads with nothing without it, and /hi never leads or touches the address', async () => {
+  for (const [search, leads] of [['?install=1', true], ['?ref=board&install=1', true], ['?install=10', false], ['?install=0', false], ['', false]]) {
+    const page = openPortal(nearbyOf([KITCHEN]), { search });
+    assert.equal(lead(page).length, leads ? 1 : 0, search);
+  }
+  const page = openPortal(nearbyOf([BEDROOM, KITCHEN]));
+  page.fire('beforeinstallprompt', promptEvent());
+  await page.settle();
+  assert.deepEqual(lead(page), []);
+  assert.equal(installBox(page)[0].textContent, 'Add to home screen', 'the foot keeps its button');
+  assert.deepEqual(page.addresses, []);
+  const hiPage = load('/hi', nearbyOf([BEDROOM, KITCHEN]), INSTALL);
+  hiPage.fire('beforeinstallprompt', promptEvent());
+  await hiPage.settle();
+  assert.deepEqual(hiPage.lead.children, []);
+  assert.deepEqual(hiPage.addresses, []);
 });
 
 test('the portal registers its service worker once the page has loaded, and /hi never does, remembers nothing and offers no install', async () => {

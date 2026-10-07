@@ -29,6 +29,18 @@ a{color:#77EDD7}
 .steps{margin:24px 0 0;font-size:.875rem;color:#7F9792}
 .steps b{display:block;color:#A9BDB8}
 .share{width:1.3em;height:1.3em;vertical-align:-.3em;fill:none;stroke:#77EDD7;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* the install the portal leads with after the board's setup + a hint at safari's share button below on an iphone and top right on an ipad */
+.lead__go{margin:0 0 28px}
+.lead__go .quiet{margin:12px 0 0}
+.tip{position:fixed;z-index:5;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);margin:0;padding:12px 18px;border-radius:16px;background:#15262F;border:1px solid #23404A;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:.875rem;line-height:1.45;color:#A9BDB8;text-align:center}
+.tip b{display:block;color:#fff}
+.tip::after{content:"";position:absolute;left:50%;bottom:-8px;width:14px;height:14px;margin-left:-7px;background:#15262F;border:solid #23404A;border-width:0 1px 1px 0;transform:rotate(45deg)}
+.tip--ipad{left:auto;right:16px;bottom:auto;top:calc(14px + env(safe-area-inset-top));transform:none}
+.tip--ipad::after{left:auto;right:30px;bottom:auto;top:-8px;margin:0;border-width:1px 0 0 1px}
+.tip-below body{padding-bottom:136px}
+@media (prefers-reduced-motion:no-preference){.tip--iphone{animation:nudge 1.8s ease-in-out infinite}.tip--ipad{animation:nudge-up 1.8s ease-in-out infinite}}
+@keyframes nudge{50%{transform:translate(-50%,5px)}}
+@keyframes nudge-up{50%{transform:translateY(-4px)}}
 .cards{display:grid;gap:12px;margin:0 0 4px}
 .card{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;border-radius:18px;background:#15262F;border:1px solid #23404A;color:#fff;font:inherit;text-align:left;cursor:pointer}
 .card:active{background:#1B313C}

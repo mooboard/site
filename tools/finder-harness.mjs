@@ -146,23 +146,28 @@ export const CROSS = ['nw', 'ne', 'c', 'sw', 'se'];
 
 export const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1';
 export const ANDROID = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36';
+// an ipad's safari asks for the desktop site so it says macintosh as a mac does + its touch points tell them apart
+export const IPAD = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15';
 
 // loads js/finder.js at pathname with answer as the network + page picks the markup of hi or portal
 // + popups false is a popup blocker + storage seeds local storage or blocked makes it throw
 // + the ua and standalone options are the browser it runs in + abort false leaves out abort controller
-// + reducedMotion is a phone that asks for less motion
+// + reducedMotion is a phone that asks for less motion + search is the address query as ?install=1
+// + touchPoints 0 with the ipad ua is a mac
 export function load(pathname, answer = () => new Promise(() => {}), opts = {}) {
   const { popups = true, page: kind = 'hi', storage = {}, ua = ANDROID, standalone = false, displayStandalone = false, abort = true,
-    reducedMotion = false } = opts;
+    reducedMotion = false, search = '', touchPoints = 5 } = opts;
   const view = new El('div');
   const top = new El('div');
   const hero = new El('div');
   const head = new El('head');
   const install = new El('div');
-  for (const root of [view, top, hero, head, install]) root.root = true;
+  const lead = new El('div');
+  for (const root of [view, top, hero, head, install, lead]) root.root = true;
   top.className = 'top';
   hero.className = 'hero';
   install.className = 'install';
+  lead.className = 'lead';
   // both pages show the brand mark + the middle dots of each eye are the ones its pupils light + as in the markup the
   // centre (pl, pr) has the pupil's ink and the dots round it no fill of their own, so their group's white
   const pupils = {};
@@ -174,8 +179,8 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
     }
   }
   const ids = { view, top, hero, ...pupils };
-  if (kind === 'portal') ids.install = install;
-  const roots = [top, view, hero, install];
+  if (kind === 'portal') Object.assign(ids, { install, lead });
+  const roots = [top, view, hero, install, lead];
   const byId = (id) => ids[id] ?? roots.flatMap((r) => r.all()).find((e) => e.attrs && e.attrs.id === id) ?? null;
   // a fake js/board.js + it records each board the page asks it to draw
   const made = [];
@@ -188,6 +193,7 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
   const fetches = [];
   const opened = [];
   const registered = [];
+  const addresses = [];   // each address the page put in the bar with history replace state
   const winListeners = {};
   const store = new Map(Object.entries(storage === 'blocked' ? {} : storage));
   // what has focus and who listens for keys
@@ -206,6 +212,7 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
     },
     location: {
       pathname,
+      search,
       replace: (url) => replaced.push(url),
       set href(url) {
         assigned.push(url);
@@ -223,12 +230,15 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
       matchMedia: (q) => ({
         matches: (/display-mode:\s*standalone/.test(q) && displayStandalone) || (/prefers-reduced-motion:\s*reduce/.test(q) && reducedMotion),
       }),
+      history: {
+        replaceState: (state, title, url) => addresses.push(url),
+      },
     },
     navigator: {
       userAgent: ua,
-      platform: ua === IPHONE ? 'iPhone' : 'Linux armv8l',
-      maxTouchPoints: 5,
-      standalone: ua === IPHONE ? standalone : undefined,
+      platform: ua === IPHONE ? 'iPhone' : ua === IPAD ? 'MacIntel' : 'Linux armv8l',
+      maxTouchPoints: touchPoints,
+      standalone: ua === IPHONE || ua === IPAD ? standalone : undefined,
       serviceWorker: {
         register: (url, o) => {
           registered.push({ url, opts: o });
@@ -264,6 +274,8 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
     top,
     hero,
     install,
+    lead,
+    addresses,
     made,
     store,
     registered,

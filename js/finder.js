@@ -34,6 +34,9 @@
   var screen = 0;          // counts views so a late answer for a view that is gone does nothing
   var installPrompt = null;   // the browser install prompt where it offers one
   var installOn = false;      // whether this view waits for a tap and may offer the install
+  var installLead = false;    // the board's setup sent ?install=1 so the page leads with the install and opens nothing by itself
+  var leadHelp = false;       // the lead button was tapped before the browser offered its prompt so it shows the menu step
+  var appInstalled = false;   // the browser said the app is installed now
   var retry = null;           // the last list or lookup the page asked for + try again asks for it again
 
   function validCode(c) {
@@ -506,9 +509,10 @@
   }
 
   // the portal opens the board it remembers after a moment + pick another lists the boards instead
+  // + while it leads with the install it lists the boards and opens none by itself
   function portal() {
     var mine = remembered();
-    if (!mine) return nearby();
+    if (!mine || installLead) return nearby(installLead);
     face('rest');
     show([
       el('h1', '', 'Opening ' + (mine.name || 'your mooboard') + '…'),
@@ -559,7 +563,7 @@
     var box = document.getElementById('install');
     if (!box) return;
     box.textContent = '';
-    if (!installOn || !onPortal || installed()) return;
+    if (!installOn || !onPortal || installed() || installLead) return;   // the lead has it when the board sent ?install=1
     if (installPrompt) {
       box.appendChild(button('add', 'Add to home screen', function () {
         var p = installPrompt;
@@ -592,6 +596,63 @@
     return svg;
   }
 
+  // ?install=1 from the board's setup + the address drops it so the app starts at the portal and a reload is the
+  // everyday portal + never once it runs from the home screen
+  function wantsInstall() {
+    if (!/(?:^\?|&)install=1(?:&|$)/.test(location.search || '')) return false;
+    try {
+      if (window.history && window.history.replaceState) window.history.replaceState(null, '', location.pathname);
+    } catch (e) { /* the address keeps it and a reload leads with the install again */ }
+    return !installed();
+  }
+  // where safari keeps its share button + an ipad that asks for the desktop site says Macintosh with touch
+  function appleDevice() {
+    var ua = navigator.userAgent || '';
+    if (/iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ipad';
+    return /iPhone|iPod/.test(ua) ? 'iphone' : '';
+  }
+  // The install the page leads with (the owner: "an add to home screen button that pops up the prompt to add
+  // automatically"). Where the browser offered its prompt, one tap opens it: a browser opens it only from a tap, never
+  // by itself. Chrome offers it only after a first tap and some time on the site, so a tap before then shows its menu
+  // step. Safari on an iPhone or iPad has no prompt a page can open, so a hint points at its Share button instead,
+  // below on an iPhone and top right on an iPad. Nothing once installed.
+  function renderLead() {
+    var box = document.getElementById('lead');
+    if (!box) return;
+    box.textContent = '';
+    tipBelow(false);
+    if (!installLead || appInstalled || installed()) return;
+    var apple = installPrompt ? '' : appleDevice();
+    if (apple) {
+      var tip = shareSteps();
+      tip.className = 'tip tip--' + apple;
+      tip.setAttribute('role', 'note');
+      box.appendChild(tip);
+      tipBelow(apple === 'iphone');
+      return;
+    }
+    if (!installPrompt && !/Android/.test(navigator.userAgent || '')) return;
+    var wrap = el('div', 'lead__go');
+    wrap.appendChild(button('btn', 'Add to home screen', function () {
+      var p = installPrompt;
+      installPrompt = null;
+      leadHelp = !p;
+      if (p) {
+        try {
+          p.prompt();
+        } catch (e) { /* the browser took the prompt back */ }
+      }
+      renderLead();
+    }));
+    if (leadHelp) wrap.appendChild(el('p', 'quiet', 'Tap the ⋮ menu, then Add to Home screen.'));
+    box.appendChild(wrap);
+  }
+  // room under the page for the hint at the bottom of an iphone screen
+  function tipBelow(on) {
+    var root = document.documentElement;
+    if (root && root.classList) root.classList.toggle('tip-below', on);
+  }
+
   // A printed link: straight to that board when this phone is on its network.
   function direct(code) {
     retry = function () { direct(code); };
@@ -605,19 +666,25 @@
   }
 
   if (onPortal) {
+    installLead = wantsInstall();
     window.addEventListener('beforeinstallprompt', function (e) {
       e.preventDefault();
       installPrompt = e;
+      leadHelp = false;
       renderInstall();
+      renderLead();
     });
     window.addEventListener('appinstalled', function () {
       installPrompt = null;
+      appInstalled = true;
       renderInstall();
+      renderLead();
     });
     // the service worker that lets the portal install + it waits for the page to finish loading
     window.addEventListener('load', function () {
       if (navigator.serviceWorker) navigator.serviceWorker.register('/portal/sw.js').catch(function () {});
     });
+    renderLead();
     portal();
   }
   else if (start.kind === 'code') direct(start.code);
