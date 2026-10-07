@@ -28,7 +28,7 @@ def shoot(url, w, h, dpr, mobile, dst):
     try:
         cdp = CDP(ws)
         pg = Page(cdp, dict(width=w, height=h, dpr=dpr, mobile=mobile, cpu=1, net=None))
-        pg.call('Network.setBlockedURLs', {'urls': ['*open-meteo*']})
+        pg.call('Network.setBlockedURLs', {'urls': ['*open-meteo*', '*api.met.no*']})
         pg.goto(url)
         cdp.pump(2)
         pg.js('try { localStorage.removeItem("moo-wx") } catch (e) {}')

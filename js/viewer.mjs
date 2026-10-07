@@ -16,8 +16,8 @@ const FINISH = {
   white: { color: '#EEF1EE', rough: 0.55 },                                                  // Moonlight
 };
 const SPIN = 0.12;                 // rad/s: one turn in about 52 s
-const HOME = { az: -0.42, pol: 1.36 };  // front left, a little above
-const MARGIN = 1.08;               // the camera stands this much past the tightest fit so the board keeps clear of every edge
+const HOME = { az: -0.42, pol: 1.50098 };  // front left, 4 degrees above
+const MARGIN = 0.12;               // the spin's reach keeps this share of each half of the frame clear, across and up and down
 
 // ---- the model: a plain glTF 2.0 binary (no extensions, no textures), read without GLTFLoader ------------------
 const COMP = { 5121: Uint8Array, 5123: Uint16Array, 5125: Uint32Array, 5126: Float32Array };
@@ -126,13 +126,11 @@ export async function start(o) {
   await idle();
   const { root, mats } = readGLB(buf);
   scene.add(root);
-  // the bounding sphere round the point the camera circles + no turn or tilt takes the board outside it
-  const box = new THREE.Box3().setFromObject(root), corner = new THREE.Vector3();
-  let radius = 0;
-  for (let i = 0; i < 8; i++) {
-    corner.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z);
-    radius = Math.max(radius, corner.length());
-  }
+  // the spin's reach: the cylinder the board sweeps round the vertical axis the camera circles, its radius half the
+  // diagonal of the board's length and depth (the farthest corner from the axis), its height the board's
+  const box = new THREE.Box3().setFromObject(root), yLo = box.min.y, yHi = box.max.y;
+  let reach = 0;
+  for (const x of [box.min.x, box.max.x]) for (const z of [box.min.z, box.max.z]) reach = Math.max(reach, Math.hypot(x, z));
 
   // the LED face: the live board's dot picture, 8 px per LED; glTF's v runs down, so no flip
   const tex = new THREE.CanvasTexture(led.dots);
@@ -165,9 +163,16 @@ export async function start(o) {
     const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1, aspect = w / h;
     renderer.setSize(w, h, false);
     cam.aspect = aspect;
-    const vHalf = THREE.MathUtils.degToRad(cam.fov / 2), hHalf = Math.atan(Math.tan(vHalf) * aspect);
-    // the sphere fits inside the narrower half angle so landscape or portrait the whole board stays in frame at any angle
-    fitD = radius / Math.sin(Math.min(vHalf, hHalf)) * MARGIN;
+    // the cylinder in frame at the home tilt (the camera t above level, looking at the centre): one distance keeps it
+    // inside the frame less the margin across, one up and down, and the camera takes the farther
+    const tV = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * (1 - MARGIN), tH = tV * aspect;
+    const t = Math.PI / 2 - HOME.pol, s = Math.sin(t), c = Math.cos(t);
+    // across: the circle's silhouette (asin(reach / d) seen level) at the height that comes nearest
+    const across = Math.max(yLo * s, yHi * s) + Math.hypot(reach * c, reach / tH);
+    // up and down: the top and the bottom at the circle's nearest and farthest points, end on to the camera
+    let upDown = 0;
+    for (const y of [yLo, yHi]) for (const z of [-reach, reach]) upDown = Math.max(upDown, y * s + z * c + Math.abs(y * c - z * s) / tV);
+    fitD = Math.max(across, upDown);
     cam.updateProjectionMatrix();
     dirty = true;
   }
