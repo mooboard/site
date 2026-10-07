@@ -3506,6 +3506,32 @@
       }
     };
   };
+  // a still message on two lines, warm from gold to pink across the panel (the social card, tools/og.html)
+  // + the biggest lyric size at which both lines fit with a dark LED at every edge
+  S.say = function (b) {
+    var lines = (b && b.opts && b.opts.say) || ['Put your wall in', 'a good mood'], gap = 3;
+    return {
+      label: 'Say', dur: 8,
+      draw: function (f) {
+        f.fill(BLACK);
+        var Ls = null, hs, total;
+        for (var cap = 13; cap >= 5 && !Ls; cap--) {
+          var cand = lines.map(function (str) { return line('lyric', cap, str); });
+          hs = cand.map(function (L) { return L.b - L.t + 1; });
+          total = hs.reduce(function (a, h) { return a + h; }, 0) + gap * (cand.length - 1);
+          if (total <= H - 2 && cand.every(function (L) { return L.r - L.l + 1 <= W - 2; })) Ls = cand;
+        }
+        if (!Ls) return;
+        var y = Math.round((H - total) / 2);
+        Ls.forEach(function (L, k) {
+          drawText(f, L, penCentre(L, (W - 1) / 2), y - L.t, WHITE, 1, function (X) {
+            var u = X / (W - 1); return [255, Math.round(184 - 104 * u), Math.round(28 + 132 * u)];
+          });
+          y += hs[k] + gap;
+        });
+      }
+    };
+  };
   S.soon = function () {
     return {
       label: 'More', dur: 8,

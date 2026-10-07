@@ -39,22 +39,8 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   if (!ANIM) { root.classList.add('no-anim'); root.classList.remove('intro', 'intro-late'); }
   var MB = window.MooBoard;
 
-  /* ---------- pause motion: every loop holds a still frame, the music plays on ---------- */
-  // the choice lasts the visit and is in place before the first board draws
-  var paused = false, motionBtn = $('#motion'), stored = null;
-  function setPaused(on) {
-    paused = on;
-    root.classList.toggle('motion-paused', on);
-    if (MB && MB.setPaused) MB.setPaused(on);
-    if (motionBtn) { motionBtn.setAttribute('aria-pressed', on); motionBtn.dataset.tip = on ? 'Play motion' : 'Pause motion'; }
-    dispatchEvent(new CustomEvent('moomotion', { detail: on }));
-  }
-  try { stored = sessionStorage.getItem('moo-paused'); } catch (e) {}
-  if (stored === '1') setPaused(true);
-  if (motionBtn) motionBtn.addEventListener('click', function () {
-    setPaused(!paused);
-    try { sessionStorage.setItem('moo-paused', paused ? '1' : '0'); } catch (e) {}
-  });
+  // motion always plays now that the pause motion button is gone + reduced motion still holds the boards still
+  var paused = false;
 
   // ask the browser for the board fonts so the canvas can use them
   if (document.fonts && document.fonts.load) {
