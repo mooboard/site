@@ -2,7 +2,7 @@
 // + run node --test tools/hi.test.mjs tools/portal.test.mjs
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { API, BEDROOM, FOUND, KITCHEN, SHARED, json, load, nearbyOf, read, script, sharedNet } from './finder-harness.mjs';
+import { API, BEDROOM, CROSS, FOUND, KITCHEN, PLUS, SHARED, json, load, nearbyOf, read, script, sharedNet } from './finder-harness.mjs';
 
 const hi = read('hi/index.html');
 const notFound = read('404.html');
@@ -227,16 +227,99 @@ test('a lookup that hangs gives up after 6 s even where a fetch cannot be aborte
   assertDown(page);
 });
 
-test('the cow\'s pupils flicker through full hues while it looks, every 100 ms', async () => {
+test('while it looks the cow\'s pupils are the board\'s plus, each a new full hue every 100 ms, with white round them', async () => {
   const page = load('/hi');
   const seen = new Set();
   for (let i = 0; i < 10; i += 1) {
-    const fill = page.pupils.pl.getAttribute('fill');
-    assert.match(fill, /^hsl\(\d{1,3},100%,50%\)$/);
-    seen.add(fill + page.pupils.pr.getAttribute('fill'));
+    const eyes = page.eyes();
+    for (const eye of eyes) {
+      assert.deepEqual(eye.lit, PLUS, 'a plus, the corners white');
+      assert.equal(eye.colours.length, 1, 'one hue for the whole pupil');
+      assert.match(eye.colours[0], /^hsl\(\d{1,3},100%,50%\)$/);
+    }
+    seen.add(eyes.map((e) => e.colours[0]).join());
     page.timers.advance(100);
   }
   assert.ok(seen.size > 5, 'new colours as it goes');
+});
+
+const BLACK_PLUS = { lit: PLUS, colours: ['#0E1A22'] };
+const BLACK_X = { lit: CROSS, colours: ['#0E1A22'] };
+
+test('the pupils settle as a black plus on the pages that wait for a tap, and turn to a black x where something went wrong', async () => {
+  const stay = load('/hi', nearbyOf([KITCHEN]));
+  await stay.settle();
+  stay.buttons().find((b) => b.textContent === 'Stay here').click();
+  const missed = load('/hi', sharedNet(() => json({ found: false })));
+  await missed.settle();
+  missed.cards()[1].click();
+  const calm = [load('/hi', nearbyOf([KITCHEN])), stay, load('/hi', nearbyOf([BEDROOM, KITCHEN])), load('/hi', sharedNet(FOUND)),
+    load('/hi', nearbyOf([])), load('/5KAS', () => json({ found: false }))];
+  const wrong = [load('/hi', () => json({}, 503)), load('/5KAS', () => Promise.reject(new TypeError('offline'))), missed, load('/nope')];
+  for (const page of calm) {
+    await page.settle();
+    assert.deepEqual(page.eyes(), [BLACK_PLUS, BLACK_PLUS], page.h1());
+  }
+  for (const page of wrong) {
+    await page.settle();
+    assert.deepEqual(page.eyes(), [BLACK_X, BLACK_X], page.h1());
+  }
+  // Try again from the api-down page looks with plus pupils again, the x gone
+  let asks = 0;
+  const near = load('/hi', () => (asks++ ? json({ boards: [BEDROOM, KITCHEN] }) : json({}, 503)));
+  await near.settle();
+  assert.deepEqual(near.eyes(), [BLACK_X, BLACK_X]);
+  near.buttons()[0].click();
+  assert.deepEqual(near.eyes().map((e) => e.lit), [PLUS, PLUS]);
+  await near.settle();
+  assert.deepEqual(near.eyes(), [BLACK_PLUS, BLACK_PLUS]);
+  assert.equal(near.timers.count(), 0, 'no rainbow or dots left running');
+});
+
+test('One moment ends in dots that run none, one, two, three, 400 ms each and round again, as on the board', async () => {
+  const page = load('/hi');
+  const line = page.view.children[1];
+  assert.equal(line.tagName, 'P');
+  assert.equal(line.text, 'One moment', 'the words, the dots after them');
+  const dots = page.dots();
+  assert.equal(dots.parent, line);
+  assert.equal(dots.getAttribute('aria-hidden'), 'true', 'not read aloud');
+  assert.deepEqual(dots.children.map((d) => d.textContent), ['.', '.', '.'], 'all three always there, so the words never move');
+  const states = [];
+  for (let i = 0; i < 9; i += 1) {
+    states.push(dots.getAttribute('data-n'));
+    page.timers.advance(400);
+  }
+  assert.deepEqual(states, ['0', '1', '2', '3', '0', '1', '2', '3', '0']);
+  assert.match(css, /\.dots\[data-n="0"\] i,\.dots\[data-n="1"\] i\+i,\.dots\[data-n="2"\] i\+i\+i\{visibility:hidden\}/, 'hidden, not gone');
+  for (const path of ['/5KAS', '/hi']) {
+    const finding = load(path, nearbyOf([KITCHEN]));
+    assert.equal(finding.dots().getAttribute('data-n'), '0', path);
+  }
+  const shared = load('/hi', sharedNet(() => new Promise(() => {})));
+  await shared.settle();
+  shared.cards()[1].click();
+  assert.equal(shared.h1(), 'Finding Kitchen');
+  assert.equal(shared.dots().getAttribute('data-n'), '0', 'finding a shared board');
+});
+
+test('with less motion asked for, the dots stand still at three', async () => {
+  const page = load('/hi', undefined, { reducedMotion: true });
+  for (let i = 0; i < 6; i += 1) {
+    assert.equal(page.dots().getAttribute('data-n'), '3');
+    page.timers.advance(400);
+  }
+  assert.match(css, /@media \(prefers-reduced-motion:reduce\)\{\.dots i\{visibility:visible!important\}\}/, 'and the css holds them still too');
+});
+
+test('the dots stop once the page moves on', async () => {
+  const page = load('/hi', nearbyOf([BEDROOM, KITCHEN]));
+  const dots = page.dots();
+  await page.settle();
+  const n = dots.getAttribute('data-n');
+  page.timers.advance(2000);
+  assert.equal(dots.getAttribute('data-n'), n);
+  assert.equal(page.timers.count(), 0, 'no timer left running');
 });
 
 test('/hi with several boards: a card each, a tap opens that one, and Identify opens its page in a new tab', async () => {
@@ -473,7 +556,7 @@ test('/hi on a shared connection lists only the boards with a well-formed code',
   assertSameWifi(none);
 });
 
-const SAME_NETWORK = 'Your phone and mooboard need to be on the same home network, not a\u00a0guest\u00a0one.';
+const SAME_NETWORK = 'Your phone and mooboard need to be on the same home\u00a0network.';
 const DIDNT_OPEN = `Didn\u2019t open? ${SAME_NETWORK}`;
 const DONT_SEE = `Don\u2019t see your board? ${SAME_NETWORK}`;
 // the view from top to bottom by class or tag
@@ -519,6 +602,11 @@ test('the home network line is on every page a board opens from: "Didn\u2019t op
   assert.deepEqual(shared.replaced, ['http://192.168.0.120/']);
 });
 
+test('the home network line ends at the home network, with no guest network anywhere on the page', () => {
+  assert.doesNotMatch(script, /guest/i);
+  assert.doesNotMatch(hi, /guest/i);
+});
+
 test('the home network line stays off the loading, same-Wi-Fi, api-down and not-found pages', async () => {
   const pages = [load('/hi'), load('/5KAS'), load('/hi', nearbyOf([])), load('/5KAS', () => json({ found: false })), load('/nope'),
     load('/hi', () => json({}, 503))];
@@ -548,16 +636,15 @@ test('/js/board.js loads once, only when a board is shown, never on the loading,
   assert.deepEqual(page.scripts(), ['/js/board.js'], 'and never again');
 });
 
-test('the board a page is about shows on top as a small mooboard in its own frame, its panel running the startup cow', async () => {
+test('the countdown and Stay here keep the logo on top, and the page that opens a board shows it on top in its own frame', async () => {
   const page = load('/hi', nearbyOf([{ ...KITCHEN, frameColor: 'moonlight' }]));
   await page.settle();
-  assert.equal(page.top.className, 'top lit', 'the countdown');
-  assert.deepEqual(page.frames(page.hero), ['white']);
-  assert.equal(page.hero.children[0].getAttribute('role'), 'img');
-  assert.equal(page.hero.children[0].getAttribute('aria-label'), 'Kitchen, a Moonlight mooboard');
+  assert.equal(page.top.className, 'top', 'the countdown: the logo');
+  assert.deepEqual(page.hero.children, []);
+  assert.deepEqual(page.frames(page.cards()[0]), ['white'], 'the board in its card');
   assert.deepEqual(page.made, [], 'drawn once board.js is in');
   page.boardJs();
-  assert.equal(page.made.length, 2, 'the top board and the card');
+  assert.equal(page.made.length, 1, 'the card');
   for (const { el, opts } of page.made) {
     assert.equal(el.className, 'led');
     assert.deepEqual([...opts.scenes], ['mark']);
@@ -567,17 +654,33 @@ test('the board a page is about shows on top as a small mooboard in its own fram
   assert.equal(page.h1(), 'Opening Kitchen…');
   assert.equal(page.top.className, 'top lit', 'the connecting page');
   assert.deepEqual(page.frames(page.hero), ['white']);
-  assert.equal(page.made.length, 3, 'drawn at once now board.js is in');
+  assert.equal(page.hero.children[0].getAttribute('role'), 'img');
+  assert.equal(page.hero.children[0].getAttribute('aria-label'), 'Kitchen, a Moonlight mooboard');
+  assert.equal(page.made.length, 2, 'drawn at once now board.js is in');
   const stay = load('/hi', nearbyOf([{ ...KITCHEN, frameColor: 'sunset' }]));
   await stay.settle();
   stay.buttons().find((b) => b.textContent === 'Stay here').click();
   assert.equal(stay.h1(), 'mooboard');
-  assert.equal(stay.top.className, 'top lit', 'after Stay here');
-  assert.deepEqual(stay.frames(stay.hero), ['orange']);
+  assert.equal(stay.top.className, 'top', 'after Stay here: the logo');
+  assert.deepEqual(stay.hero.children, []);
+  assert.deepEqual(stay.frames(stay.cards()[0]), ['orange']);
   const printed = load('/5KAS', () => json({ found: true, localIp: '192.168.0.110', name: 'Kitchen', frameColor: 'mint' }));
   await printed.settle();
   assert.equal(printed.top.className, 'top lit', 'a printed link');
   assert.deepEqual(printed.frames(printed.hero), ['teal']);
+});
+
+test('the board in a card has the frame colour of the board itself, the one the connecting page draws on top', async () => {
+  const frames = { midnight: 'black', moonlight: 'white', sunset: 'orange', mint: 'teal', red: 'red' };
+  for (const [frameColor, frame] of Object.entries(frames)) {
+    const page = load('/hi', nearbyOf([{ ...KITCHEN, frameColor }]));
+    await page.settle();
+    assert.deepEqual(page.frames(page.view), [frame], `${frameColor}: the countdown`);
+    page.buttons().find((b) => b.textContent === 'Stay here').click();
+    assert.deepEqual(page.frames(page.view), [frame], `${frameColor}: after Stay here`);
+    page.cards()[0].click();
+    assert.deepEqual(page.frames(page.hero), [frame], `${frameColor}: on top while it opens`);
+  }
 });
 
 test('every card shows its board as a mini mooboard in its own frame, and the lists keep the cow on top', async () => {
@@ -600,8 +703,9 @@ test('a missing or unknown frameColor draws the board in midnight', async () => 
     const page = load('/hi', nearbyOf([{ ...KITCHEN, frameColor }]));
     await page.settle();
     const why = JSON.stringify(frameColor) ?? 'undefined';
-    assert.deepEqual(page.frames(page.hero), ['black'], why);
     assert.deepEqual(page.frames(page.cards()[0]), ['black'], why);
+    page.timers.advance(3000);
+    assert.deepEqual(page.frames(page.hero), ['black'], why);
     assert.equal(page.hero.children[0].getAttribute('aria-label'), 'Kitchen, a Midnight mooboard', why);
   }
 });
@@ -609,8 +713,9 @@ test('a missing or unknown frameColor draws the board in midnight', async () => 
 test('red draws the red edition frame, its shade one constant the owner can swap', async () => {
   const page = load('/hi', nearbyOf([{ ...KITCHEN, frameColor: 'red' }]));
   await page.settle();
-  assert.deepEqual(page.frames(page.hero), ['red']);
   assert.deepEqual(page.frames(page.cards()[0]), ['red']);
+  page.timers.advance(3000);
+  assert.deepEqual(page.frames(page.hero), ['red']);
   assert.equal(page.hero.children[0].getAttribute('aria-label'), 'Kitchen, a Red mooboard');
   assert.equal(css.match(/--red:#[0-9A-Fa-f]{6}/g).length, 1, 'one shade, set once');
   assert.match(css, /\.bezel\[data-frame="red"\]\{--frame:var\(--red\)/);
@@ -635,7 +740,7 @@ test('when /js/board.js cannot load the frames stay with dark panels and the pag
   await page.settle();
   page.boardJsFails();
   assert.deepEqual(page.made, []);
-  assert.deepEqual(page.frames(page.hero), ['orange']);
+  assert.deepEqual(page.frames(page.cards()[0]), ['orange']);
   page.buttons().find((b) => b.textContent === 'Stay here').click();
   assert.deepEqual(page.scripts(), ['/js/board.js'], 'no second try');
   page.cards()[0].click();
@@ -646,7 +751,7 @@ test('an older cached board.js without the mark scene runs its moo scene', async
   const page = load('/hi', nearbyOf([KITCHEN]));
   await page.settle();
   page.boardJs({ mark: false });
-  assert.equal(page.made.length, 2);
+  assert.equal(page.made.length, 1);
   assert.ok(page.made.every(({ opts }) => opts.scenes.length === 1 && opts.scenes[0] === 'moo'));
 });
 
@@ -654,15 +759,19 @@ test('a panel the page has moved on from is not drawn', async () => {
   const page = load('/hi', nearbyOf([{ ...KITCHEN, frameColor: 'mint' }]));
   await page.settle();
   const countdown = page.view.all().concat(page.hero.all()).filter((e) => e.className === 'led');
-  assert.equal(countdown.length, 2);
+  assert.equal(countdown.length, 1);
   page.buttons().find((b) => b.textContent === 'Stay here').click();
   page.boardJs();
-  assert.equal(page.made.length, 2, 'the two panels on the page now');
+  assert.equal(page.made.length, 1, 'the panel on the page now');
   assert.ok(page.made.every(({ el }) => !countdown.includes(el) && el.isConnected));
 });
 
-test('the cow stays on top while it looks, and on the same-Wi-Fi, api-down and not-found pages', async () => {
-  for (const page of [load('/hi'), load('/5KAS'), load('/hi', nearbyOf([])), load('/nope'), load('/hi', () => json({}, 503))]) {
+test('the cow stays on top while it looks, on the countdown and after Stay here, and on the same-Wi-Fi, api-down and not-found pages', async () => {
+  const stay = load('/hi', nearbyOf([KITCHEN]));
+  await stay.settle();
+  stay.buttons().find((b) => b.textContent === 'Stay here').click();
+  for (const page of [load('/hi'), load('/5KAS'), load('/hi', nearbyOf([KITCHEN])), stay, load('/hi', nearbyOf([])), load('/nope'),
+    load('/hi', () => json({}, 503))]) {
     await page.settle();
     assert.equal(page.top.className, 'top', page.h1());
     assert.deepEqual(page.hero.children, [], page.h1());

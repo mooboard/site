@@ -4,16 +4,23 @@
   var API = 'https://api.mooboard.co';
   var ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // the label's: no 0/O, no 1/I/L
   var INK = '#0E1A22';
+  var WHITE = '#FFFFFF';   // the eye whites
   var TIMEOUT_MS = 6000;
   var AUTO_GO_MS = 3000;
   var TICK_MS = 100;   // the panel's startup card gives the pupils a new colour every 100 ms
+  var DOT_MS = 400;    // the board's loading dots + none then . .. ... each for 400 ms as on its updating card
   var PORTAL_GO_MS = 1500;          // how long the portal says it is opening the board it remembers
   var MINE = 'mooboard.portal';     // where the portal keeps the board it opened last
   var view = document.getElementById('view');
   var start = route(location.pathname);
   var onPortal = start.kind === 'portal';
-  var pupils = [document.getElementById('pl'), document.getElementById('pr')];
+  // each eye's middle three by three dots by their place round its centre + a pupil lights some and the rest stay
+  // eye white + the board's pupils are a plus and an x where something went wrong
+  var PLUS = ['', '-n', '-e', '-s', '-w'];
+  var CROSS = ['', '-ne', '-se', '-sw', '-nw'];
+  var eyes = [cells('pl'), cells('pr')];
   var rainbow = null;
+  var dotTimer = null;
   var autoGo = null;
   var top = document.getElementById('top');
   var hero = document.getElementById('hero');
@@ -56,21 +63,55 @@
     return { kind: 'missing' };
   }
 
-  // The loading cow: a random full hue in each pupil every tick, as on the panel, and black again once settled.
-  function tick() {
-    for (var i = 0; i < pupils.length; i++) {
-      if (pupils[i]) pupils[i].setAttribute('fill', 'hsl(' + Math.floor(Math.random() * 360) + ',100%,50%)');
+  // an eye's middle dots by their place round its centre
+  function cells(id) {
+    var all = PLUS.concat(CROSS.slice(1)), out = {};
+    for (var i = 0; i < all.length; i++) out[all[i]] = document.getElementById(id + all[i]);
+    return out;
+  }
+  // both pupils drawn in a shape + colour gives each pupil its colour
+  function pupils(shape, colour) {
+    for (var e = 0; e < eyes.length; e++) {
+      var c = colour();
+      for (var k in eyes[e]) {
+        if (eyes[e][k]) eyes[e][k].setAttribute('fill', shape.indexOf(k) >= 0 ? c : WHITE);
+      }
     }
   }
-  function spin(on) {
+  // The loading cow: a random full hue in each plus pupil every tick, as on the panel.
+  function tick() {
+    pupils(PLUS, function () { return 'hsl(' + Math.floor(Math.random() * 360) + ',100%,50%)'; });
+  }
+  // The cow's look: busy runs its plus pupils round the rainbow while the page looks, rest settles them black, and
+  // error crosses them out, black, where something went wrong (the owner: "show an x instead of a + (like dead x x)").
+  function face(mood) {
     if (rainbow !== null) clearInterval(rainbow);
     rainbow = null;
-    if (on) {
+    if (mood === 'busy') {
       tick();
       rainbow = setInterval(tick, TICK_MS);
       return;
     }
-    for (var i = 0; i < pupils.length; i++) if (pupils[i]) pupils[i].setAttribute('fill', INK);
+    pupils(mood === 'error' ? CROSS : PLUS, function () { return INK; });
+  }
+  // whether this phone asks for less motion
+  function still() {
+    try {
+      return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    } catch (e) {
+      return false;
+    }
+  }
+  // The loading line's dots: none, then one, two and three, each for 400 ms and round again, as on the board. They all
+  // stand still where motion is turned down. Hidden dots keep their room, so the words never move.
+  function runDots(dots) {
+    var n = still() ? 3 : 0;
+    dots.setAttribute('data-n', String(n));
+    if (n === 3) return;
+    dotTimer = setInterval(function () {
+      n = (n + 1) % 4;
+      dots.setAttribute('data-n', String(n));
+    }, DOT_MS);
   }
 
   function el(tag, cls, text) {
@@ -94,6 +135,8 @@
     screen++;
     if (autoGo !== null) clearTimeout(autoGo);
     autoGo = null;
+    if (dotTimer !== null) clearInterval(dotTimer);
+    dotTimer = null;
     view.textContent = '';
     for (var i = 0; i < nodes.length; i++) view.appendChild(nodes[i]);
     // focus moves to the new heading so keyboard and screen reader users carry on from there
@@ -115,11 +158,11 @@
     p.appendChild(link('sub', 'Setup guide', 'https://mooboard.co/guide'));
     return p;
   }
-  // the home network line with its question bold on a line of its own + a guest one never splits
+  // the home network line with its question bold on a line of its own + its last two words never split
   function sameNetwork(lead) {
     var p = el('p', 'hint');
     p.appendChild(el('b', '', lead));
-    p.appendChild(document.createTextNode(' Your phone and mooboard need to be on the same home network, not a\u00a0guest\u00a0one.'));
+    p.appendChild(document.createTextNode(' Your phone and mooboard need to be on the same home\u00a0network.'));
     return p;
   }
   function isFrame(c) {
@@ -180,7 +223,7 @@
       }
     });
   }
-  // the top shows the board a page is about in its own frame + else the cow
+  // the top shows the board a page is opening, with no card of its own, in its own frame + else the cow
   function setTop(board) {
     hero.textContent = '';
     if (!board) {
@@ -290,13 +333,20 @@
     if (!privateIPv4(ip)) return showNone();
     remember(code, name, color);
     show([el('h1', '', 'Opening ' + (name || 'your mooboard') + '…'), sameNetwork('Didn\u2019t open?')], { name: name, frameColor: color });
-    spin(false);
+    face('rest');
     location.replace('http://' + ip + '/');
   }
 
+  // a page that waits on the api + One moment and its running dots + the dots are left out of what is read aloud
   function showLoading(title) {
-    show([el('h1', '', title), el('p', '', 'One moment.')]);
-    spin(true);
+    var dots = el('span', 'dots');
+    dots.setAttribute('aria-hidden', 'true');
+    for (var i = 0; i < 3; i++) dots.appendChild(el('i', '', '.'));
+    var line = el('p', '', 'One moment');
+    line.appendChild(dots);
+    show([el('h1', '', title), line]);
+    face('busy');
+    runDots(dots);
   }
 
   // A new board is on nobody's network yet: its setup screen shows its own Wi-Fi (a Wi-Fi QR once the setup flow ships, the name and password today).
@@ -316,7 +366,7 @@
   }
 
   function showNone() {
-    spin(false);
+    face('rest');
     show([
       el('h1', '', 'Open this on the same Wi-Fi as your mooboard'),
       el('p', '', 'Connect this phone to your home Wi-Fi, then open the link again.'),
@@ -331,7 +381,7 @@
 
   // the api did not answer + offline or busy or too slow + which says nothing about the wifi
   function showDown() {
-    spin(false);
+    face('error');
     show([
       el('h1', '', 'Could not reach mooboard.co'),
       el('p', '', 'This phone may be offline, or mooboard.co is busy. Try again in a moment.'),
@@ -346,19 +396,20 @@
   }
 
   function showMissing() {
-    spin(false);
+    face('error');
     show([el('h1', '', 'Page not found'), el('p', '', 'There is nothing at this address.'), link('btn', 'Go to mooboard.co', '/')]);
   }
 
-  // Exactly one board: say so, and open it after a moment unless "Stay here" is tapped.
+  // Exactly one board: say so, and open it after a moment unless "Stay here" is tapped. The logo stays on top, and the
+  // card shows the board in its own frame colour (the owner: "keep the top the logo").
   function showOne(board) {
-    spin(false);
+    face('rest');
     show([
       el('h1', '', 'Opening ' + board.name + '…'),
       cards([board], function (b) { go(b.localIp, b.name, b.frameColor, b.code); }),
       button('link', 'Stay here', function () { showPicked(board); }),
       sameNetwork('Didn\u2019t open?')
-    ], board);
+    ]);
     autoGo = setTimeout(function () {
       autoGo = null;
       go(board.localIp, board.name, board.frameColor, board.code);
@@ -370,21 +421,22 @@
     });
   }
 
+  // after Stay here + the logo on top and the board in its card as on the countdown
   function showPicked(board) {
-    spin(false);
+    face('rest');
     show([
       el('h1', '', 'mooboard'),
       el('p', '', 'Tap it to open it.'),
       cards([board], function (b) { go(b.localIp, b.name, b.frameColor, b.code); }),
       sameNetwork('Don\u2019t see your board?'),
       guide()
-    ], board);
+    ]);
     offerInstall(true);
   }
 
   // Several boards: tap one to open it, or Identify it to see which board on the wall it is.
   function showList(boards) {
-    spin(false);
+    face('rest');
     show([
       el('h1', '', 'Pick your mooboard'),
       el('p', '', 'Tap a board to open it.'),
@@ -399,7 +451,7 @@
   // code and opens it, and Identify finds out first whether it is the one on your wall.
   // missed names a board that did not answer + the list stays so another can be picked
   function showShared(boards, missed) {
-    spin(false);
+    face(missed ? 'error' : 'rest');
     show([
       el('h1', '', missed ? 'Could not reach ' + missed.name : 'Pick your mooboard'),
       el('p', '', missed ? 'Try again in a moment, or pick another board.' : 'This internet connection is shared.'),
@@ -457,7 +509,7 @@
   function portal() {
     var mine = remembered();
     if (!mine) return nearby();
-    spin(false);
+    face('rest');
     show([
       el('h1', '', 'Opening ' + (mine.name || 'your mooboard') + '…'),
       button('link', 'Pick another', function () { nearby(true); }),

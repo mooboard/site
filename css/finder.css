@@ -12,6 +12,9 @@ main{width:100%;max-width:420px}
 h1{margin:0 0 10px;font-size:1.6rem;line-height:1.2;font-weight:800;color:#fff;letter-spacing:-.01em;overflow-wrap:anywhere}
 h1:focus{outline:none}
 p{margin:0 0 22px;color:#A9BDB8}
+.dots i{font-style:normal}
+.dots[data-n="0"] i,.dots[data-n="1"] i+i,.dots[data-n="2"] i+i+i{visibility:hidden}   /* a hidden dot keeps its room so the words stand still */
+@media (prefers-reduced-motion:reduce){.dots i{visibility:visible!important}}
 a{color:#77EDD7}
 .btn{display:block;width:100%;padding:15px 20px;border:0;border-radius:16px;background:#77EDD7;color:#0E1A22;font:inherit;font-weight:700;text-decoration:none;cursor:pointer}
 .link{display:inline-block;margin-top:14px;padding:8px 12px;border:0;background:none;color:#77EDD7;font:inherit;text-decoration:underline;cursor:pointer}

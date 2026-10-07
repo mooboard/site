@@ -138,14 +138,22 @@ class Tab {
   }
 }
 
+// each eye's middle three by three dots row by row, by their place round its centre + '' is the centre, the brand mark's pupil
+const EYE_PLACES = ['nw', 'n', 'ne', 'w', '', 'e', 'sw', 's', 'se'];
+// the dots a pupil lights as eyes() lists them + the board's plus and the x where something went wrong
+export const PLUS = ['n', 'w', 'c', 'e', 's'];
+export const CROSS = ['nw', 'ne', 'c', 'sw', 'se'];
+
 export const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1';
 export const ANDROID = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36';
 
 // loads js/finder.js at pathname with answer as the network + page picks the markup of hi or portal
 // + popups false is a popup blocker + storage seeds local storage or blocked makes it throw
 // + the ua and standalone options are the browser it runs in + abort false leaves out abort controller
+// + reducedMotion is a phone that asks for less motion
 export function load(pathname, answer = () => new Promise(() => {}), opts = {}) {
-  const { popups = true, page: kind = 'hi', storage = {}, ua = ANDROID, standalone = false, displayStandalone = false, abort = true } = opts;
+  const { popups = true, page: kind = 'hi', storage = {}, ua = ANDROID, standalone = false, displayStandalone = false, abort = true,
+    reducedMotion = false } = opts;
   const view = new El('div');
   const top = new El('div');
   const hero = new El('div');
@@ -155,10 +163,16 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
   top.className = 'top';
   hero.className = 'hero';
   install.className = 'install';
-  // both pages show the brand mark + its pupils are the ones the loading rainbow lights
-  const pupils = { pl: new El('circle'), pr: new El('circle') };
-  pupils.pl.setAttribute('fill', '#0E1A22');
-  pupils.pr.setAttribute('fill', '#0E1A22');
+  // both pages show the brand mark + the middle dots of each eye are the ones its pupils light + as in the markup the
+  // centre (pl, pr) has the pupil's ink and the dots round it no fill of their own, so their group's white
+  const pupils = {};
+  for (const eye of ['pl', 'pr']) {
+    for (const place of EYE_PLACES) {
+      const dot = new El('circle');
+      if (!place) dot.setAttribute('fill', '#0E1A22');
+      pupils[place ? `${eye}-${place}` : eye] = dot;
+    }
+  }
   const ids = { view, top, hero, ...pupils };
   if (kind === 'portal') ids.install = install;
   const roots = [top, view, hero, install];
@@ -206,7 +220,9 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
       addEventListener: (type, fn) => {
         (winListeners[type] ||= []).push(fn);
       },
-      matchMedia: (q) => ({ matches: /display-mode:\s*standalone/.test(q) && displayStandalone }),
+      matchMedia: (q) => ({
+        matches: (/display-mode:\s*standalone/.test(q) && displayStandalone) || (/prefers-reduced-motion:\s*reduce/.test(q) && reducedMotion),
+      }),
     },
     navigator: {
       userAgent: ua,
@@ -279,6 +295,14 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
     links: () => view.all().filter((e) => e.tagName === 'A' && e.className !== 'ident').map((a) => [a.textContent, a.getAttribute('href')]),
     scripts: () => head.children.filter((e) => e.tagName === 'SCRIPT').map((e) => e.src),
     frames: (root) => root.all().filter((e) => e.className === 'bezel').map((e) => e.getAttribute('data-frame')),
+    // each eye's pupil: the dots it lights as PLUS and CROSS list them (c the centre) and their colours + the rest are white
+    eyes: () => ['pl', 'pr'].map((eye) => {
+      const fill = (place) => pupils[place ? `${eye}-${place}` : eye].getAttribute('fill');
+      const lit = EYE_PLACES.filter((place) => fill(place) !== null && fill(place) !== '#FFFFFF');
+      return { lit: lit.map((place) => place || 'c'), colours: [...new Set(lit.map(fill))] };
+    }),
+    // the loading line's dots
+    dots: () => view.all().find((e) => e.className === 'dots'),
     // js/board.js arrives + mark false is an older copy without the mark scene
     boardJs: ({ mark = true } = {}) => {
       context.window.MooBoard = { Board, scenes: mark ? { mark() {}, moo() {} } : { moo() {} } };

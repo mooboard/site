@@ -3,14 +3,14 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { API, BEDROOM, IPHONE, KITCHEN, json, load, nearbyOf, read, script } from './finder-harness.mjs';
+import { API, BEDROOM, CROSS, IPHONE, KITCHEN, PLUS, json, load, nearbyOf, read, script } from './finder-harness.mjs';
 
 const portal = read('portal/index.html');
 const hi = read('hi/index.html');
 const manifest = JSON.parse(read('portal/manifest.webmanifest'));
 const sw = read('portal/sw.js');
 const MINE = 'mooboard.portal';
-const SAME_NETWORK = 'Your phone and mooboard need to be on the same home network, not a\u00a0guest\u00a0one.';
+const SAME_NETWORK = 'Your phone and mooboard need to be on the same home\u00a0network.';
 const DIDNT_OPEN = `Didn\u2019t open? ${SAME_NETWORK}`;
 const SAME_WIFI = 'Open this on the same Wi-Fi as your mooboard';
 const remembered = (b) => ({ [MINE]: JSON.stringify(b) });
@@ -83,20 +83,43 @@ test('the service worker keeps the portal shell and leaves the api and the board
   assert.match(sw, /req\.method !== 'GET'/);
 });
 
-test('the logo is the matrix cow, its pupils flickering while it looks and settling after', async () => {
+test('the logo is the matrix cow, its plus pupils flickering while it looks and settling black after', async () => {
   assert.doesNotMatch(script, /var MARK = |pixelCow/, 'no cow drawn all in dots by the script');
   const page = openPortal(nearbyOf([]));
   assert.equal(page.h1(), 'Looking for your mooboard');
   assert.match(page.pupils.pl.getAttribute('fill'), /^hsl\(\d{1,3},100%,50%\)$/, 'looking');
+  assert.deepEqual(page.eyes().map((e) => e.lit), [PLUS, PLUS]);
   await page.settle();
   assert.equal(page.pupils.pl.getAttribute('fill'), '#0E1A22', 'settled');
+  assert.deepEqual(page.eyes(), [{ lit: PLUS, colours: ['#0E1A22'] }, { lit: PLUS, colours: ['#0E1A22'] }]);
   assert.equal(page.top.className, 'top', 'the cow on top');
+});
+
+test('One moment on the portal has the running dots too, still where less motion is asked for', () => {
+  const page = openPortal(nearbyOf([]));
+  assert.equal(page.view.children[1].text, 'One moment');
+  const states = [];
+  for (let i = 0; i < 5; i += 1) {
+    states.push(page.dots().getAttribute('data-n'));
+    page.timers.advance(400);
+  }
+  assert.deepEqual(states, ['0', '1', '2', '3', '0']);
+  const still = openPortal(nearbyOf([]), { reducedMotion: true });
+  still.timers.advance(1200);
+  assert.equal(still.dots().getAttribute('data-n'), '3');
+});
+
+test('nothing on the portal mentions a guest network', () => {
+  assert.doesNotMatch(portal, /guest/i);
+  assert.doesNotMatch(script, /guest/i);
 });
 
 test('a first visit with one board counts down like /hi and remembers the board once it opens, never its address', async () => {
   const page = openPortal(nearbyOf([{ ...KITCHEN, frameColor: 'midnight' }]));
   await page.settle();
   assert.equal(page.h1(), 'Opening Kitchen…');
+  assert.equal(page.top.className, 'top', 'the logo on top, as on /hi');
+  assert.deepEqual(page.frames(page.cards()[0]), ['black'], 'the board in its card in its own frame');
   assert.equal(mine(page), null, 'nothing kept until it opens');
   page.timers.advance(3000);
   assert.deepEqual(page.replaced, ['http://192.168.0.110/']);
@@ -218,6 +241,7 @@ test('when the api cannot be reached the portal says so, and Try again asks agai
   assert.equal(page.h1(), 'Could not reach mooboard.co');
   assert.deepEqual(page.buttons().map((b) => b.textContent), ['Try again']);
   assert.equal(page.focused(), page.find((e) => e.tagName === 'H1'));
+  assert.deepEqual(page.eyes(), [{ lit: CROSS, colours: ['#0E1A22'] }, { lit: CROSS, colours: ['#0E1A22'] }], 'x pupils');
   page.buttons()[0].click();
   await page.settle();
   assert.equal(page.h1(), 'Pick your mooboard');
