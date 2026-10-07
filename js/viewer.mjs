@@ -16,9 +16,10 @@ export const FINISH = {
   white: { color: '#EEF1EE', rough: 0.55 },                                                  // Moonlight
 };
 // the wall rail and hooks in black or white petg matte under every finish + black unless the visitor picks white
+// + the feet's felt pads go with them + null keeps the model's own dark felt
 export const RAILS = {
-  black: { color: '#1F2023', rough: 0.82 },
-  white: { color: '#F2F2EF', rough: 0.82 },
+  black: { color: '#1F2023', rough: 0.82, felt: null },
+  white: { color: '#F2F2EF', rough: 0.82, felt: '#ECEAE4' },
 };
 const SPIN = 0.12;                 // rad/s: one turn in about 52 s
 const HOME = { az: -0.42, pol: 1.50098 };  // front left, 4 degrees above
@@ -147,10 +148,12 @@ export async function start(o) {
   const dot = mats.find((m) => m.name === 'status_dot');
   if (dot) { dot.emissive = new THREE.Color('#3aa8ff'); dot.emissiveIntensity = 0.9; }
   const rail = mats.find((m) => m.name === 'rail');
+  const felt = mats.find((m) => m.name === 'felt');
+  const feltDark = felt ? felt.color.clone() : null;
   function setRail(name) {
     const r = RAILS[name] || RAILS.black;
-    if (!rail) return;
-    rail.color.set(r.color); rail.roughness = r.rough; rail.metalness = 0;
+    if (rail) { rail.color.set(r.color); rail.roughness = r.rough; rail.metalness = 0; }
+    if (felt) { if (r.felt) felt.color.set(r.felt); else felt.color.copy(feltDark); }
     dirty = true;
   }
 
