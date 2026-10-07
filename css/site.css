@@ -261,7 +261,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .viewer.v-live .v-hint { opacity: 1; }
 .viewer.v-touched .v-hint { opacity: 0; }
 .v-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 18px; padding: 0 var(--gut); margin-top: clamp(8px, 1.6vw, 20px); }
-.v-acts { display: flex; gap: 8px; }
+.v-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .v-btn { display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 20px 0 16px; border-radius: 999px; background: var(--ink); color: #fff;
   font-weight: 800; font-size: 15px; white-space: nowrap; transition: transform .3s var(--ease), background .3s, color .3s, box-shadow .3s; }
 .v-btn:hover { transform: translateY(-3px); }
@@ -271,10 +271,21 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .v-close[aria-pressed="true"] { background: var(--accent-solid); color: var(--accent-ink); box-shadow: 0 0 24px rgba(var(--accent-rgb), .5); }
 .v-close[aria-pressed="true"] .zv { display: none; }
 .viewer:not(.v-live) .v-acts { visibility: hidden; }
+/* the rail and hooks pick: black or white petg + a pill like the buttons beside it */
+.v-rail { display: inline-flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px 0 18px; border-radius: 999px; background: var(--ink); color: #fff;
+  font-weight: 800; font-size: 15px; white-space: nowrap; }
+.v-dot { width: 22px; height: 22px; border-radius: 50%; position: relative; box-shadow: 0 0 0 1px rgba(255, 255, 255, .35) inset; transition: transform .3s var(--ease); }
+.v-dot[data-rail="black"] { background: #1F2023; }
+.v-dot[data-rail="white"] { background: #F2F2EF; }
+.v-dot::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid transparent; transition: border-color .3s; }
+.v-dot.on::after { border-color: #fff; }
+.v-dot:hover { transform: scale(1.12); }
 @media (max-width: 700px) {
   /* the buttons stay clear of the player bar fixed at the bottom */
   .viewer { padding-bottom: calc(clamp(16px, 3vh, 32px) + var(--bar)); padding-bottom: calc(clamp(16px, 3svh, 32px) + var(--bar)); }
   .v-btn { height: 44px; padding: 0 14px 0 11px; font-size: 13px; }
+  .v-rail { height: 44px; gap: 10px; padding: 0 13px 0 14px; font-size: 13px; }
+  .v-dot { width: 20px; height: 20px; }
 }
 
 /* ---------- tech ---------- */
@@ -314,8 +325,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .wl-msg { flex-basis: 100%; min-height: 24px; margin: 8px 0 0; font-weight: 800; color: var(--accent-lite); }
 .wl-form.soon input:not(:focus), .wl-form.done input:not(:focus) { border-color: var(--teal); }
 .wl-note { flex-basis: 100%; margin: 4px 0 0; font-size: 14px; font-weight: 700; color: rgba(255, 255, 255, .55); }
-.wl-note a, .credit a { color: inherit; text-underline-offset: 3px; }
-.wl-note a:hover, .credit a:hover, .foot-links a:hover { color: var(--accent-lite); }
+.foot-links a:hover { color: var(--accent-lite); }
 
 /* ---------- footer ---------- */
 .foot { background: var(--ink2); padding: 70px var(--gut) 50px; text-align: center; }
@@ -324,7 +334,6 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .foot-links { display: flex; justify-content: center; gap: 14px; margin: 0 0 4px; font-size: 14px; font-weight: 800; }
 .foot-links a { padding: 6px 4px; color: rgba(255, 255, 255, .7); text-decoration: none; transition: color .3s; }
 .legal { margin: 0; font-size: 13px; color: rgba(255, 255, 255, .55); font-weight: 700; }
-.credit { margin: 6px 0 0; font-size: 12px; color: rgba(255, 255, 255, .5); font-weight: 700; }
 
 .moo-pop {
   position: fixed; z-index: 60; left: 0; top: 0; pointer-events: none; padding: 8px 16px; border-radius: 18px 18px 18px 4px;

@@ -385,7 +385,7 @@
   function clockText(d) { var h = d.getHours(); return (H12 ? String((h + 11) % 12 + 1) : two(h)) + ':' + two(d.getMinutes()); }
   function dayMinOf(d) { return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; }
 
-  /* ---------- live weather: MET Norway (CC BY 4.0, credited on the page), no key, location guessed from the time zone (no prompt) ---------- */
+  /* ---------- live weather: MET Norway (CC BY 4.0, credited on the privacy page), no key, location guessed from the time zone (no prompt) ---------- */
   var TZ_CITY = {
     'America/New_York': [40.71, -74.01], 'America/Detroit': [42.33, -83.05], 'America/Toronto': [43.65, -79.38],
     'America/Chicago': [41.88, -87.63], 'America/Denver': [39.74, -104.99], 'America/Phoenix': [33.45, -112.07],

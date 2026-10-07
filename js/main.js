@@ -312,6 +312,15 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     var sec = $('#viewer');
     if (!sec) return;
     var cv = $('.v-canvas', sec), spinBtn = $('.v-spin', sec), closeBtn = $('.v-close', sec), hint = $('.v-hint span', sec);
+    // the rail and hooks in black or white + the pick stays when the frame color changes
+    var railDots = $$('.v-dot', sec), rail = 'black';
+    function setRail(r) {
+      rail = r === 'white' ? 'white' : 'black';
+      railDots.forEach(function (d) { var on = d.dataset.rail === rail; d.classList.toggle('on', on); d.setAttribute('aria-checked', on); d.tabIndex = on ? 0 : -1; });
+      if (viewer) viewer.setRail(rail);
+    }
+    railDots.forEach(function (d) { d.addEventListener('click', function () { setRail(d.dataset.rail); }); });
+    bindRadioKeys('.v-rail .v-dot');
     if (TOUCH && hint) hint.textContent = 'Swipe to turn it';
     var started = false;
     // (a browser that has WebGL but can't make a context fails in the viewer's start and keeps the poster)
@@ -322,7 +331,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       var led = new MB.Board(document.createElement('div'), { scenes: ['combo'], auto: false, external: true, minScale: 8, maxScale: 8, look: { crisp: true } });
       busy(import(new URL('js/viewer.mjs', document.baseURI).href).then(function (m) {
         return m.start({
-          canvas: cv, led: led, frame: colorsSec.dataset.frame || 'teal', reduced: REDUCED, model: 'assets/3d/board.glb',
+          canvas: cv, led: led, frame: colorsSec.dataset.frame || 'teal', rail: rail, reduced: REDUCED, model: 'assets/3d/board.glb',
           onSpin: function (on) { spinBtn.setAttribute('aria-pressed', on); $('span', spinBtn).textContent = on ? 'Pause' : 'Spin'; spinBtn.setAttribute('aria-label', on ? 'Pause the spin' : 'Spin it'); },
           onClose: function (on) { spinBack = false; closeBtn.setAttribute('aria-pressed', on); },
           onTouch: function () { spinBack = false; sec.classList.add('v-touched'); }

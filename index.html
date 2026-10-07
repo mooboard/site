@@ -188,6 +188,7 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
     <div class="v-acts">
       <button class="v-btn v-spin" type="button" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="v-pause" d="M9 6v12M15 6v12"/><path class="v-play" d="M8 5.5v13l10.5-6.5z"/></svg><span>Pause</span></button>
       <button class="v-btn v-close" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/><path d="M8 10.5h5"/><path class="zv" d="M10.5 8v5"/></svg><span>See up close</span></button>
+      <div class="v-rail" role="radiogroup" aria-label="Rail and hooks"><span aria-hidden="true">Rail</span><button class="v-dot on" type="button" role="radio" aria-checked="true" data-rail="black" aria-label="Black"></button><button class="v-dot" type="button" role="radio" aria-checked="false" data-rail="white" aria-label="White"></button></div>
     </div>
   </div>
 </section>
@@ -232,7 +233,7 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
     <input id="wl-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="cows@mooboard.co" required>
     <button class="btn" type="submit">Join the waitlist</button>
     <p class="wl-msg" id="wl-msg" role="status" aria-live="polite"></p>
-    <p class="wl-note">We only email you about mooboard. <a href="/privacy/">Privacy policy</a></p>
+    <p class="wl-note">We only email you about mooboard.</p>
   </form>
 </section>
 
@@ -245,7 +246,6 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
   <p class="moo">moo.</p>
   <p class="foot-links"><a href="/support/">Support</a><a href="/privacy/">Privacy</a></p>
   <p class="legal">&copy; 2026 mooboard co.</p>
-  <p class="credit">Weather data: <a href="https://api.met.no/">MET Norway</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>)</p>
 </footer>
 
 <div class="moo-pop" id="moo-pop" aria-hidden="true">moo</div>

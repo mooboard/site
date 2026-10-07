@@ -15,7 +15,11 @@ export const FINISH = {
   black: { color: '#262B30', rough: 0.6 },                                                   // Midnight
   white: { color: '#EEF1EE', rough: 0.55 },                                                  // Moonlight
 };
-const RAIL = { color: '#1F2023', rough: 0.82 };   // the wall rail and hooks stay black petg matte under every finish
+// the wall rail and hooks in black or white petg matte under every finish + black unless the visitor picks white
+export const RAILS = {
+  black: { color: '#1F2023', rough: 0.82 },
+  white: { color: '#F2F2EF', rough: 0.82 },
+};
 const SPIN = 0.12;                 // rad/s: one turn in about 52 s
 const HOME = { az: -0.42, pol: 1.50098 };  // front left, 4 degrees above
 const MARGIN = 0.12;               // the spin's reach keeps this share of each half of the frame clear, across and up and down
@@ -143,7 +147,12 @@ export async function start(o) {
   const dot = mats.find((m) => m.name === 'status_dot');
   if (dot) { dot.emissive = new THREE.Color('#3aa8ff'); dot.emissiveIntensity = 0.9; }
   const rail = mats.find((m) => m.name === 'rail');
-  if (rail) { rail.color.set(RAIL.color); rail.roughness = RAIL.rough; rail.metalness = 0; }
+  function setRail(name) {
+    const r = RAILS[name] || RAILS.black;
+    if (!rail) return;
+    rail.color.set(r.color); rail.roughness = r.rough; rail.metalness = 0;
+    dirty = true;
+  }
 
   function setFrame(name) {
     const f = FINISH[name] || FINISH.teal, m = frameMat;
@@ -262,6 +271,7 @@ export async function start(o) {
   if (window.ResizeObserver) new ResizeObserver(fit).observe(canvas); else addEventListener('resize', fit);
   fit();
   setFrame(o.frame);
+  setRail(o.rail);
   await idle();
   // draw once now, so the poster can step aside on a finished frame
   led.tick(performance.now()); tex.needsUpdate = true;
@@ -271,5 +281,5 @@ export async function start(o) {
   renderer.render(scene, cam);
   run();
   o.onSpin && o.onSpin(spinning);
-  return { setFrame, setSpin, spinning: () => spinning, closeUp, close: () => close, renderer };
+  return { setFrame, setRail, setSpin, spinning: () => spinning, closeUp, close: () => close, renderer };
 }
