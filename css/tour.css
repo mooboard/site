@@ -10,6 +10,8 @@
 .dots li{width:8px;height:8px;border-radius:50%;background:#23404A}
 .dots li.on{background:#77EDD7}
 .step p{margin:0}
+/* a cap in the words: as tall as the capitals and sat on the line like them */
+.key{display:inline-block;width:.95em;height:.95em;vertical-align:-.1em}
 .nav{display:flex;gap:12px;margin-top:auto;padding-top:24px}
 .nav .btn{flex:2}
 .nav .back{flex:1;padding:15px 12px;border-radius:16px;background:#15262F;border:1px solid #23404A;color:#A9BDB8;font:inherit;font-weight:700;cursor:pointer}

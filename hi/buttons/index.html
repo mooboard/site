@@ -18,14 +18,19 @@
 <link rel="preload" href="/assets/tour/panel.png" as="image">
 </head>
 <body class="tour">
+<!-- the two caps as the words draw them (owner, oct 7): a rounded square like the cap + the dot on BOOT and the arrow on RESET -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="k-boot" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.6" fill="currentColor"/></symbol>
+<symbol id="k-reset" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.9 8.6A5.4 5.4 0 1 1 12 6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M11.4 4.2 14.6 6.6 11.4 9z" fill="currentColor"/></symbol>
+</svg>
 <main>
 <div class="stage" id="stage" aria-hidden="true"><canvas id="board"></canvas></div>
 <ol class="dots" id="dots" aria-hidden="true"><li class="on"></li><li></li><li></li></ol>
-<section class="step on"><h1>Tap BOOT</h1><p>Shows the guide.</p></section>
-<section class="step"><h1>Hold BOOT 1 to 5 seconds</h1><p>Shows mooboard.co/portal.</p></section>
-<section class="step"><h1>Press RESET</h1><p>Restarts the board.</p></section>
+<section class="step on"><h1>Tap <svg class="key" role="img" aria-label="the dot button"><use href="#k-boot"/></svg></h1><p>Shows the guide.</p></section>
+<section class="step"><h1>Hold <svg class="key" role="img" aria-label="the dot button"><use href="#k-boot"/></svg> for 1 to 5 seconds</h1><p>Shows mooboard.co/portal.</p></section>
+<section class="step"><h1>Press <svg class="key" role="img" aria-label="the arrow button"><use href="#k-reset"/></svg></h1><p>Restarts the board.</p></section>
 <div class="nav" id="nav"></div>
-<p class="warn">Holding BOOT for 10 seconds or more factory resets the board.</p>
+<p class="warn">Holding <svg class="key" role="img" aria-label="the dot button"><use href="#k-boot"/></svg> for 10 seconds or more factory resets the board.</p>
 </main>
 <script type="module" src="/js/tour.mjs"></script>
 </body>
