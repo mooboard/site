@@ -34,7 +34,11 @@ const between = (s, a, b) => s.slice(s.indexOf(a), s.indexOf(b, s.indexOf(a) + a
 
 test('the start page loads the site\'s own files only, and nothing from anywhere else', () => {
   for (const text of [startJs, mount, css]) assert.doesNotMatch(text, /https?:\/\//, 'no other site');
-  assert.deepEqual([...new Set(html.match(/https?:\/\/[^\s"'<>)]+/g))], ['http://4.3.2.1'], 'only the hotspot address');
+  // the link preview's tags name the page and its picture on mooboard.co itself, as the other pages' tags do, and load nothing
+  const previews = [...html.matchAll(/<meta property="og:(?:url|image)" content="([^"]+)">/g)].map((m) => m[1]);
+  assert.deepEqual(previews, ['https://mooboard.co/start/', 'https://mooboard.co/og.png'], 'the preview names this page and the site\'s picture');
+  const page = html.replace(/<meta property="og:(?:url|image)" content="[^"]+">/g, '');
+  assert.deepEqual([...new Set(page.match(/https?:\/\/[^\s"'<>)]+/g))], ['http://4.3.2.1'], 'only the hotspot address');
   assert.deepEqual(html.match(/(?:href|src)="https?:[^"]*"/g), ['href="http://4.3.2.1"'], 'as the one link a person taps on the board\'s own Wi-Fi, and never a file');
   for (const text of [html, startJs, mount, css]) {
     assert.doesNotMatch(text, /@import/);
@@ -169,11 +173,11 @@ test('light parts keep an outline and a soft shadow on the light backdrops, here
 
 test('the desk stand is a way to put it up only for the desk board, and it is coming soon', () => {
   const { waysOf } = helpers();
-  assert.deepEqual([...waysOf('MB1D')], ['strips', 'screws', 'stand']);
-  assert.deepEqual([...waysOf('MB1W')], ['strips', 'screws']);
-  assert.deepEqual([...waysOf('MB1P')], ['strips', 'screws']);
+  assert.deepEqual([...waysOf('MB1D')], ['screws', 'strips', 'stand']);
+  assert.deepEqual([...waysOf('MB1W')], ['screws', 'strips']);
+  assert.deepEqual([...waysOf('MB1P')], ['screws', 'strips']);
   assert.deepEqual([...html.matchAll(/<button type="button" class="chip"[^>]*data-way="(\w+)"[^>]*>([^<]+)</g)].map((m) => [m[1], m[2]]),
-    [['strips', 'Adhesive strips'], ['screws', 'Screws'], ['stand', 'Desk stand']]);
+    [['screws', 'Screws'], ['strips', 'Adhesive strips'], ['stand', 'Desk stand']]);
   assert.match(html, /<span class="tag">Coming soon<\/span>/);
 });
 

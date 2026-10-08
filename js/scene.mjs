@@ -787,7 +787,7 @@ export async function create(o) {
     return f;
   }
   // the mounting card's own clock + it plays from the rail step on the way in from an earlier card
-  let mt = { way: 'strips', step: 0, time: 0, playing: false, held: false }, mtLast = 0;
+  let mt = { way: 'screws', step: 0, time: 0, playing: false, held: false }, mtLast = 0;
   function mountPose() {
     return resolve(stateAt(mt.way, mt.step, mt.time, mt.held));
   }

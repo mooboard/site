@@ -336,3 +336,10 @@ html:not(.js) .sheet .close { display: none; }
   .btn:active, .back:active, .close:active { transform: none; }
   .sheet[open] { animation: none; }
 }
+
+/* ---------- the cards as wide as the window above them on every card (owner 2026-10-08) + the next one waits just past
+   the edge, so only the dots say there are more ---------- */
+.track { --inset: max(16px, (100% - 760px) / 2); gap: calc(2 * var(--inset)); }
+.card { flex-basis: calc(100% - 2 * var(--inset)); }
+.card:first-child { margin-left: var(--inset); }
+.card:last-child { margin-right: var(--inset); }

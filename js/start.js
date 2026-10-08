@@ -48,7 +48,7 @@
   }
   // the ways to put it up a model has + the desk stand only for the desk board
   function waysOf(model) {
-    return model === 'MB1D' ? ['strips', 'screws', 'stand'] : ['strips', 'screws'];
+    return model === 'MB1D' ? ['screws', 'strips', 'stand'] : ['screws', 'strips'];
   }
   var api = window.mooStart = { modelOf: modelOf, codeOf: codeOf, ssidOf: ssidOf, frameOf: frameOf, railOf: railOf, hiOf: hiOf, portalOf: portalOf, waysOf: waysOf };
 
@@ -331,7 +331,7 @@
 
   // ---- the one scene in the window + it loads at the start + each card moves it to that card's pose + the mounting
   // card's chips pick a way and its steps play with a caption each + the hardware rows take the camera to their spot ----
-  var M = { card: $('mounting'), way: 'strips', step: 0 };
+  var M = { card: $('mounting'), way: 'screws', step: 0 };
   var S = { api: null, state: 'idle' };
   var segs = $('segs'), cap = $('cap'), player = $('player'), chips = $('chips');
   var soons = all('.soon');
@@ -432,7 +432,7 @@
           var now = cards[shown].id;
           if (now !== first) a.card(now);
           else if (now === 'mounting') a.step(0);
-          if (M.way !== 'strips' && M.way !== 'stand') a.way(M.way);
+          if (M.way !== 'screws' && M.way !== 'stand') a.way(M.way);
         }, flat);
     };
     // a module of its own so this page needs no import syntax + the import map gives it three.js
@@ -448,8 +448,8 @@
   }
   M.card.classList.add('live');
   player.hidden = false;
-  buildSegs('strips');
-  onStep('strips', 0);
+  buildSegs('screws');
+  onStep('screws', 0);
   all('#seqs > div').forEach(function (d) { d.hidden = d.getAttribute('data-way') !== M.way; });
 
   // ---- the first card + the address's #card + #help is the wi-fi card with its help open + else the hello + quietly ----
