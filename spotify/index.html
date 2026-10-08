@@ -1,0 +1,138 @@
+<!doctype html>
+<!-- mooboard.co/spotify + the steps to make your own spotify app that the board's setup links to + not linked from
+     the home page -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your own Spotify app | mooboard</title>
+<meta name="description" content="Make your own Spotify app for your mooboard, step by step.">
+<meta name="theme-color" content="#0E1A22">
+<link rel="canonical" href="https://mooboard.co/spotify/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="mooboard">
+<meta property="og:title" content="Your own Spotify app">
+<meta property="og:description" content="Make your own Spotify app for your mooboard, step by step.">
+<meta property="og:url" content="https://mooboard.co/spotify/">
+<meta property="og:image" content="https://mooboard.co/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../brand/mark-teal.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="preload" href="../fonts/nunito.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../css/pages.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="../"><img class="mark" src="../brand/mark-teal.svg" alt="" width="44" height="35"><img class="wordmark" src="../brand/wordmark-white.svg" alt="mooboard" width="116" height="20"></a>
+  <a class="btn btn-sm" href="../#waitlist">Join waitlist</a>
+</header>
+
+<main>
+
+<section class="band" aria-labelledby="spotify-h">
+  <h1 id="spotify-h">Your own Spotify app</h1>
+</section>
+
+<article class="doc">
+
+<ol class="steps">
+  <li><p>You need Spotify Premium. Spotify only lets Premium accounts make apps.</p></li>
+  <li><p>Open <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> and log in with your Spotify account.</p></li>
+  <li>
+    <p>Tap <b>Create app</b>.</p>
+    <ul class="fields">
+      <li><span class="label">App name</span><span class="copyline"><span class="val">mooboard</span><button type="button" class="copy" aria-label="Copy the app name" hidden>Copy</button></span></li>
+      <li><span class="label">App description</span><span class="copyline"><span class="val">My mooboard</span><button type="button" class="copy" aria-label="Copy the app description" hidden>Copy</button></span></li>
+      <li><span class="label">Redirect URI</span><span class="copyline"><span class="val">https://<wbr>api.mooboard.co/<wbr>link/<wbr>spotify/<wbr>callback</span><button type="button" class="copy" aria-label="Copy the redirect URI" hidden>Copy</button></span><span>Then tap <b>Add</b>.</span></li>
+      <li><span>Under <b>APIs used</b>, check <b>Web API</b>.</span></li>
+      <li><span>Agree to the terms and tap <b>Save</b>.</span></li>
+    </ul>
+  </li>
+  <li><p>Open <b>Settings</b>, then <b>User Management</b>. Add your name and the email of your Spotify account, then <b>Save</b>.</p></li>
+  <li><p>Open <b>Settings</b>, then <b>Basic Information</b>, and copy the <b>Client ID</b>.</p></li>
+  <li><p>Go back to your board’s setup page. Paste the Client ID under <b>Spotify</b>, then tap <b>Sign in with Spotify</b> and <b>Agree</b>.</p></li>
+</ol>
+
+<p class="note">Spotify asks you to sign in again every 6 months. Your board will tell you when.</p>
+<p class="sr" id="copied" role="status" aria-live="polite"></p>
+
+</article>
+
+</main>
+
+<footer class="foot">
+  <img class="mark" src="../brand/mark-teal.svg" alt="" width="52" height="41" loading="lazy">
+  <nav aria-label="Footer"><a href="../support/">Support</a><a href="../privacy/">Privacy</a></nav>
+  <p class="legal">&copy; 2026 mooboard co.</p>
+</footer>
+
+<script>
+// a copy button beside each value a person types into spotify's form + the clipboard api first + then a hidden text
+// box and the copy command + then the value selected so a long press copies it + the buttons stay hidden without js
+(function () {
+  'use strict';
+  var live = document.getElementById('copied');
+
+  function copyCommand(text) {
+    var box = document.createElement('textarea');
+    box.value = text;
+    box.setAttribute('readonly', '');
+    box.style.position = 'fixed';
+    box.style.top = '0';
+    box.style.left = '0';
+    box.style.opacity = '0';
+    document.body.appendChild(box);
+    box.focus();
+    box.select();
+    box.setSelectionRange(0, text.length);   // ios selects nothing without it
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(box);
+    return ok;
+  }
+
+  function selectValue(el) {
+    var range = document.createRange();
+    range.selectNodeContents(el);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function setUp(button) {
+    var value = button.parentNode.querySelector('.val');
+    var timer = null;
+    function copied(ok) {
+      if (!ok) { selectValue(value); return; }
+      button.textContent = 'Copied';
+      button.classList.add('done');
+      live.textContent = 'Copied';
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        button.textContent = 'Copy';
+        button.classList.remove('done');
+        live.textContent = '';
+      }, 2000);
+    }
+    button.hidden = false;
+    button.addEventListener('click', function () {
+      var text = value.textContent;
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function () { copied(true); }, function () { copied(copyCommand(text)); });
+      } else {
+        copied(copyCommand(text));
+      }
+    });
+  }
+
+  var buttons = document.querySelectorAll('.copy');
+  for (var i = 0; i < buttons.length; i++) setUp(buttons[i]);
+})();
+</script>
+</body>
+</html>

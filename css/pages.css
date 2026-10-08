@@ -121,6 +121,35 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -.01
 .doc code { padding: 1px 6px; border-radius: 6px; background: #fff; font: 700 .9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere; }
 .doc .addr { padding: 1px 6px; background: #fff; }
 
+/* ---------- the spotify guide + steps + the form's fields + copy buttons ---------- */
+.steps { margin: 0 0 32px; padding: 0; list-style: none; counter-reset: step; }
+.steps > li { position: relative; min-height: 34px; padding-left: 50px; counter-increment: step; }
+.steps > li + li { margin-top: 26px; }
+.steps > li::before {
+  content: counter(step); position: absolute; left: 0; top: -2px; display: grid; place-items: center; width: 34px; height: 34px;
+  border-radius: 50%; background: var(--teal); color: var(--ink); font: 900 17px/1 var(--body);
+}
+.steps p { margin: 0; }
+.doc .fields { margin: 14px 0 0; padding: 0; list-style: none; border-radius: 18px; background: #fff; box-shadow: 0 20px 40px -34px rgba(14, 26, 34, .55); }
+.fields > li { display: grid; gap: 8px; padding: 14px 16px; }
+.doc .fields > li + li { margin-top: 0; border-top: 1px solid #DCEBE7; }
+.fields .label { font-weight: 800; }
+.copyline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.val {
+  padding: 6px 12px; border-radius: 10px; background: var(--mint); color: var(--ink); font-weight: 800; font-size: 16px;
+  overflow-wrap: anywhere; -webkit-user-select: all; user-select: all;
+}
+.copy {
+  display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 16px; border: 2px solid var(--deep);
+  border-radius: 999px; background: #fff; color: var(--deep); font: 800 15px var(--body); cursor: pointer; transition: background .2s, color .2s, border-color .2s;
+}
+.copy:hover { background: #D5F8EF; }
+.copy[hidden] { display: none; }
+.copy.done { border-color: var(--teal); background: var(--teal); color: var(--ink); }
+.note { font-weight: 700; color: var(--muted); }
+/* read by screen readers and never seen */
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
 /* ---------- footer ---------- */
 .foot { padding: 40px var(--gut); background: var(--ink2); color: #fff; text-align: center; }
 .foot .mark { width: 52px; height: auto; margin: 0 auto 14px; }
