@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Privacy policy | mooboard</title>
-<meta name="description" content="How mooboard.co handles your data: what the forms collect, which services the site talks to and what stays in your browser.">
+<meta name="description" content="How mooboard handles your data: on the website, on your board and in our sign-in helper.">
 <meta name="theme-color" content="#0E1A22">
 <link rel="canonical" href="https://mooboard.co/privacy/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="mooboard">
 <meta property="og:title" content="mooboard privacy policy">
-<meta property="og:description" content="How mooboard.co handles your data: what the forms collect, which services the site talks to and what stays in your browser.">
+<meta property="og:description" content="How mooboard handles your data: on the website, on your board and in our sign-in helper.">
 <meta property="og:url" content="https://mooboard.co/privacy/">
 <meta property="og:image" content="https://mooboard.co/og.png">
 <meta property="og:image:width" content="1200">
@@ -34,22 +34,24 @@
 
 <section class="band" aria-labelledby="privacy-h">
   <h1 id="privacy-h">Privacy policy</h1>
-  <p class="when">Effective <time datetime="2026-10-06">October 6, 2026</time></p>
+  <p class="when">Effective <time datetime="2026-10-08">October 8, 2026</time></p>
 </section>
 
 <article class="doc">
 
-<p class="lead">This policy covers the website at mooboard.co, including the board finder at mooboard.co/hi. It says what the site collects, who else sees it and what you can do about it.</p>
+<p class="lead">This policy covers the website at mooboard.co, including the board finder at mooboard.co/hi. It also covers your mooboard, its web app and our sign-in helper at api.mooboard.co. It says what each one collects, who else sees it and what you can do about it.</p>
 
 <h2>Who we are</h2>
 <p>mooboard.co is run by mooboard co. When this policy says “we” or “us”, it means mooboard co. You can reach us at <span class="addr">support@mooboard.co</span>.</p>
 
 <h2>The short version</h2>
 <ul>
-  <li>No cookies, no analytics and no ads.</li>
-  <li>We only get your details when you send them to us with a form.</li>
+  <li>No cookies on the website. No analytics and no ads anywhere.</li>
+  <li>On the website, we only get your details when you send them to us with a form.</li>
   <li>Some parts of the site load content from other services, which see your IP address. They are all listed below.</li>
   <li>We don’t sell your data.</li>
+  <li>Your board shows your music, calendars and tasks on its display. They never come to us.</li>
+  <li>Our sign-in helper keeps your Spotify or Google sign-in for 10 minutes at most, until your board picks it up.</li>
 </ul>
 
 <h2>What you send us</h2>
@@ -73,7 +75,7 @@
   <li><b>Apple</b> (itunes.apple.com and mzstatic.com), for the 30 second song previews and the album artwork of the radio on the home page, when they load.</li>
   <li><b>lrclib.net</b>, for the lyrics of those songs.</li>
   <li><b>MET Norway</b> (api.met.no), for the weather the boards on the home page show. The page picks a city from your device’s time zone setting, or a default city, and asks for that city’s weather. Only the city’s coordinates are sent. The site never asks for your location and never uses GPS. Weather data: <a href="https://api.met.no/">MET Norway</a>, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</li>
-  <li><b>api.mooboard.co</b>, our own server, for the board finder at mooboard.co/hi. The finder asks it which boards are on the same network as you, which it works out from the public IP address your request comes from. Asking for one board also sends that board’s 4 character code. Once the finder has found your board, it opens the board’s own page on your home network.</li>
+  <li><b>api.mooboard.co</b>, our own server, for the board finder at mooboard.co/hi. The finder asks it which boards are on the same network as you, which it works out from the public IP address your request comes from. Asking for one board also sends that board’s 4 character code. Once the finder has found your board, it opens the board’s own page on your home network. To be found, your board checks in with the same server. It sends the board’s code, name, software version and frame color, and its address on your home network. The server keeps them with the public IP address the check-in came from and your network’s IPv6 prefix, if it has one. It deletes them 30 days after the board’s last check-in.</li>
   <li><b>jsDelivr</b> (cdn.jsdelivr.net), which serves three.js, the code library behind the 3D view of the board on the home page, when that part of the page loads.</li>
 </ul>
 <p>Links to other sites, like the Apple Music links on the home page, take you to those sites, and their own policies apply there.</p>
@@ -87,10 +89,30 @@
 </ul>
 <p>Local storage stays until you clear it in your browser’s settings. Session storage is cleared when you close the tab.</p>
 
+<h2>Your board</h2>
+<p>Your mooboard can show what’s playing on your Spotify account. It can also show your Google calendars and tasks. For that it reads your calendar list, your calendar events and your tasks. Everything it asks Spotify and Google for is read-only, so it can never change anything in your accounts.</p>
+<p>Your board gets this straight from Spotify and Google and shows it on its display. None of it comes to us. To show lyrics, your board sends the song’s title and artist to lyrics services: lrclib.net, Musixmatch, NetEase Cloud Music, lyrics-api.binimum.org and lyrics-api.boidu.dev.</p>
+<p>Your board keeps its Spotify and Google sign-ins on the board itself.</p>
+<h3>Disconnecting</h3>
+<p>To disconnect Spotify or Google, use your board’s web app. You can also remove mooboard in <a href="https://www.spotify.com/account/apps/">your Spotify account’s apps</a> or in <a href="https://myaccount.google.com/connections">your Google Account’s third-party connections</a>. A factory reset erases the sign-ins saved on your board.</p>
+
+<h2>The sign-in helper</h2>
+<p>When you sign in to Spotify or Google from your board’s setup, our sign-in helper at api.mooboard.co does the sign-in for your board.</p>
+<p>It reads the name of the account you signed in with, so the web app can show which account is connected. For Spotify that’s your display name. For Google it’s your email address.</p>
+<p>It keeps your sign-in for 10 minutes at most, until your board picks it up. Then it deletes it. It never stores your sign-in after that.</p>
+<p>While your board shows your calendars, it renews its Google sign-in through the helper about once an hour. The helper passes it to Google and keeps nothing. Your board renews its Spotify sign-in with Spotify directly.</p>
+<p>The sign-in helper never reads your music, your calendars or your tasks.</p>
+
+<h2>Google user data</h2>
+<p>mooboard uses data from your Google Account only to show your calendars and tasks on your board, and to show which account is connected. It is never used for ads, never sold and never read by people at mooboard.</p>
+<p>mooboard’s use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
 <h2>How long we keep things</h2>
 <ul>
   <li><b>Waitlist emails</b>: until you leave the waitlist or ask us to delete yours.</li>
   <li><b>Support messages</b>: as long as we need them to help you. Ask us and we’ll delete them.</li>
+  <li><b>Sign-ins</b>: 10 minutes at most on our sign-in helper. On your board until you disconnect or reset it.</li>
+  <li><b>Board check-ins</b>: until 30 days after your board’s last check-in.</li>
   <li><b>Browser storage</b>: on your device, as described above.</li>
   <li><b>Hosting logs</b>: kept by GitHub under its own privacy statement.</li>
 </ul>
