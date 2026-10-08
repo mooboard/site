@@ -49,10 +49,12 @@ p{margin:0;color:var(--dim);text-wrap:balance}
   var say = 'That sign-in link expired.';
   var next = 'Go back and try again.';
   var shape = CROSS;
+  var closing = false;
   if (r === 'ok' && name) {
     say = 'Signed in to ' + name + '.';
-    next = 'Go back to the setup page.';
+    next = 'Closing in 3';
     shape = PLUS;
+    closing = true;
   } else if (r === 'refused') {
     say = 'Sign-in was canceled.';
   } else if (r === 'notallowed' && s === 'spotify') {
@@ -67,6 +69,24 @@ p{margin:0;color:var(--dim);text-wrap:balance}
       if (dot) dot.setAttribute('fill', INK);
     });
   });
+  // a sign-in that worked counts down from 3 and closes this tab back to the setup page (owner 2026-10-08) + the line
+  // to go back by hand for a browser that keeps the tab open
+  if (closing) {
+    var left = 3;
+    var line = document.getElementById('next');
+    var tick = setInterval(function () {
+      left -= 1;
+      if (left > 0) {
+        line.textContent = 'Closing in ' + left;
+        return;
+      }
+      clearInterval(tick);
+      window.close();
+      setTimeout(function () {
+        line.textContent = 'Go back to the setup page.';
+      }, 300);
+    }, 1000);
+  }
 })();
 </script>
 </body>
