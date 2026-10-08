@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fleet | mooboard</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0E1A22">
+<link rel="icon" href="../brand/mark-teal.svg" type="image/svg+xml">
+<link rel="icon" href="../favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="preload" href="../fonts/nunito.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../css/pages.css">
+<style>
+/* the owner's fleet counter + the key form and the totals and the builds table + the rest is pages.css */
+[hidden] { display: none !important; }
+/* the footer stays at the bottom of a short page */
+body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+main { flex: 1 0 auto; }
+.fleet { max-width: 880px; margin: 0 auto; padding: clamp(28px, 5vw, 56px) var(--gut) clamp(56px, 8vw, 96px); }
+.key { max-width: 480px; margin: 0 auto; }
+.key .field { margin-bottom: 22px; }
+.key input {
+  display: block; width: 100%; min-height: 52px; padding: 12px 16px; border: 2px solid var(--line); border-radius: 14px;
+  background: #fff; color: var(--ink); font: 700 17px/1.4 var(--body); transition: border-color .2s, box-shadow .2s;
+}
+.key input:focus { outline: none; border-color: var(--deep); box-shadow: 0 0 0 4px rgba(119, 237, 215, .55); }
+.key [aria-invalid="true"] { border-color: var(--err); }
+.key [aria-invalid="true"]:focus { border-color: var(--err); box-shadow: 0 0 0 4px rgba(180, 35, 79, .2); }
+.totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(10px, 2.4vw, 20px); margin: 0 0 clamp(12px, 2.4vw, 20px); }
+.stat {
+  margin: 0; padding: clamp(16px, 3.4vw, 30px) 8px; border-radius: clamp(18px, 3vw, 28px); background: #fff; text-align: center;
+  box-shadow: 0 30px 60px -44px rgba(14, 26, 34, .55);
+}
+.stat b { display: block; font: 600 clamp(34px, 8vw, 56px)/1 var(--display); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.stat span { display: block; margin-top: 8px; font-size: clamp(13px, 1.8vw, 16px); line-height: 1.3; font-weight: 800; color: var(--muted); }
+.stat .live::before {
+  content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 6px; vertical-align: 1px; border-radius: 50%;
+  background: #2BC4A6; box-shadow: 0 0 0 3px rgba(43, 196, 166, .22);
+}
+/* a build longer than the card scrolls inside it and never pushes the page sideways */
+.builds { overflow-x: auto; padding: clamp(4px, 1.4vw, 12px) clamp(12px, 3vw, 32px); border-radius: clamp(18px, 3vw, 28px); }
+.builds table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.builds th { padding: 14px 6px 10px; text-align: left; vertical-align: bottom; font-size: 14px; line-height: 1.25; font-weight: 800; color: var(--muted); }
+.builds td { padding: 13px 6px; border-top: 1px solid #DCEEE9; font-weight: 800; line-height: 1.3; }
+.builds th:first-child, .builds td:first-child { padding-left: 0; }
+.builds th:last-child, .builds td:last-child { padding-right: 0; }
+.builds .n { text-align: right; }
+.builds .build { white-space: nowrap; }
+.builds th:first-child, .builds .build { padding-right: 16px; }
+.builds .none { color: var(--muted); }
+.fleet .status.bad { margin: 0 0 clamp(12px, 2.4vw, 20px); }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: clamp(16px, 2.4vw, 22px); }
+.updated { margin: 0; font-size: 15px; font-weight: 700; color: var(--muted); }
+.meta .btn { margin-left: auto; }
+.btn-line { background: transparent; box-shadow: inset 0 0 0 2px var(--ink); }
+.btn-line:hover { background: rgba(14, 26, 34, .06); box-shadow: inset 0 0 0 2px var(--ink); }
+@media (max-width: 520px) {
+  .builds th { padding-left: 3px; padding-right: 3px; font-size: 12px; }
+  .builds td { padding-left: 3px; padding-right: 3px; font-size: 14px; }
+  .builds th:first-child, .builds .build { padding-right: 10px; }
+}
+/* the narrowest phones + a build may wrap after its hyphen */
+@media (max-width: 370px) {
+  .builds .build { white-space: normal; }
+  .stat { padding-left: 4px; padding-right: 4px; }
+  .stat span { font-size: 12px; }
+}
+@media (max-width: 340px) {
+  .builds th { font-size: 11px; }
+  .builds td { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="logo" href="../"><img class="mark" src="../brand/mark-teal.svg" alt="" width="44" height="35"><img class="wordmark" src="../brand/wordmark-white.svg" alt="mooboard" width="116" height="20"></a>
+  <a class="btn btn-sm" href="../#waitlist">Join waitlist</a>
+</header>
+
+<main>
+
+<section class="band" aria-labelledby="fleet-h">
+  <h1 id="fleet-h">Fleet</h1>
+</section>
+
+<div class="fleet">
+
+  <form class="card key" id="key" hidden>
+    <div class="field">
+      <label for="k-key">Fleet key</label>
+      <input id="k-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" required aria-describedby="k-key-err">
+      <p class="err" id="k-key-err" aria-live="polite"></p>
+    </div>
+    <button class="btn" type="submit">Show boards</button>
+  </form>
+
+  <section id="boards" aria-labelledby="fleet-h" hidden>
+    <p class="status bad" id="down" role="status" hidden>Can’t reach api.mooboard.co right now.</p>
+    <div id="data" hidden>
+      <div class="totals">
+        <p class="stat"><b id="t-online">0</b><span class="live">Online now</span></p>
+        <p class="stat"><b id="t-day">0</b><span>Today</span></p>
+        <p class="stat"><b id="t-week">0</b><span>This week</span></p>
+      </div>
+      <div class="card builds" id="builds">
+        <table>
+          <thead><tr><th scope="col">Build</th><th scope="col">Channel</th><th scope="col" class="n">Online now</th><th scope="col" class="n">Today</th><th scope="col" class="n">This week</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="meta">
+      <p class="updated" id="updated"></p>
+      <button class="btn btn-sm btn-line" id="forget" type="button">Forget key</button>
+    </div>
+  </section>
+
+</div>
+
+</main>
+
+<footer class="foot">
+  <img class="mark" src="../brand/mark-teal.svg" alt="" width="52" height="41" loading="lazy">
+  <nav aria-label="Footer"><a href="../support/">Support</a><a href="../privacy/">Privacy</a></nav>
+  <p class="legal">&copy; 2026 mooboard co.</p>
+</footer>
+
+<script>
+// how many boards run each build + asks api.mooboard.co with the key this device keeps + every minute while in view
+(function () {
+  'use strict';
+  var API = 'https://api.mooboard.co';
+  // a local preview may ask a local worker with ?api=http://localhost:8787 + mooboard.co always asks api.mooboard.co
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+    var asked = new URLSearchParams(location.search).get('api');
+    if (asked && /^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(asked)) API = asked;
+  }
+  var STORE = 'mooboard.fleet';   // where this device keeps the key
+  var EVERY_MS = 60000;
+  var WAIT_MS = 10000;            // an ask that takes longer counts as no answer
+  var CHANNELS = { stable: 'Stable', beta: 'Beta', prototype: 'Prototype' };
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $('key'), input = $('k-key'), err = $('k-key-err'), boards = $('boards'), data = $('data');
+  var down = $('down'), rows = $('rows'), builds = $('builds'), updated = $('updated');
+  var held = '';     // the key for this visit when the device keeps nothing
+  var epoch = 0;     // moves on when the key changes so a late answer for an old key does nothing
+  var asking = -1;   // the epoch of the ask in flight
+  var timer = null;
+
+  function readKey() {
+    try {
+      var k = localStorage.getItem(STORE);
+      if (k) return k;
+    } catch (e) { /* no storage here */ }
+    return held;
+  }
+  function saveKey(k) {
+    held = k;
+    try { localStorage.setItem(STORE, k); } catch (e) { /* kept for this visit only */ }
+  }
+  function dropKey() {
+    held = '';
+    try { localStorage.removeItem(STORE); } catch (e) { /* nothing kept */ }
+  }
+
+  // the form for a key + with the reason the last one failed
+  function askKey(message) {
+    epoch += 1;
+    clearTimeout(timer);
+    boards.hidden = true;
+    form.hidden = false;
+    input.value = '';
+    err.textContent = message;
+    if (message) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid');
+  }
+
+  function num(n) { return (Number(n) || 0).toLocaleString('en-US'); }
+
+  function cell(tr, text, cls) {
+    var td = document.createElement('td');
+    td.textContent = text;
+    if (cls) td.className = cls;
+    tr.appendChild(td);
+  }
+
+  function show(d) {
+    $('t-online').textContent = num(d.total.online);
+    $('t-day').textContent = num(d.total.day);
+    $('t-week').textContent = num(d.total.week);
+    rows.textContent = '';
+    d.builds.forEach(function (b) {
+      var tr = document.createElement('tr');
+      var channel = Object.prototype.hasOwnProperty.call(CHANNELS, b.channel) ? CHANNELS[b.channel] : '';
+      cell(tr, b.version || 'Unknown', b.version ? 'build' : 'build none');
+      cell(tr, channel || 'Unknown', channel ? '' : 'none');
+      cell(tr, num(b.online), 'n');
+      cell(tr, num(b.day), 'n');
+      cell(tr, num(b.week), 'n');
+      rows.appendChild(tr);
+    });
+    builds.hidden = d.builds.length === 0;
+    updated.textContent = 'Updated ' + new Date(d.now).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    data.hidden = false;
+    down.hidden = true;
+  }
+
+  function load() {
+    var key = readKey();
+    if (!key || asking === epoch) return;
+    var mine = asking = epoch;
+    clearTimeout(timer);
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var cut = setTimeout(function () { if (ctrl) ctrl.abort(); }, WAIT_MS);
+    fetch(API + '/fleet', { headers: { Authorization: 'Bearer ' + key }, cache: 'no-store', credentials: 'omit', signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) {
+        if (r.status === 401) return 'key';
+        if (!r.ok) throw new Error('status');
+        return r.json();
+      })
+      .then(function (d) {
+        if (mine !== epoch) return;
+        if (d === 'key') {
+          dropKey();
+          askKey('That key didn’t work.');
+          input.focus();
+          return;
+        }
+        if (!d || typeof d.now !== 'number' || !d.total || !Array.isArray(d.builds)) throw new Error('answer');
+        show(d);
+      })
+      .catch(function () { if (mine === epoch) down.hidden = false; })
+      .then(function () {
+        clearTimeout(cut);
+        if (asking === mine) asking = -1;
+        if (mine === epoch && readKey()) timer = setTimeout(tick, EVERY_MS);
+      });
+  }
+
+  // every minute while the page is in view + at once when it comes back into view
+  function tick() { if (!document.hidden) load(); }
+  document.addEventListener('visibilitychange', tick);
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var key = input.value.trim();
+    if (!key) { input.focus(); return; }
+    saveKey(key);
+    epoch += 1;
+    data.hidden = true;
+    down.hidden = true;
+    updated.textContent = '';
+    form.hidden = true;
+    boards.hidden = false;
+    load();
+  });
+
+  input.addEventListener('input', function () {
+    if (!err.textContent) return;
+    err.textContent = '';
+    input.removeAttribute('aria-invalid');
+  });
+
+  $('forget').addEventListener('click', function () {
+    dropKey();
+    askKey('');
+    input.focus();
+  });
+
+  if (readKey()) {
+    boards.hidden = false;
+    load();
+  } else {
+    askKey('');
+  }
+})();
+</script>
+</body>
+</html>
