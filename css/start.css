@@ -54,17 +54,32 @@ h1:focus, h2:focus { outline: none; }
 .track::-webkit-scrollbar { display: none; }
 .card {
   position: relative; flex: 0 0 calc(100% - 40px); min-width: 0; scroll-snap-align: center; scroll-snap-stop: always;
-  display: flex; flex-direction: column; gap: 22px; overflow-y: auto; overscroll-behavior-y: contain;
-  padding: 26px 22px; border-radius: 28px; background: var(--card); box-shadow: var(--shadow);
+  --px: 22px; --py: 26px; --gap: 22px;
+  display: flex; flex-direction: column; gap: var(--gap); overflow-y: auto; overscroll-behavior-y: contain;
+  padding: var(--py) var(--px); border-radius: 28px; background: var(--card); box-shadow: var(--shadow);
   scrollbar-width: none;
 }
 .card::-webkit-scrollbar { display: none; }
-/* centered while it fits + a card taller than the screen scrolls from its top instead */
+/* centered while it fits + a card taller than the screen scrolls from its top instead + with the scene on the words
+   alone sit in the middle */
 .card > :first-child { margin-top: auto; }
 .card > :last-child { margin-bottom: auto; }
+.js:not(.flat3d) .card > .txt { margin-block: auto; }
 .card:first-child { margin-left: 20px; }
 .card:last-child { margin-right: 20px; }
 .txt { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.txt > p { margin: 0; text-wrap: pretty; }
+/* a title with its one action on the right */
+.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* a card with more words below its edge fades out at the bottom until it is scrolled to the end + a sticky edge stops
+   at the card's padding so it reaches past it to the very edge */
+.card::after {
+  content: ''; position: sticky; bottom: calc(-1 * var(--py)); flex: none; align-self: stretch; height: 76px;
+  margin: calc(-76px - var(--gap)) calc(-1 * var(--px)) 0; background: linear-gradient(to bottom, transparent, var(--card) 88%);
+  pointer-events: none; opacity: 0; transition: opacity .25s;
+}
+.card.more-below::after { opacity: 1; }
+html:not(.js) .card::after { content: none; }
 .lead { margin: 0; font: 600 clamp(18px, 4.8vw, 22px)/1.35 var(--display); color: var(--muted); text-wrap: balance; }
 html:not(.js) .track { flex-direction: column; overflow: visible; }
 html:not(.js) body { height: auto; overflow: auto; }
@@ -156,6 +171,11 @@ html:not(.js) .pager { display: none; }
   background: var(--teal); color: var(--on-teal); font: 800 14px/1 var(--body); font-style: normal;
 }
 .diagram .pin { position: absolute; transform: translate(-50%, -50%); }
+/* BOOT's and RESET's caps as the buttons tour draws them + each as big as a number's badge */
+.pin.caps { display: flex; gap: 4px; width: auto; border-radius: 8px; background: none; color: var(--text); }
+.pin.caps svg { width: 26px; height: 26px; }
+.diagram .pin.caps { padding: 2px; border-radius: 9px; background: var(--card); }
+#hardware .rows .pin:not(.caps) { margin-inline: 15px; }
 .key { display: inline-block; width: 1em; height: 1em; vertical-align: -.14em; margin: 0 1px; }
 
 /* ---------- 4 mounting + the chips + the 3d stage + the steps + the caption + replay ---------- */
@@ -212,35 +232,16 @@ html:not(.js) .pager { display: none; }
 .mount.flat:not(.stand) .vis, .mount.flat .seq-name, .mount.flat .stage canvas { display: none; }
 html:not(.js) .mount .vis { display: none; }
 
-/* ---------- 5 set up + numbered steps as the spotify guide has them + the line for a board that is set up ---------- */
-.steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
-.steps > li { position: relative; min-height: 32px; padding: 3px 0 0 46px; counter-increment: step; text-wrap: pretty; }
-.steps > li + li { margin-top: 18px; }
-.steps > li::before {
-  content: counter(step); position: absolute; left: 0; top: 0; display: grid; place-items: center; width: 32px; height: 32px;
-  border-radius: 50%; background: var(--teal); color: var(--on-teal); font: 900 16px/1 var(--body);
-}
-.hint { margin: 4px 0 0; padding: 14px 16px; border-radius: 16px; background: var(--soft); color: var(--muted); font-size: 15px; font-weight: 700; }
-.hint b { color: var(--text); }
-
-/* ---------- 5 to 7 wi-fi + a lead line + short lists + section headers under a divider + the board's own words on
-   a little dark panel + the setup page's words as quotes ---------- */
-.lede { margin: 0; font-weight: 700; text-wrap: pretty; }
+/* ---------- 5 join its wi-fi + short lists + the note with the link to wi-fi help + the sheet's sections under a
+   divider ---------- */
 .txt h3 { margin: 4px 0 -4px; padding-top: 14px; border-top: 1px solid var(--line); font: 800 13px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .facts { margin: 0; padding-left: 1.2em; }
 .facts li { text-wrap: pretty; }
 .facts li + li { margin-top: 6px; }
 .facts li::marker { color: var(--muted); }
-.facts.quotes { padding: 0; list-style: none; }
-.facts.quotes li { padding: 8px 12px; border-left: 3px solid var(--line); border-radius: 0 10px 10px 0; background: var(--soft); font-size: 15px; }
-.boardsays > li { gap: 12px; }
-.panel {
-  flex: none; display: grid; place-content: center; width: 128px; min-height: 46px; padding: 6px 8px; border-radius: 8px;
-  background: #07080A; box-shadow: inset 0 0 0 2px #262B30; text-align: center; color: #fff; font: 800 13px/1.2 var(--body);
-}
-.panel b { font-weight: 800; }
-.panel i { display: block; font-style: normal; font-weight: 700; font-size: 12px; color: #A3ACB0; }
-.panel .err { color: #FF6464; }
+.hint { margin: 4px 0 0; padding: 14px 16px; border-radius: 16px; background: var(--soft); color: var(--muted); font-size: 15px; font-weight: 700; }
+.hint b { color: var(--text); }
+.more { font-weight: 800; }
 .wifi .vis { width: 100%; max-width: 520px; margin: 0 auto; perspective: 1400px; }
 .wifi .tilt { transform: rotateX(6deg) rotateY(-8deg); }
 
@@ -267,9 +268,38 @@ html:not(.js) .window, .flat3d .window { display: none; }
 .flat3d .spot { cursor: default; }
 .flat3d .spot .pin { box-shadow: none; }
 
+/* ---------- wi-fi help + a sheet up from the bottom over the cards + the title and close stay put and the body scrolls
+   + in the middle of a computer's screen ---------- */
+.sheet {
+  width: 100%; max-width: 560px; max-height: min(88vh, 760px); max-height: min(88dvh, 760px); margin: auto auto 0; padding: 0;
+  border: 0; border-radius: 28px 28px 0 0; background: var(--card); color: var(--text); box-shadow: 0 -20px 60px -30px rgba(14, 26, 34, .6);
+  overflow: hidden; overscroll-behavior: contain;
+}
+.sheet[open] { display: flex; flex-direction: column; animation: sheet-up .32s var(--ease); }
+.sheet::backdrop { background: rgba(14, 26, 34, .48); }
+@keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } }
+.sheet-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 22px 14px; border-bottom: 1px solid var(--line); }
+.sheet-head h2 { font-size: clamp(25px, 6.4vw, 32px); }
+.close {
+  flex: none; height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--grey); color: var(--text);
+  font: 600 17px var(--display); cursor: pointer;
+}
+.close:active { transform: scale(.98); }
+.sheet-body {
+  --sx: 22px; --sb: max(24px, env(safe-area-inset-bottom)); flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: 4px var(--sx) var(--sb);
+}
+.sheet-body::after {
+  content: ''; position: sticky; bottom: calc(-1 * var(--sb)); flex: none; height: 48px; margin: -62px calc(-1 * var(--sx)) 0;
+  background: linear-gradient(to bottom, transparent, var(--card) 80%); pointer-events: none; opacity: 0; transition: opacity .25s;
+}
+.sheet-body.more-below::after { opacity: 1; }
+html:not(.js) .sheet { display: block; position: static; max-height: none; margin: 20px; border-radius: 28px; overflow: visible; }
+html:not(.js) .sheet .close { display: none; }
+
 /* ---------- desktop + the drawing on the left and the words on the right ---------- */
 @media (min-width: 880px) {
-  .card { flex-basis: calc(100% - 96px); padding: 40px 48px; }
+  .card { flex-basis: calc(100% - 96px); --px: 48px; --py: 30px; }
   .card:first-child { margin-left: 48px; }
   .card:last-child { margin-right: 48px; }
   .split { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(280px, 1fr); align-items: center; gap: 44px; }
@@ -278,17 +308,24 @@ html:not(.js) .window, .flat3d .window { display: none; }
   .cap { font-size: 21px; }
   .rows b { font-size: 18px; }
   .rows small { font-size: 16px; }
-  .steps > li { font-size: 18px; }
   .split .stage { max-height: none; }
   .split.flat:not(.stand) { display: flex; }
   .js:not(.flat3d) .split { display: flex; }
-  .window { aspect-ratio: auto; height: min(44vh, 420px); height: min(44dvh, 420px); max-height: none; }
+  .window { aspect-ratio: auto; height: min(40vh, 400px); height: min(40dvh, 400px); max-height: none; }
   .split:not(.flat) > * { margin: 0; }
-  .narrow .txt { width: min(100%, 560px); margin-inline: auto; }
+  .narrow .txt, .js:not(.flat3d) .split .txt { width: min(100%, 560px); margin-inline: auto; }
+  /* what is in the box and where things are in two columns where there is room + the wi-fi words in longer lines */
+  #box .txt, .js:not(.flat3d) #hardware .txt { width: min(100%, 760px); }
+  #wifi .txt { width: min(100%, 700px); }
+  #box .rows, .js:not(.flat3d) #hardware .rows { display: grid; grid-template-columns: 1fr 1fr; column-gap: 36px; }
+  #box .rows > li:nth-child(2), .js:not(.flat3d) #hardware .rows > li:nth-child(2) { border-top: 0; }
+  .sheet { margin: auto; border-radius: 28px; max-height: min(84vh, 760px); max-height: min(84dvh, 760px); }
+  .sheet-head { padding: 28px 32px 16px; }
+  .sheet-body { --sx: 32px; --sb: 30px; padding: 6px var(--sx) var(--sb); }
   .hello .tilt { width: min(100%, 720px); }
 }
 @media (max-height: 720px) and (max-width: 879px) {
-  .card { padding: 18px 18px; gap: 14px; }
+  .card { --px: 18px; --py: 18px; --gap: 14px; }
   .stage { aspect-ratio: 16 / 10; }
   .chip { height: 36px; padding: 0 14px; }
   .player { gap: 8px; }
@@ -298,5 +335,6 @@ html:not(.js) .window, .flat3d .window { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; }
-  .btn:active, .back:active { transform: none; }
+  .btn:active, .back:active, .close:active { transform: none; }
+  .sheet[open] { animation: none; }
 }

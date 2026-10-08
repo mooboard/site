@@ -1,7 +1,8 @@
 /* mooboard.co/start in one scene + a new board's first steps as cards to flick under one 3d window + ?m= names the
-   model and ?u= the board's code as the sticker link hands them on + ?frame= its frame as the buttons tour takes it +
-   a swipe or the dots or back and next or the arrow keys move between the cards and the scene moves with them +
-   js/scene.mjs and three.js load at the start while the first card's words are already up */
+   model and ?u= the board's code as the sticker link hands them on + its own wi-fi is named after that code + ?frame=
+   its frame as the buttons tour takes it + a swipe or the dots or back and next or the arrow keys move between the
+   cards and the scene moves with them + wi-fi help opens over them + js/scene.mjs and three.js load at the start while
+   the first card's words are already up */
 (function () {
   'use strict';
   var MODELS = ['MB1W', 'MB1D', 'MB1P'];
@@ -29,6 +30,10 @@
     var v = param(search, 'frame');
     return v !== null && Object.prototype.hasOwnProperty.call(SITE_FRAMES, v) ? v : null;
   }
+  // the board's own wi-fi while it waits for a phone + named after its code + the Xs when the link has no code
+  function ssidOf(search) {
+    return 'mooboard-' + (codeOf(search) || 'XXXX');
+  }
   // mooboard.co/hi for this board + its own link opens it once it is on the same wi-fi + else the boards near you
   function hiOf(code) {
     return code ? '/hi/' + code : '/hi/';
@@ -45,7 +50,7 @@
   function waysOf(model) {
     return model === 'MB1D' ? ['strips', 'screws', 'stand'] : ['strips', 'screws'];
   }
-  var api = window.mooStart = { modelOf: modelOf, codeOf: codeOf, frameOf: frameOf, railOf: railOf, hiOf: hiOf, portalOf: portalOf, waysOf: waysOf };
+  var api = window.mooStart = { modelOf: modelOf, codeOf: codeOf, ssidOf: ssidOf, frameOf: frameOf, railOf: railOf, hiOf: hiOf, portalOf: portalOf, waysOf: waysOf };
 
   var root = document.documentElement;
   var track = document.getElementById('track');
@@ -57,11 +62,12 @@
   var search = location.search;
   var model = modelOf(search), code = codeOf(search), frame = frameOf(search);
   var finish = frame ? SITE_FRAMES[frame] : 'black';
-  var hi = hiOf(code);
+  var hi = hiOf(code), ssid = ssidOf(search);
 
   // ---- what the link says about the board ----
   all('[data-hi]').forEach(function (a) { a.setAttribute('href', hi); });
   all('[data-portal]').forEach(function (a) { a.setAttribute('href', portalOf(code)); });
+  all('[data-ssid]').forEach(function (s) { s.textContent = ssid; });
   all('.bezel').forEach(function (b) { b.setAttribute('data-frame', finish); });
   root.setAttribute('data-frame', finish);
   if (frame) $('watch').setAttribute('href', '/hi/buttons/?frame=' + frame);
@@ -111,8 +117,8 @@
     };
   }
   // ---- the join card as the board shows it while it waits for a phone + a code to scan on the left with its light
-  // border + Scan to set up in teal + its wi-fi name + PW in dim with its digits as dots here + the code is drawn to look
-  // like the board's and holds nothing a phone could join ----
+  // border + Scan to set up in teal + its wi-fi name as the card says it + PW in dim with its digits as dots here + the
+  // code is drawn to look like the board's and holds nothing a phone could join ----
   function codeModules(n) {
     var m = [], seed = 20261008;
     var rnd = function () { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
@@ -143,7 +149,7 @@
       }
     });
   }
-  function joinScene(MB) {
+  function joinScene(MB, name) {
     var N = 25, Q = codeModules(N), LIGHT = [205, 210, 212], TEAL = [119, 237, 215], WHITE = [255, 255, 255];
     var LEFT = 32, WIDE = 92;
     var fit = function (caps, str) { for (var i = 0; i < caps.length; i++) { var L = MB.text.line('label', caps[i], str); if (!L.empty && L.inkW <= WIDE) return L; } return MB.text.line('label', caps[caps.length - 1], str); };
@@ -156,7 +162,7 @@
             var lit = x < 0 || y < 0 || x >= N || y >= N || Q[y * N + x] === 2;
             if (lit) f.set(3 + x, 4 + y, LIGHT);
           }
-          var a = fit([7, 6.5, 6], 'Scan to set up'), b = fit([7, 6.5, 6], 'mooboard-XXXX'), c = fit([6, 5.5, 5], 'PW ••••••••');
+          var a = fit([7, 6.5, 6], 'Scan to set up'), b = fit([7, 6.5, 6], name), c = fit([6, 5.5, 5], 'PW ••••••••');
           var gap = 3, h = a.inkH + b.inkH + c.inkH + 2 * gap, top = Math.floor((32 - h) / 2);
           drawLine(f, a, LEFT - a.l, top - a.t, TEAL);
           drawLine(f, b, LEFT - b.l, top + a.inkH + gap - b.t, WHITE);
@@ -188,7 +194,7 @@
     var MB = window.MooBoard;
     if (!MB || !MB.Board || !MB.text || !MB.scenes) return;
     MB.scenes.hello = helloScene(MB);
-    MB.scenes.join = joinScene(MB);
+    MB.scenes.join = joinScene(MB, ssid);
     MB.scenes.off = function () { return { label: 'Off', dur: 10, draw: function (f) { f.fill([0, 0, 0]); } }; };
     MB.scenes.clock = clockScene(MB);
     [['hello-board', 'hello', 30], ['join-board', 'join', 4], ['poster-board', 'hello', 30]].forEach(function (b) {
@@ -265,7 +271,7 @@
     else go(index + 1);
   });
   document.addEventListener('keydown', function (e) {
-    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.defaultPrevented) return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || e.defaultPrevented || help.open) return;
     var t = e.target, tag = t && t.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
     if (e.key === 'ArrowRight') { e.preventDefault(); go(index + 1); }
@@ -274,8 +280,53 @@
   // a resize keeps the card that shows in the middle
   window.addEventListener('resize', function () { if (index >= 0) track.scrollLeft = leftOf(index); });
   window.addEventListener('hashchange', function () {
-    var k = cards.map(function (c) { return c.id; }).indexOf(location.hash.slice(1));
+    var ids = cards.map(function (c) { return c.id; });
+    if (location.hash === '#help') { go(ids.indexOf('wifi')); openHelp(); return; }
+    var k = ids.indexOf(location.hash.slice(1));
     if (k >= 0) go(k);
+  });
+
+  // ---- a card or the help sheet with more words below its edge fades out there + as it scrolls or its words change
+  // size ----
+  var scrollers = cards.concat(all('.sheet-body'));
+  function edge(el) { el.classList.toggle('more-below', el.scrollHeight - el.scrollTop - el.clientHeight > 4); }
+  function edges() { scrollers.forEach(edge); }
+  scrollers.forEach(function (el) { el.addEventListener('scroll', function () { edge(el); }, { passive: true }); });
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(edges);
+    scrollers.forEach(function (el) { ro.observe(el); all(':scope > *', el).forEach(function (k) { ro.observe(k); }); });
+  }
+  window.addEventListener('resize', edges);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(edges);
+
+  // ---- wi-fi help + a sheet over the cards + press here opens it + close or escape or a tap outside shuts it + tab
+  // stays inside it while it is open + focus goes back to press here ----
+  var help = $('help'), more = $('more'), helpClose = $('help-close');
+  var modal = typeof help.showModal === 'function';
+  function openHelp() {
+    if (help.open) return;
+    if (modal) help.showModal(); else help.setAttribute('open', '');
+    var body = help.querySelector('.sheet-body');
+    body.scrollTop = 0;
+    edge(body);
+    helpClose.focus();
+  }
+  function closeHelp() {
+    if (!help.open) return;
+    if (modal) help.close(); else help.removeAttribute('open');
+    try { more.focus({ preventScroll: true }); } catch (e) { more.focus(); }
+  }
+  more.addEventListener('click', function (e) { e.preventDefault(); openHelp(); });
+  helpClose.addEventListener('click', closeHelp);
+  help.addEventListener('click', function (e) { if (e.target === help) closeHelp(); });   // a tap on the dim outside it
+  help.addEventListener('cancel', function (e) { e.preventDefault(); closeHelp(); });   // escape
+  help.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); closeHelp(); return; }
+    if (e.key !== 'Tab') return;
+    var f = all('a[href], button:not([disabled])', help);
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !help.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || !help.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
   });
 
   // ---- the one scene in the window + it loads at the start + each card moves it to that card's pose + the mounting
@@ -401,12 +452,14 @@
   onStep('strips', 0);
   all('#seqs > div').forEach(function (d) { d.hidden = d.getAttribute('data-way') !== M.way; });
 
-  // ---- the first card + the address's #card + else the hello + quietly ----
-  var first = Math.max(0, cards.map(function (c) { return c.id; }).indexOf(location.hash.slice(1)));
+  // ---- the first card + the address's #card + #help is the wi-fi card with its help open + else the hello + quietly ----
+  var ids = cards.map(function (c) { return c.id; }), asked = location.hash;
+  var first = Math.max(0, ids.indexOf(asked === '#help' ? 'wifi' : asked.slice(1)));
   mark(first);
   track.scrollLeft = leftOf(first);
   arrive(false);
   startScene();
+  if (asked === '#help') openHelp();
 
   // renders for the owner + ?shots holds the page at a card and the scene at a pose or a moment
   if (/[?&]shots\b/.test(search)) {
@@ -417,9 +470,11 @@
         (function wait() { if (S.state === 'ready' || S.state === 'flat') res(S.state); else setTimeout(wait, 100); })();
       });
     };
+    api.help = function (on) { if (on) openHelp(); else closeHelp(); };
     api.hold = function (spec) {
       S.api.hold(spec);
       if (spec.way) { onStep(spec.way, spec.step || 0); onTime(spec.way, spec.step || 0, spec.t == null ? 1 : 0.5); }
+      if (spec.spot != null) onSpot(spec.spot);
     };
   }
 })();

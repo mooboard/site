@@ -1,5 +1,6 @@
-// tests for /start + the start page's words and links + js/start.js's reading of ?m= ?u= and ?frame= + the rail model's
-// names + run node --test tools/hi.test.mjs tools/portal.test.mjs tools/start.test.mjs
+// tests for /start + the start page's words and links + js/start.js's reading of ?m= ?u= and ?frame= + the board's own
+// wi-fi named after its code + wi-fi help in a sheet + the rail model's names + run node --test tools/hi.test.mjs
+// tools/portal.test.mjs tools/start.test.mjs
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
@@ -33,8 +34,8 @@ const between = (s, a, b) => s.slice(s.indexOf(a), s.indexOf(b, s.indexOf(a) + a
 
 test('the start page loads the site\'s own files only, and nothing from anywhere else', () => {
   for (const text of [startJs, mount, css]) assert.doesNotMatch(text, /https?:\/\//, 'no other site');
-  assert.deepEqual([...new Set(html.match(/https?:\/\/[^\s"'<>)]+/g))], ['http://4.3.2.1'], 'only the hotspot address, as words to type');
-  assert.doesNotMatch(html, /(?:href|src)="https?:/, 'and never as a link or a file');
+  assert.deepEqual([...new Set(html.match(/https?:\/\/[^\s"'<>)]+/g))], ['http://4.3.2.1'], 'only the hotspot address');
+  assert.deepEqual(html.match(/(?:href|src)="https?:[^"]*"/g), ['href="http://4.3.2.1"'], 'as the one link a person taps on the board\'s own Wi-Fi, and never a file');
   for (const text of [html, startJs, mount, css]) {
     assert.doesNotMatch(text, /@import/);
     assert.doesNotMatch(text, /\/\/(?:fonts|cdn|unpkg|ajax)\./);
@@ -78,7 +79,27 @@ test('the hardware rows take the camera to their spot, and the scene moves card 
   assert.match(mount, /const k = reduced \? 1 : ease\(seg\(\(now - moveAt\) \/ 1000, 0, MOVE\)\)/, 'about a second with an ease, or a cut');
   assert.match(mount, /let touring = !reduced/, 'the camera tour plays only with motion');
   assert.match(mount, /mt\.held = reduced; mt\.playing = !reduced/, 'the steps are stills with less motion');
-  for (const id of ['hello', 'box', 'hardware', 'mounting', 'wifi', 'setup', 'help']) assert.match(mount, new RegExp('\\n    ' + id + ': '), id + ' has a pose');
+  for (const id of ['hello', 'box', 'hardware', 'mounting', 'wifi']) assert.match(mount, new RegExp('\\n    ' + id + ': '), id + ' has a pose');
+  assert.doesNotMatch(mount, /\n    (?:setup|help): /, 'and the cards that went have none');
+});
+
+test('the BOOT and RESET row shows their caps in place of a number as the buttons tour draws them, and so does its marker', () => {
+  const tour = read('hi/buttons/index.html');
+  for (const id of ['k-boot', 'k-reset']) {
+    const sym = tour.match(new RegExp(`<symbol id="${id}"[\\s\\S]*?</symbol>`))[0];
+    assert.ok(html.includes(sym), `the tour's ${id}`);
+  }
+  const caps = '<i class="pin caps" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#k-boot"/></svg><svg viewBox="0 0 24 24"><use href="#k-reset"/></svg></i>';
+  const hw = between(html, 'id="hardware"', '</section>');
+  assert.ok(hw.includes(`data-spot="1" aria-pressed="false">${caps}<span class="what"><b>BOOT and RESET</b>`), 'the row');
+  assert.deepEqual([...hw.matchAll(/<i class="pin" aria-hidden="true">(\d)<\/i>/g)].map((m) => m[1]), ['2', '3', '4'], 'the others keep their numbers');
+  assert.match(hw, /<i class="pin caps" style="[^"]+" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#k-boot"\/><\/svg><svg viewBox="0 0 24 24"><use href="#k-reset"\/><\/svg><\/i>/, 'the drawing without 3d');
+  assert.doesNotMatch(hw, /<i class="pin"[^>]*>1<\/i>/, 'no 1 anywhere');
+  assert.match(css, /\.pin\.caps svg \{ width: 26px; height: 26px; \}/, 'each cap as big as a number\'s badge');
+  assert.match(mount, /const caps = n === 1/, 'the marker by the buttons');
+  for (const d of ['M11.4 4.2 14.6 6.6 11.4 9z', 'M15.9 8.6A5.4 5.4 0 1 1 12 6.6']) {
+    assert.ok(tour.includes(d) && mount.includes(d), 'draws RESET\'s arrow as the tour does');
+  }
 });
 
 test('the board\'s face in 3d is a board of its own with a clock that asks nothing of the network', () => {
@@ -101,6 +122,18 @@ test('?u= is a board code with the label\'s letters in any case, and anything el
   for (const [search, want] of cases) assert.equal(codeOf(search), want, search);
   assert.equal(hiOf('5KAS'), '/hi/5KAS', 'a code opens that board');
   assert.equal(hiOf(null), '/hi/', 'else the boards near you');
+});
+
+test('the board\'s own Wi-Fi is mooboard- and its code from ?u=, and mooboard-XXXX without one', () => {
+  const { ssidOf } = helpers();
+  const cases = [['?u=5KAS', 'mooboard-5KAS'], ['?m=MB1D&u=t8qp', 'mooboard-T8QP'], ['', 'mooboard-XXXX'], ['?u=OOPS', 'mooboard-XXXX'],
+    ['?u=5KASX', 'mooboard-XXXX'], ['?w=3F9C', 'mooboard-XXXX'], ['?m=MB1W', 'mooboard-XXXX']];
+  for (const [search, want] of cases) assert.equal(ssidOf(search), want, search);
+  assert.equal((startJs.match(/'mooboard-'/g) || []).length, 1, 'the rule in one place');
+  assert.doesNotMatch(startJs, /param\(search, 'w'\)/, 'no ?w=');
+  assert.match(html, /<b><span class="nw">Wi-Fi<\/span> SSID:<\/b> <span class="nw" data-ssid>mooboard-XXXX<\/span>/, 'the card');
+  assert.match(startJs, /all\('\[data-ssid\]'\)\.forEach\(function \(s\) \{ s\.textContent = ssid; \}\)/, 'fills it');
+  assert.match(startJs, /MB\.scenes\.join = joinScene\(MB, ssid\)/, 'and the board\'s join card in 3d says the same');
 });
 
 test('?frame= takes the frames boards name, and nothing else', () => {
@@ -146,8 +179,7 @@ test('a sticker link\'s trip to the start page lands with its model and code, an
   assert.equal(modelOf(search), 'MB1D');
   assert.equal(codeOf(search), '5KAS');
   assert.equal(hiOf(codeOf(search)), '/hi/5KAS', 'no ?m= so a board still away shows the same-Wi-Fi page and never comes round again');
-  assert.equal([...html.matchAll(/href="\/hi\/" data-hi/g)].length, 1, 'the mooboard.co/hi link takes the code');
-  assert.equal([...html.matchAll(/href="\/portal\/" data-portal/g)].length, 2, 'and both mooboard.co/portal links');
+  assert.equal([...html.matchAll(/href="\/portal\/" data-portal/g)].length, 1, 'the mooboard.co/portal link in Wi-Fi help takes the code');
   const { portalOf } = helpers();
   assert.equal(portalOf('5KAS'), '/portal/5KAS');
   assert.equal(portalOf(null), '/portal/');
@@ -162,12 +194,15 @@ test('the dots sit over a dock of back and next, back hides on the first card an
   assert.equal((html.match(/id="back"|id="next"|class="dots"/g) || []).length, 3, 'one back, one next and one row of dots');
 });
 
-test('the seven cards, in order, with one h1', () => {
-  const ids = [...html.matchAll(/<section class="card[^"]*" id="(\w+)" aria-roledescription="slide" aria-label="(\d) of 7"/g)].map((m) => [m[1], m[2]]);
-  assert.deepEqual(ids, [['hello', '1'], ['box', '2'], ['hardware', '3'], ['mounting', '4'], ['wifi', '5'], ['setup', '6'], ['help', '7']]);
+test('the five cards, in order, with one h1, and Wi-Fi help is a sheet and not a card', () => {
+  const ids = [...html.matchAll(/<section class="card[^"]*" id="(\w+)" aria-roledescription="slide" aria-label="(\d) of 5"/g)].map((m) => [m[1], m[2]]);
+  assert.deepEqual(ids, [['hello', '1'], ['box', '2'], ['hardware', '3'], ['mounting', '4'], ['wifi', '5']]);
+  assert.equal((html.match(/<section class="card/g) || []).length, 5);
   assert.equal(html.match(/<h1>/g).length, 1);
   assert.deepEqual([...html.matchAll(/<h[12]>([\s\S]*?)<\/h[12]>/g)].map((m) => m[1].replace(/<[^>]+>/g, '')),
-    ['Meet your mooboard', 'In the box', 'Hardware', 'Mounting', 'Join its Wi-Fi', 'Set up', 'Wi-Fi help']);
+    ['Meet your mooboard', 'In the box', 'Hardware', 'Mounting', 'Join its Wi-Fi']);
+  assert.doesNotMatch(html, /id="setup"|<section[^>]*id="help"|Already set up/);
+  assert.match(css, /\.js:not\(\.flat3d\) \.card > \.txt \{ margin-block: auto; \}/, 'the words sit in the middle of each card');
 });
 
 test('in the box: the board, the rail with its hooks, the strips, the screws and anchors, the charger and the cable', () => {
@@ -185,41 +220,51 @@ test('hardware: where each thing is, and Watch opens the buttons tour', () => {
   assert.match(startJs, /'\/hi\/buttons\/\?frame=' \+ frame/, 'with the board\'s frame when the link names one');
 });
 
-test('the setup cards keep the words /hi uses for a new board, in order, and say where a board that is set up is', async () => {
-  const hi = load('/hi', nearbyOf([]));
-  await hi.settle();
-  const theirs = hi.setup().children[1].children.map((li) => li.textContent);
-  const text = words(html);
-  let at = 0;
-  for (const line of theirs) {
-    const i = text.indexOf(line, at);
-    assert.ok(i >= at, line);
-    at = i + line.length;
-  }
-  assert.ok(text.includes('Already set up? Open mooboard.co/portal on the same Wi-Fi as your mooboard.'), 'the address the firmware gives once setup is done');
+test('the Wi-Fi card says what the owner wrote, word for word, and its links work', () => {
+  const card = between(html, 'id="wifi"', '</section>');
+  const said = words(card.slice(card.indexOf('<div class="txt">'))).replace(/’/g, "'").trim();
+  assert.equal(said, [
+    'Join its Wi-Fi',
+    'After plugging in your mooboard, it will show info to join its Wi-Fi.',
+    'Wi-Fi SSID: mooboard-XXXX',
+    'Password: See on board.',
+    "You can also scan the QR code with your phone's camera.",
+    "Once connected, a captive portal will launch where you will input your home's Wi-Fi details.",
+    "If it doesn't open, go to http://4.3.2.1 in your browser manually.",
+    'Note: mooboard can only join WPA2 and WPA3 Personal networks on the 2.4GHz band. Press here for more details.',
+  ].join(' '));
+  assert.match(card, /<a class="nw" href="http:\/\/4\.3\.2\.1" target="_blank" rel="noopener">http:\/\/4\.3\.2\.1<\/a>/, 'the address to tap');
+  assert.match(card, /<a class="more" id="more" href="#help" role="button" aria-haspopup="dialog" aria-controls="help">Press here for more details\.<\/a>/);
+  assert.match(startJs, /more\.addEventListener\('click', function \(e\) \{ e\.preventDefault\(\); openHelp\(\); \}\)/, 'it opens Wi-Fi help');
 });
 
-test('the Wi-Fi cards say what the firmware does, in its own words', () => {
-  const text = words(html);
+test('Wi-Fi help is a sheet with the help card\'s words, a Close button, Escape, a focus trap and a body that scrolls', () => {
+  const sheet = between(html, '<dialog class="sheet" id="help"', '</dialog>');
+  assert.match(sheet, /aria-labelledby="help-title"/);
+  assert.match(sheet, /<h2 id="help-title"><span class="nw">Wi-Fi<\/span> help<\/h2>\s*<button type="button" class="close" id="help-close">Close<\/button>/);
+  assert.deepEqual([...sheet.matchAll(/<h3>([\s\S]*?)<\/h3>/g)].map((m) => m[1].replace(/<[^>]+>/g, '')), ['Tips', 'Change Wi-Fi later', 'Factory reset']);
+  const text = words(sheet);
   for (const fact of [
-    'Scan to set up', 'mooboard-XXXX', 'its password, 8 digits', 'The status light breathes blue while it waits.',
-    'go to http://4.3.2.1 in your browser', 'It can take up to a minute.',
-    'For 10 seconds.',
-    'That password did not work. Check it and try again.',
-    'mooboard could not find your network. It needs a 2.4 GHz network, close enough to hear.',
-    'This network is incompatible. Please join a WPA2 or WPA3 Personal network on 2.4 GHz.',
-    'mooboard could not join your network. Check the router is on, then try again.',
-    'mooboard.local also works', 'mooboard needs a 2.4 GHz network.', 'Do not pick a guest network.',
+    'mooboard needs a 2.4 GHz network.', 'It joins WPA2 and WPA3 Personal networks, and open ones.', 'Do not pick a guest network.',
     'A VPN or iCloud Private Relay can hide that you are home.', 'Move the board closer to your router and scan again.',
     'Other network', 'Change Wi-Fi', 'Save and restart', 'the board shows its code again after 2 minutes',
     'Hold BOOT for 10 seconds.', 'from amber to red with Factory resetting…', 'BOOT does nothing while the board shows its code to join.',
     'Erase everything', 'type RESET',
   ]) assert.ok(text.includes(fact), fact);
-  assert.doesNotMatch(text, /5 GHz|192\.168\.4\.1|WiFi/, 'nothing the firmware does not say');
-  // the board's own cards as their lines read on its screen
-  const panels = [...html.matchAll(/<span class="panel">([\s\S]*?)<\/span><span class="what">/g)]
-    .map((m) => [...m[1].replace(/<span class="nw">|<\/span>/g, '').matchAll(/<(?:b|i)[^>]*>([^<]+)</g)].map((x) => x[1]));
-  assert.deepEqual(panels, [['Setting up Wi-Fi'], ['Joining', 'your network'], ['Connected', 'mooboard.co/hi'], ['Wrong password', 'try again.']]);
+  assert.doesNotMatch(words(html), /5 GHz|192\.168\.4\.1|WiFi/, 'nothing the firmware does not say');
+  assert.ok(html.indexOf('<dialog class="sheet"') > html.indexOf('</main>'), 'outside the cards so it is never inert with them');
+  const js = between(startJs, '// ---- wi-fi help', '// ---- the one scene');
+  assert.match(js, /help\.showModal\(\)/, 'a modal sheet');
+  assert.match(js, /helpClose\.addEventListener\('click', closeHelp\)/, 'Close shuts it');
+  assert.match(js, /e\.key === 'Escape'/, 'and Escape');
+  assert.match(js, /help\.addEventListener\('cancel'/);
+  assert.match(js, /e\.key !== 'Tab'/, 'tab stays inside');
+  assert.match(js, /last\.focus\(\)/);
+  assert.match(js, /first\.focus\(\)/);
+  assert.match(js, /more\.focus\(/, 'and focus goes back');
+  assert.match(startJs, /e\.defaultPrevented \|\| help\.open\) return;/, 'the arrow keys leave the cards alone meanwhile');
+  assert.match(css, /\.sheet-body \{[^}]*overflow-y: auto/, 'its body scrolls on a short phone');
+  assert.match(css, /\.sheet \{[^}]*max-height: min\(88dvh, 760px\)/);
 });
 
 test('every mounting way has a caption for each of its steps in 3d, and stills for less motion', () => {
@@ -236,7 +281,7 @@ test('every mounting way has a caption for each of its steps in 3d, and stills f
   assert.deepEqual(caps('screws'), [
     'Hold the rail level on the wall.',
     'Mark the wall through the rail’s 3 holes.',
-    'Take the rail down. Screw an anchor into each mark.',
+    'Take the rail down and screw an anchor into each mark.',
     'Screw the rail on.',
     'Line up the hooks with the rail’s round holes and push in.',
     'Lift the board a little and slide it left until it clicks.',

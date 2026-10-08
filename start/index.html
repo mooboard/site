@@ -46,7 +46,7 @@
 <main class="deck" id="deck" aria-roledescription="carousel" aria-label="Get started">
 <div class="track" id="track">
 
-<section class="card hello" id="hello" aria-roledescription="slide" aria-label="1 of 7">
+<section class="card hello" id="hello" aria-roledescription="slide" aria-label="1 of 5">
   <div class="vis">
     <div class="tilt"><div class="bezel" data-frame="black"><div class="led" id="hello-board" role="img" aria-label="mooboard saying hello"></div></div></div>
     <div class="shadow" aria-hidden="true"></div>
@@ -57,7 +57,7 @@
   </div>
 </section>
 
-<section class="card narrow" id="box" aria-roledescription="slide" aria-label="2 of 7">
+<section class="card narrow" id="box" aria-roledescription="slide" aria-label="2 of 5">
   <div class="txt">
     <h2>In the box</h2>
     <ul class="rows">
@@ -71,7 +71,7 @@
   </div>
 </section>
 
-<section class="card split" id="hardware" aria-roledescription="slide" aria-label="3 of 7">
+<section class="card split" id="hardware" aria-roledescription="slide" aria-label="3 of 5">
   <div class="vis">
     <!-- the board from the front in glb x + 259.3 and y down from its top edge + the caps and the light from round 4's cad -->
     <div class="diagram">
@@ -88,16 +88,16 @@
         <rect class="spot" x="-2.6" y="40" width="5.2" height="54.6" rx="2.6"/>
         <path class="lead-line" d="M477.3 -17V-9M443.9 151V143M259.3 151V141M-13 67.3H-6"/>
       </svg>
-      <i class="pin" style="left:90.24%;top:7.89%">1</i>
+      <i class="pin caps" style="left:90.24%;top:7.89%" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#k-boot"/></svg><svg viewBox="0 0 24 24"><use href="#k-reset"/></svg></i>
       <i class="pin" style="left:84.40%;top:91.23%">2</i>
       <i class="pin" style="left:52.07%;top:91.23%">3</i>
       <i class="pin" style="left:2.45%;top:49.69%">4</i>
     </div>
   </div>
   <div class="txt">
-    <h2>Hardware</h2>
+    <div class="head"><h2>Hardware</h2><a class="pill" id="watch" href="/hi/buttons/" target="_blank" rel="noopener" aria-label="Watch the buttons tour"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>Watch</a></div>
     <ol class="rows">
-      <li><button type="button" class="spot" data-spot="1" aria-pressed="false"><i class="pin" aria-hidden="true">1</i><span class="what"><b>BOOT and RESET</b><small>Top edge</small></span></button><a class="pill" id="watch" href="/hi/buttons/" target="_blank" rel="noopener" aria-label="Watch the buttons tour"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>Watch</a></li>
+      <li><button type="button" class="spot" data-spot="1" aria-pressed="false"><i class="pin caps" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#k-boot"/></svg><svg viewBox="0 0 24 24"><use href="#k-reset"/></svg></i><span class="what"><b>BOOT and RESET</b><small>Top edge</small></span></button></li>
       <li><button type="button" class="spot" data-spot="2" aria-pressed="false"><i class="pin" aria-hidden="true">2</i><span class="what"><b>Status light</b><small>Bottom, near the right end</small></span></button></li>
       <li><button type="button" class="spot" data-spot="3" aria-pressed="false"><i class="pin" aria-hidden="true">3</i><span class="what"><b>USB-C port</b><small>Bottom center</small></span></button></li>
       <li><button type="button" class="spot" data-spot="4" aria-pressed="false"><i class="pin" aria-hidden="true">4</i><span class="what"><b>NFC</b><small>Left side</small></span></button></li>
@@ -105,7 +105,7 @@
   </div>
 </section>
 
-<section class="card split mount" id="mounting" aria-roledescription="slide" aria-label="4 of 7">
+<section class="card split mount" id="mounting" aria-roledescription="slide" aria-label="4 of 5">
   <div class="vis">
     <div class="soon soon-flat" hidden><svg viewBox="0 0 420 190" aria-hidden="true"><rect x="78" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="326" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="40" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="288" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="10" y="20" width="400" height="108" rx="4" fill="#262B30"/><rect x="13" y="23" width="394" height="102" rx="1.5" fill="#07080A"/><g fill="#77EDD7"><circle cx="150" cy="74" r="3"/><circle cx="170" cy="62" r="3"/><circle cx="190" cy="56" r="3"/><circle cx="210" cy="62" r="3"/><circle cx="230" cy="74" r="3"/><circle cx="250" cy="62" r="3"/><circle cx="270" cy="56" r="3"/></g><rect x="0" y="182" width="420" height="3" rx="1.5" fill="#B9B5AD"/></svg><span class="tag">Coming soon</span></div>
   </div>
@@ -132,7 +132,7 @@
       <div data-way="screws"><p class="seq-name">Screws</p><ol class="seq">
         <li>Hold the rail level on the wall.</li>
         <li>Mark the wall through the rail’s 3 holes.</li>
-        <li>Take the rail down. Screw an anchor into each mark.</li>
+        <li>Take the rail down and screw an anchor into each mark.</li>
         <li>Screw the rail on.</li>
         <li>Line up the hooks with the rail’s round holes and push in.</li>
         <li>Lift the board a little and slide it left until it clicks.</li>
@@ -141,70 +141,42 @@
   </div>
 </section>
 
-<section class="card narrow wifi" id="wifi" aria-roledescription="slide" aria-label="5 of 7">
+<section class="card narrow wifi" id="wifi" aria-roledescription="slide" aria-label="5 of 5">
   <div class="vis">
     <div class="tilt"><div class="bezel" data-frame="black"><div class="led" id="join-board" role="img" aria-label="mooboard showing a code to scan, Scan to set up, its Wi-Fi name and PW with its password"></div></div></div>
   </div>
   <div class="txt">
     <h2>Join its <span class="nw">Wi-Fi</span></h2>
-    <p class="lede">Plug it in. Its screen shows how to join its own <span class="nw">Wi-Fi</span>.</p>
+    <p>After plugging in your mooboard, it will show info to join its <span class="nw">Wi-Fi</span>.</p>
     <ul class="facts">
-      <li>A code to scan and <b>Scan to set up</b>.</li>
-      <li>Its <span class="nw">Wi-Fi</span> name, <b class="nw">mooboard-XXXX</b>.</li>
-      <li><b>PW</b> and its password, 8 digits.</li>
-      <li>The status light breathes blue while it waits.</li>
+      <li><b><span class="nw">Wi-Fi</span> SSID:</b> <span class="nw" data-ssid>mooboard-XXXX</span></li>
+      <li><b>Password:</b> See on board.</li>
     </ul>
-    <p class="lede">Scan the code with your phone’s camera, or join <span class="nw">mooboard-XXXX</span> with the password shown.</p>
-    <h3>Scan the code</h3>
-    <ul class="facts">
-      <li><b>iPhone:</b> open the Camera and point it at the code. Tap the <span class="nw">Wi-Fi</span> banner, then Join.</li>
-      <li><b>Android:</b> open the Camera or Google Lens and point it at the code. Tap to join the network.</li>
-    </ul>
-    <h3>Or join it by hand</h3>
-    <ul class="facts">
-      <li><b>iPhone:</b> open Settings, then <span class="nw">Wi-Fi</span>. Pick <span class="nw">mooboard-XXXX</span> and type the 8 digits after PW.</li>
-      <li><b>Android:</b> open Settings, then your <span class="nw">Wi-Fi</span> list. Pick <span class="nw">mooboard-XXXX</span> and type the 8 digits after PW.</li>
-    </ul>
-    <p class="hint"><b>Already set up?</b> Open <a href="/portal/" data-portal>mooboard.co/portal</a> on the same <span class="nw">Wi-Fi</span> as your mooboard.</p>
+    <p>You can also scan the QR code with your phone’s camera.</p>
+    <p>Once connected, a captive portal will launch where you will input your home’s <span class="nw">Wi-Fi</span> details.</p>
+    <p>If it doesn’t open, go to <a class="nw" href="http://4.3.2.1" target="_blank" rel="noopener">http://4.3.2.1</a> in your browser manually.</p>
+    <p class="hint">Note: mooboard can only join WPA2 and WPA3 Personal networks on the 2.4GHz band. <a class="more" id="more" href="#help" role="button" aria-haspopup="dialog" aria-controls="help">Press here for more details.</a></p>
   </div>
 </section>
 
-<section class="card narrow" id="setup" aria-roledescription="slide" aria-label="6 of 7">
-  <div class="txt">
-    <h2>Set up</h2>
-    <p class="lede">The setup page opens. Pick your home <span class="nw">Wi-Fi</span>.</p>
-    <ul class="facts">
-      <li>If it doesn’t open, go to <b class="nw">http://4.3.2.1</b> in your browser.</li>
-      <li>Type its password and tap <b>Join</b>. It can take up to a minute.</li>
-    </ul>
-    <h3>On the board</h3>
-    <ul class="rows boardsays">
-      <li><span class="panel"><b>Setting up <span class="nw">Wi-Fi</span></b></span><span class="what">Your phone has the setup page open.</span></li>
-      <li><span class="panel"><b>Joining</b><i>your network</i></span><span class="what">It is joining your home <span class="nw">Wi-Fi</span>.</span></li>
-      <li><span class="panel"><b>Connected</b><i>mooboard.co/hi</i></span><span class="what">It joined your <span class="nw">Wi-Fi</span>.</span></li>
-      <li><span class="panel"><b class="err">Wrong password</b><i>try again.</i></span><span class="what">For 10 seconds. Then it shows its code again.</span></li>
-    </ul>
-    <h3>If it can’t join</h3>
-    <p>The page says why, and the board shows its code again. The page can say:</p>
-    <ul class="facts quotes">
-      <li>That password did not work. Check it and try again.</li>
-      <li>mooboard could not find your network. It needs a 2.4 GHz network, close enough to hear.</li>
-      <li>This network is incompatible. Please join a WPA2 or WPA3 Personal network on 2.4 GHz.</li>
-      <li>mooboard could not join your network. Check the router is on, then try again.</li>
-    </ul>
-    <h3>After it joins</h3>
-    <ul class="facts">
-      <li>The board restarts onto your <span class="nw">Wi-Fi</span>, and its own <span class="nw">Wi-Fi</span> goes away.</li>
-      <li>Join your phone back to your home <span class="nw">Wi-Fi</span>.</li>
-      <li>Come back to <a href="/hi/" data-hi>mooboard.co/hi</a>.</li>
-      <li>Setup carries on there. <b>mooboard.local</b> also works.</li>
-    </ul>
-  </div>
-</section>
+</div>
+</main>
 
-<section class="card narrow" id="help" aria-roledescription="slide" aria-label="7 of 7">
-  <div class="txt">
-    <h2><span class="nw">Wi-Fi</span> help</h2>
+<nav class="pager" aria-label="Cards">
+  <ol class="dots" id="dots"></ol>
+  <div class="dock">
+    <button type="button" class="back" id="back" hidden>Back</button>
+    <button type="button" class="btn" id="next">Next</button>
+  </div>
+</nav>
+<!-- wi-fi help + a sheet over the cards that press here opens + close or escape or a tap outside shuts it + tab
+     stays inside while it is open + without javascript it stands under the cards -->
+<dialog class="sheet" id="help" aria-labelledby="help-title">
+  <div class="sheet-head">
+    <h2 id="help-title"><span class="nw">Wi-Fi</span> help</h2>
+    <button type="button" class="close" id="help-close">Close</button>
+  </div>
+  <div class="txt sheet-body">
     <h3>Tips</h3>
     <ul class="facts">
       <li>mooboard needs a 2.4 GHz network. Most routers broadcast one under the same name as the rest. It may also be its own, like Home_2.4.</li>
@@ -231,18 +203,7 @@
       <li>Or in the web app, open <b>System</b>, then <b>Advanced</b>. Under <b>Erase everything</b>, type RESET and tap <b>Erase</b>.</li>
     </ul>
   </div>
-</section>
-
-</div>
-</main>
-
-<nav class="pager" aria-label="Cards">
-  <ol class="dots" id="dots"></ol>
-  <div class="dock">
-    <button type="button" class="back" id="back" hidden>Back</button>
-    <button type="button" class="btn" id="next">Next</button>
-  </div>
-</nav>
+</dialog>
 <p class="sr" id="said" aria-live="polite"></p>
 
 <script src="/js/board.js" defer></script>

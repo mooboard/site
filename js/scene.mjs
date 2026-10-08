@@ -276,7 +276,7 @@ function disc(r, color) {
   return new THREE.Mesh(new THREE.CircleGeometry(r, 20), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0 }));
 }
 
-// ---- the extras for the box and the setup cards ----
+// ---- the extras for the box and the wi-fi cards ----
 const EDGE = new THREE.LineBasicMaterial({ color: '#56626B', transparent: true, opacity: 0.45, depthWrite: false });
 function edged(m) { m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 30), EDGE)); return m; }
 // a 20 w usb-c wall charger + a white block with two prongs at the back and a usb-c port at the front
@@ -317,18 +317,42 @@ function makePlug() {
   return g;
 }
 // a numbered marker for the hardware card + a teal disc with its number + always on top + the same size on any screen
+// the caps of BOOT and RESET as the buttons tour draws them + a rounded square with a dot and one with an arrow
+const CAPS = [
+  ['M12 7.4a4.6 4.6 0 1 0 0 9.2a4.6 4.6 0 1 0 0-9.2z', null],
+  ['M11.4 4.2 14.6 6.6 11.4 9z', 'M15.9 8.6A5.4 5.4 0 1 1 12 6.6'],
+];
 function makeMarker(n) {
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
+  const caps = n === 1, c = document.createElement('canvas');
+  c.width = caps ? 272 : 128;
+  c.height = 128;
   const x = c.getContext('2d');
-  x.fillStyle = '#0E1A22'; x.beginPath(); x.arc(64, 64, 62, 0, 6.3); x.fill();
-  x.fillStyle = '#77EDD7'; x.beginPath(); x.arc(64, 64, 55, 0, 6.3); x.fill();
-  x.fillStyle = '#0E1A22'; x.font = '800 70px Nunito, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.fillText(String(n), 64, 69);
+  if (caps) {
+    // the marker by the buttons + their two caps in ink on white as the hardware row has them
+    CAPS.forEach(([fill, line], k) => {
+      x.save();
+      x.translate(4 + k * 140, 4);
+      x.scale(120 / 24, 120 / 24);
+      x.fillStyle = '#FFFFFF'; x.strokeStyle = '#0E1A22'; x.lineWidth = 2; x.lineCap = 'round';
+      x.beginPath(); x.moveTo(7.5, 1.5);
+      x.arcTo(22.5, 1.5, 22.5, 22.5, 6); x.arcTo(22.5, 22.5, 1.5, 22.5, 6); x.arcTo(1.5, 22.5, 1.5, 1.5, 6); x.arcTo(1.5, 1.5, 22.5, 1.5, 6);
+      x.closePath(); x.fill(); x.stroke();
+      x.fillStyle = '#0E1A22';
+      x.fill(new Path2D(fill));
+      if (line) x.stroke(new Path2D(line));
+      x.restore();
+    });
+  } else {
+    x.fillStyle = '#0E1A22'; x.beginPath(); x.arc(64, 64, 62, 0, 6.3); x.fill();
+    x.fillStyle = '#77EDD7'; x.beginPath(); x.arc(64, 64, 55, 0, 6.3); x.fill();
+    x.fillStyle = '#0E1A22'; x.font = '800 70px Nunito, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(String(n), 64, 69);
+  }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, transparent: true, sizeAttenuation: false }));
   s.renderOrder = 20;
+  s.userData.wide = c.width / c.height;
   return s;
 }
 
@@ -449,7 +473,7 @@ export async function create(o) {
   A.front = A.holes[0].z;
   const WAYS = ways(A);
 
-  // the wall comes in for the mounting and setup cards + the table under the box's parts only takes shadows
+  // the wall comes in for the mounting and wi-fi cards + the table under the box's parts only takes shadows
   const wallMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(o.wall || '#E6EAED'), roughness: 0.97, transparent: true });
   const wall = new THREE.Mesh(new THREE.PlaneGeometry(8000, 5000), wallMat);
   wall.position.z = A.wall.z - 0.05;
@@ -731,10 +755,8 @@ export async function create(o) {
     hardware: hardwarePose,
     mounting: mountPose,
     wifi: () => wallPose('join', { t: [0, 0, 0], az: -0.12, el: 0.05, w: 560, h: 210 }),
-    setup: () => wallPose('join', { t: [0, -40, 0], az: -0.32, el: 0.1, w: 610, h: 330 }),
-    help: () => wallPose('clock', { t: [0, -24, 0], az: 0.28, el: 0.1, w: 620, h: 300 }),
   };
-  const poseOf = (id, now) => (POSE[id] || POSE.setup)(now);
+  const poseOf = (id, now) => (POSE[id] || POSE.wifi)(now);
 
   // ---- drawing a pose ----
   let ghostNow = -1, ledNow = '', ledAt = 0, ledTicks = 0;
@@ -808,7 +830,8 @@ export async function create(o) {
     markers.forEach((m, k) => {
       m.visible = f.markers > 0.02;
       m.material.opacity = f.markers;
-      m.scale.setScalar(f.marker === k + 1 ? 0.07 : 0.05);
+      const size = f.marker === k + 1 ? 0.07 : 0.05;
+      m.scale.set(size * m.userData.wide, size, 1);
     });
     marks.forEach((d, k) => { d.material.opacity = f.marks[k]; d.visible = f.marks[k] > 0; });
     // the steps' rings and arrow and the wait clock

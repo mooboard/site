@@ -9,11 +9,11 @@ only board on the phone's network or lists them with the last one opened on top.
 tour of the two buttons that the board's setup links to, with its frame in `?frame=`: `js/tour.mjs`, `css/tour.css`,
 `assets/3d/board-tour.glb` and the panel's frames in `assets/tour/`. `start/` is the get started page for a new board: the
 logo, a light window with one three.js scene, and cards to flick under it for what is in the box, the hardware,
-mounting, its Wi-Fi, setup and Wi-Fi help. A board's sticker link (`/hi/<code>?m=<model>`) goes there when its board is
-not on the phone's network yet. It runs `js/start.js` and `css/start.css`. The scene is `js/scene.mjs`: it loads at the
-start with the homepage's board model and `assets/3d/rail.glb`, the wall rail and its two hooks, and moves to each
-card's pose as the cards change. Without WebGL each card shows its own drawing instead. GitHub Pages serves the
-repository as it is, at the domain in `CNAME`.
+mounting and joining its Wi-Fi, with Wi-Fi help in a sheet over them. A board's sticker link (`/hi/<code>?m=<model>`)
+goes there when its board is not on the phone's network yet, and its Wi-Fi shows as `mooboard-<code>`. It runs
+`js/start.js` and `css/start.css`. The scene is `js/scene.mjs`: it loads at the start with the homepage's board model
+and `assets/3d/rail.glb`, the wall rail and its two hooks, and moves to each card's pose as the cards change. Without
+WebGL each card shows its own drawing instead. GitHub Pages serves the repository as it is, at the domain in `CNAME`.
 
 ## Preview
 
