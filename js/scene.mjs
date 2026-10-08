@@ -964,8 +964,11 @@ export async function create(o) {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
   // the clock face keeps its time + a frame every 15 s while it shows
   setInterval(() => { if (ledNow === 'clock' && live && !document.hidden) { ledAt = performance.now(); kick(); } }, 15000);
+  // the canvas's own size + a page scaled up on a wider screen draws at its size on screen so the scene stays sharp
+  const coarse = matchMedia('(pointer: coarse)').matches;
   function resize() {
-    const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
+    const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1, z = canvas.currentCSSZoom || canvas.getBoundingClientRect().width / w || 1;
+    renderer.setPixelRatio(Math.min((window.devicePixelRatio || 1) * z, coarse ? 1.75 : 2.5));
     renderer.setSize(w, h, false);
     aspect = w / h;
     cam.aspect = aspect;
@@ -973,7 +976,7 @@ export async function create(o) {
     kick();
   }
   if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas);
-  else addEventListener('resize', resize);
+  addEventListener('resize', resize);   // the scale can change while the canvas keeps its own size
   resize();
   readyAt = performance.now();
   if (card === 'hardware') tourAt = readyAt;

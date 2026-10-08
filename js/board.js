@@ -3909,7 +3909,8 @@
     boards.push(this);
   }
   Board.prototype.resize = function () {
-    var w = this.el.clientWidth || 512, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // a page scaled up with css zoom shows the board bigger than its own width says + its dots follow the size on screen
+    var w = this.el.clientWidth || 512, dpr = Math.min(window.devicePixelRatio || 1, 2) * (this.el.currentCSSZoom || 1);
     var s = clamp(Math.max(Math.round(w * dpr / W), this.opts.minScale || 0), 3, this.opts.maxScale || 14);
     this.el.style.setProperty('--cell', (w / W).toFixed(2) + 'px');
     if (s === this.s) return;

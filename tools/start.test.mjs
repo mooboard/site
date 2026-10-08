@@ -124,6 +124,32 @@ test('the page is a phone\'s width on any screen and Hardware is one column', ()
   assert.match(css, /h2 \{ font-size: clamp\(27px, 7vw, 30px\); \}/);
 });
 
+test('a wider screen shows the phone page scaled up to the window at the owner\'s phone\'s proportions, and a phone is as it was', () => {
+  // the head script in node with a window of each size + the scale it sets and the page's own height
+  const script = /<script>\n\(function \(\) \{\n  var BASE = 411[\s\S]*?<\/script>/.exec(html)[0].replace(/<\/?script>/g, '');
+  const fit = (w, h) => {
+    const vars = {}, classes = new Set(['js']);
+    const root = { classList: { toggle: (c, on) => (on ? classes.add(c) : classes.delete(c)) }, style: { setProperty: (k, v) => { vars[k] = v; } } };
+    vm.runInNewContext(script, { window: { innerWidth: w, innerHeight: h, addEventListener: () => {} }, document: { documentElement: root }, String, Math });
+    return { wide: classes.has('wide'), k: +vars['--k'], col: Math.round(+vars['--k'] * 411), lh: parseFloat(vars['--lh']) };
+  };
+  assert.deepEqual(fit(390, 844), { wide: false, k: 1, col: 411, lh: 844 }, 'a phone is as it was');
+  assert.equal(fit(430, 932).wide, false);
+  assert.equal(fit(1280, 800).col, 430, 'at least 430 wide');
+  assert.equal(fit(1440, 900).col, 468, '0.52 of the window\'s height');
+  assert.equal(fit(1920, 1080).col, 562);
+  assert.equal(fit(1440, 1300).col, 676);
+  assert.equal(fit(2560, 1600).col, 680, 'at most 680 wide');
+  assert.equal(fit(640, 1300).col, 608, 'and never past the window\'s sides');
+  assert.equal(Math.round(fit(1440, 900).lh), 790, 'the page inside is as tall as on the owner\'s phone');
+  assert.match(css, /\.wide body \{ width: var\(--base\); zoom: var\(--k\); \}/, 'the whole page scales');
+  assert.match(css, /\.wide \.window \{ max-height: calc\(\.34 \* var\(--lh\)\); \}/, 'a height in vh would grow with the scale');
+  assert.match(css, /\.wide \.sheet \{ max-width: var\(--base\); max-height: min\(calc\(\.88 \* var\(--lh\)\), 760px\); \}/);
+  assert.match(mount, /z = canvas\.currentCSSZoom \|\| canvas\.getBoundingClientRect\(\)\.width \/ w \|\| 1;/, 'the scene draws at its size on screen');
+  assert.match(mount, /addEventListener\('resize', resize\);/, 'and follows a new scale');
+  assert.match(read('js/board.js'), /Math\.min\(window\.devicePixelRatio \|\| 1, 2\) \* \(this\.el\.currentCSSZoom \|\| 1\)/, 'and so do the LED boards');
+});
+
 test('the hardware camera keeps the whole board and all four markers inside the window', () => {
   // the camera as js/scene.mjs aims it + its first spot and the markers read from it + the window's 4 by 3
   const num = (v) => +v;

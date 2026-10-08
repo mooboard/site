@@ -10,6 +10,7 @@
   --wall: #E3E8EB; --frame: #262B30; --frame-hi: #3a4047; --edge: rgba(14, 26, 34, .0);
   --dock: rgba(255, 255, 255, .72); --grey: #E3ECEA;
   --phone: 430px;   /* the page is a phone's width on any screen (owner 2026-10-08) */
+  --base: 411px;    /* and a wider screen scales up the owner's phone's page from this width */
   --display: 'Fredoka', 'Nunito', system-ui, sans-serif;
   --body: 'Nunito', system-ui, -apple-system, sans-serif;
   --ease: cubic-bezier(.2, .8, .2, 1);
@@ -307,6 +308,12 @@ html:not(.js) .window, .flat3d .window { display: none; }
 .sheet-body.more-below::after { opacity: 1; }
 html:not(.js) .sheet { display: block; position: static; max-height: none; margin: 20px; border-radius: 28px; overflow: visible; }
 html:not(.js) .sheet .close { display: none; }
+
+/* ---------- a wider screen + the phone page scaled up to the window's height + the head script sets --k and --lh + a
+   height in vh would grow with the scale so the page's own height stands in for it ---------- */
+.wide body { width: var(--base); zoom: var(--k); }
+.wide .window { max-height: calc(.34 * var(--lh)); }
+.wide .sheet { max-width: var(--base); max-height: min(calc(.88 * var(--lh)), 760px); }
 
 /* ---------- a short window + tighter cards ---------- */
 @media (max-height: 720px) {

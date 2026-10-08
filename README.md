@@ -11,7 +11,8 @@ tour of the two buttons that the board's setup links to, with its frame in `?fra
 logo, a light window with one three.js scene, and cards to flick under it for what is in the box, the hardware,
 mounting and joining its Wi-Fi, with Wi-Fi help in a sheet over them. A board's sticker link (`/hi/<code>?m=<model>`)
 goes there when its board is not on the phone's network yet, and its Wi-Fi shows as `mooboard-<code>`. It runs
-`js/start.js` and `css/start.css`. The scene is `js/scene.mjs`: it loads at the start with the homepage's board model
+`js/start.js` and `css/start.css`. On a screen wider than a phone it shows the phone page scaled up to the
+window's height. The scene is `js/scene.mjs`: it loads at the start with the homepage's board model
 and `assets/3d/rail.glb`, the wall rail and its two hooks, and moves to each card's pose as the cards change. Without
 WebGL each card shows its own drawing instead. GitHub Pages serves the repository as it is, at the domain in `CNAME`.
 

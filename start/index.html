@@ -32,6 +32,23 @@
 <link rel="preload" href="/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
 <script>document.documentElement.className = 'js';</script>
 <script nomodule>document.documentElement.className = '';</script>
+<!-- a screen wider than a phone shows the phone page scaled up to the window's height at the owner's phone's
+     proportions (owner 2026-10-08) + 411 px wide at 0.52 of its height + at least 430 and at most 680 px wide on screen
+     + --k is the scale and --lh the page's own height + a phone is as it was -->
+<script>
+(function () {
+  var BASE = 411, RATIO = 0.52, MIN = 430, MAX = 680, GUTTER = 16, root = document.documentElement;
+  function fit() {
+    var w = window.innerWidth, h = window.innerHeight, wide = w >= 600, k = 1;
+    if (wide) k = Math.max(MIN, Math.min(h * RATIO, MAX, w - 2 * GUTTER)) / BASE;
+    root.classList.toggle('wide', wide);
+    root.style.setProperty('--k', String(k));
+    root.style.setProperty('--lh', (h / k).toFixed(2) + 'px');
+  }
+  fit();
+  window.addEventListener('resize', fit);
+})();
+</script>
 <script type="importmap">{"imports":{"three":"/js/vendor/three/build/three.module.min.js","three/addons/":"/js/vendor/three/examples/jsm/"}}</script>
 <link rel="stylesheet" href="/css/start.css">
 </head>
