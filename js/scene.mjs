@@ -1,7 +1,8 @@
 /* mooboard.co/start in one scene + one three.js scene in the window over the cards + each card has a pose + a change
    of card moves the scene to the new pose in about a second + going back plays it back + a jump goes straight there +
-   the mounting card plays the steps of the way picked + the hardware card's camera goes round its four spots + less
-   motion cuts from pose to pose and plays nothing by itself
+   the mounting card plays the steps of the way picked + the hardware card's camera goes round its four spots + close
+   up at the buttons a label on each takes over from the 1 + less motion cuts from pose to pose and plays nothing by
+   itself
 
    the board is the homepage model assets/3d/board.glb + its face is the page's live board from js/board.js + the rail
    and its two hooks come from assets/3d/rail.glb with its at_* places as the board hangs + a new rail is a new
@@ -316,43 +317,73 @@ function makePlug() {
   g.add(tip, body, cord);
   return g;
 }
-// a numbered marker for the hardware card + a teal disc with its number + always on top + the same size on any screen
-// the caps of BOOT and RESET as the buttons tour draws them + a rounded square with a dot and one with an arrow
-const CAPS = [
-  ['M12 7.4a4.6 4.6 0 1 0 0 9.2a4.6 4.6 0 1 0 0-9.2z', null],
-  ['M11.4 4.2 14.6 6.6 11.4 9z', 'M15.9 8.6A5.4 5.4 0 1 1 12 6.6'],
-];
-function makeMarker(n) {
-  const caps = n === 1, c = document.createElement('canvas');
-  c.width = caps ? 272 : 128;
-  c.height = 128;
-  const x = c.getContext('2d');
-  if (caps) {
-    // the marker by the buttons + their two caps in ink on white as the hardware row has them
-    CAPS.forEach(([fill, line], k) => {
-      x.save();
-      x.translate(4 + k * 140, 4);
-      x.scale(120 / 24, 120 / 24);
-      x.fillStyle = '#FFFFFF'; x.strokeStyle = '#0E1A22'; x.lineWidth = 2; x.lineCap = 'round';
-      x.beginPath(); x.moveTo(7.5, 1.5);
-      x.arcTo(22.5, 1.5, 22.5, 22.5, 6); x.arcTo(22.5, 22.5, 1.5, 22.5, 6); x.arcTo(1.5, 22.5, 1.5, 1.5, 6); x.arcTo(1.5, 1.5, 22.5, 1.5, 6);
-      x.closePath(); x.fill(); x.stroke();
-      x.fillStyle = '#0E1A22';
-      x.fill(new Path2D(fill));
-      if (line) x.stroke(new Path2D(line));
-      x.restore();
-    });
-  } else {
-    x.fillStyle = '#0E1A22'; x.beginPath(); x.arc(64, 64, 62, 0, 6.3); x.fill();
-    x.fillStyle = '#77EDD7'; x.beginPath(); x.arc(64, 64, 55, 0, 6.3); x.fill();
-    x.fillStyle = '#0E1A22'; x.font = '800 70px Nunito, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-    x.fillText(String(n), 64, 69);
-  }
+// the caps of BOOT and RESET as the buttons tour draws them in a box 24 across + a rounded square with a dot and one
+// with an arrow
+const CAP = {
+  boot: { fill: 'M12 7.4a4.6 4.6 0 1 0 0 9.2a4.6 4.6 0 1 0 0-9.2z', line: null },
+  reset: { fill: 'M11.4 4.2 14.6 6.6 11.4 9z', line: 'M15.9 8.6A5.4 5.4 0 1 1 12 6.6' },
+};
+function drawCap(x, cap, left, top, size, ink) {
+  x.save();
+  x.translate(left, top);
+  x.scale(size / 24, size / 24);
+  x.strokeStyle = ink; x.fillStyle = ink; x.lineWidth = 2; x.lineCap = 'round';
+  x.beginPath(); x.moveTo(7.5, 1.5);
+  x.arcTo(22.5, 1.5, 22.5, 22.5, 6); x.arcTo(22.5, 22.5, 1.5, 22.5, 6); x.arcTo(1.5, 22.5, 1.5, 1.5, 6); x.arcTo(1.5, 1.5, 22.5, 1.5, 6);
+  x.closePath(); x.stroke();
+  x.fill(new Path2D(CAP[cap].fill));
+  if (CAP[cap].line) x.stroke(new Path2D(CAP[cap].line));
+  x.restore();
+}
+// a canvas as a sprite that keeps its size on any screen and draws over the model
+function flat(c) {
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, transparent: true, sizeAttenuation: false }));
   s.renderOrder = 20;
   s.userData.wide = c.width / c.height;
+  return s;
+}
+// a numbered marker for the hardware card + a teal disc with its number + always on top + the same size on any screen
+function makeMarker(n) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = '#0E1A22'; x.beginPath(); x.arc(64, 64, 62, 0, 6.3); x.fill();
+  x.fillStyle = '#77EDD7'; x.beginPath(); x.arc(64, 64, 55, 0, 6.3); x.fill();
+  x.fillStyle = '#0E1A22'; x.font = '800 70px Nunito, system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(String(n), 64, 69);
+  return flat(c);
+}
+// a button's label for the close look at the buttons + its cap and its name on a teal tag + a line down to the button
+// + the tag goes left of the button on the left and right of the one on the right so the two never meet
+function makeLabel(cap, name, left) {
+  const c = document.createElement('canvas'), x = c.getContext('2d');
+  const font = '800 38px Nunito, system-ui, sans-serif';
+  x.font = font;
+  const tagW = Math.ceil(18 + 44 + 10 + x.measureText(name).width + 20), tagH = 64, foot = 14;
+  c.width = tagW + 16;
+  c.height = tagH + 66;
+  const W = c.width, H = c.height, ax = left ? W - foot : foot, ay = H - 10;
+  const x0 = left ? W - 6 - tagW : 6, y0 = 6;
+  x.font = font;
+  // the line from the tag down to the button + a dot on the button with a light ring so it shows on any frame
+  x.strokeStyle = '#0E1A22'; x.lineWidth = 4; x.lineCap = 'round';
+  x.beginPath(); x.moveTo(ax, y0 + tagH - 6); x.lineTo(ax, ay); x.stroke();
+  x.fillStyle = '#FFFFFF'; x.beginPath(); x.arc(ax, ay, 9, 0, 6.3); x.fill();
+  x.fillStyle = '#0E1A22'; x.beginPath(); x.arc(ax, ay, 6, 0, 6.3); x.fill();
+  // the tag
+  x.beginPath(); x.moveTo(x0 + tagH / 2, y0);
+  x.arcTo(x0 + tagW, y0, x0 + tagW, y0 + tagH, tagH / 2); x.arcTo(x0 + tagW, y0 + tagH, x0, y0 + tagH, tagH / 2);
+  x.arcTo(x0, y0 + tagH, x0, y0, tagH / 2); x.arcTo(x0, y0, x0 + tagW, y0, tagH / 2); x.closePath();
+  x.fillStyle = '#77EDD7'; x.fill();
+  x.lineWidth = 5; x.strokeStyle = '#0E1A22'; x.stroke();
+  drawCap(x, cap, x0 + 18, y0 + 10, 44, '#0E1A22');
+  x.fillStyle = '#0E1A22'; x.textBaseline = 'middle';
+  x.fillText(name, x0 + 18 + 44 + 10, y0 + tagH / 2 + 2);
+  const s = flat(c);
+  s.center.set(ax / W, 1 - ay / H);
+  s.userData.tagH = tagH / H;
   return s;
 }
 
@@ -366,7 +397,7 @@ const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _q2 = new THREE.Quate
 function blank() {
   const a = {};
   for (const n of ACTORS) a[n] = { p: [0, 0, 0], q: [0, 0, 0, 1], s: 1, o: 0 };
-  return { a, cam: null, wall: 0, table: 0, floor: 0, plug: 0, markers: 0, marker: 0, ghost: 0, bubble: 0, marks: [0, 0, 0], led: 'off', fx: null };
+  return { a, cam: null, wall: 0, table: 0, floor: 0, plug: 0, markers: 0, marker: 0, near: 0, ghost: 0, bubble: 0, marks: [0, 0, 0], led: 'off', fx: null };
 }
 function put(f, name, p, rx = 0, ry = 0, rz = 0, o = 1, s = 1) {
   _q.setFromEuler(_e.set(rx, ry, rz));
@@ -409,7 +440,7 @@ function mixFrame(A, B, k) {
     if (far && A.a.board.o <= 0.001 && B.a.board.o > 0.001) f.a.board.o = B.a.board.o * seg(k, 0.55, 1);
   }
   f.cam = mixCam(A.cam, B.cam, k);
-  for (const key of ['wall', 'table', 'floor', 'plug', 'markers', 'ghost', 'bubble']) f[key] = lerp(A[key], B[key], k);
+  for (const key of ['wall', 'table', 'floor', 'plug', 'markers', 'near', 'ghost', 'bubble']) f[key] = lerp(A[key], B[key], k);
   f.marker = k < 0.5 ? A.marker : B.marker;
   f.marks = [0, 1, 2].map((i) => lerp(A.marks[i], B.marks[i], k));
   f.led = k < 0.4 ? A.led : B.led;
@@ -541,6 +572,13 @@ export async function create(o) {
   plug.position.fromArray(USB);
   board.add(plug);
   const markers = MARKS.map((p, k) => { const s = makeMarker(k + 1); s.position.fromArray(p); board.add(s); return s; });
+  // the buttons' labels on the top of each cap as the model has it + they take over from the 1 close up
+  const labels = [['reset', 'RESET', true], ['boot', 'BOOT', false]].map(([cap, name, left]) => {
+    const node = B.root.getObjectByName('cap_' + cap), box = new THREE.Box3().setFromObject(node), l = makeLabel(cap, name, left);
+    l.position.set((box.min.x + box.max.x) / 2, box.max.y, (box.min.z + box.max.z) / 2);
+    board.add(l);
+    return l;
+  });
   shadows(board, true);
   scene.add(board);
 
@@ -708,7 +746,7 @@ export async function create(o) {
     return f;
   }
   // hardware + the board facing you + the camera goes round its four spots + a tapped row takes it there
-  let touring = !reduced, spotPick = 0, spotShown = -1, spotFrom = null, spotAt = 0, tourAt = 0;
+  let touring = !reduced, spotPick = 0, spotShown = -1, spotWas = -1, spotFrom = null, spotAt = 0, tourAt = 0;
   function tourSpot(now) {
     const total = TOUR.reduce((a, b) => a + b, 0);
     let t = ((now - tourAt) / 1000) % total;
@@ -721,12 +759,16 @@ export async function create(o) {
     const spot = touring ? tourSpot(now) : spotPick;
     if (spot !== spotShown) {
       spotFrom = spotShown < 0 || !last ? null : last.cam;
+      spotWas = spotShown;
       spotShown = spot;
       spotAt = now;
       o.onSpot && o.onSpot(spot);
     }
     const to = shotCam(SPOTS[spot]);
-    f.cam = spotFrom && !reduced ? mixCam(spotFrom, to, ease(seg((now - spotAt) / 1000, 0, MOVE))) : to;
+    const k = spotFrom && !reduced ? ease(seg((now - spotAt) / 1000, 0, MOVE)) : 1;
+    f.cam = k < 1 ? mixCam(spotFrom, to, k) : to;
+    // close up at the buttons + their labels take over from the 1 as the camera comes in and give way as it leaves
+    f.near = spot === 1 ? k : spotWas === 1 ? 1 - k : 0;
     f.led = 'clock';
     f.floor = 1;
     f.markers = 1;
@@ -828,10 +870,16 @@ export async function create(o) {
     plug.visible = f.plug > 0.02;
     plug.position.set(USB[0], USB[1] - (1 - f.plug) * 40, USB[2]);
     markers.forEach((m, k) => {
-      m.visible = f.markers > 0.02;
-      m.material.opacity = f.markers;
+      m.material.opacity = f.markers * (k === 0 ? 1 - f.near : 1);
+      m.visible = m.material.opacity > 0.02;
       const size = f.marker === k + 1 ? 0.07 : 0.05;
       m.scale.set(size * m.userData.wide, size, 1);
+    });
+    labels.forEach((l) => {
+      l.material.opacity = f.markers * f.near;
+      l.visible = l.material.opacity > 0.02;
+      const size = 0.05 / l.userData.tagH;   // the tag as tall as a marker
+      l.scale.set(size * l.userData.wide, size, 1);
     });
     marks.forEach((d, k) => { d.material.opacity = f.marks[k]; d.visible = f.marks[k] > 0; });
     // the steps' rings and arrow and the wait clock
@@ -939,6 +987,7 @@ export async function create(o) {
   return {
     // a change of card + the scene moves to that card's pose
     card(id) {
+      peek = null;
       if (id === card) return;
       const was = order.indexOf(card), now = performance.now();
       from = last;
@@ -967,9 +1016,15 @@ export async function create(o) {
     hold(spec) {
       const now = performance.now();
       if (spec.way) { mt.way = spec.way; mt.step = spec.step || 0; mt.time = spec.t == null ? WAYS[mt.way].steps[mt.step].still : spec.t; mt.playing = false; mt.held = spec.t == null; }
-      if (spec.spot != null) { touring = false; spotPick = spec.spot; spotShown = spec.spot; spotFrom = null; }
+      if (spec.spot != null) {
+        touring = false; spotPick = spec.spot; spotShown = spec.spot; spotWas = spec.from_spot == null ? -1 : spec.from_spot;
+        // a held move from one spot to another + at seconds into it
+        spotFrom = spec.from_spot == null ? null : shotCam(SPOTS[spec.from_spot]);
+        spotAt = now - (spec.at || 0) * 1000;
+      }
       if (spec.card) { card = spec.card; from = null; moveAt = -1e9; }
       peek = spec.from ? () => mixFrame(poseOf(spec.from, now), poseOf(spec.card, now), ease(spec.k)) : null;
+      if (spec.from_spot != null) { const held = poseOf('hardware', now); peek = () => held; }
       if (spec.since != null) readyAt = now - spec.since * 1000;
       last = frameAt(now);
       for (let i = 0; i < 3; i++) { ledTicks = 0; render(last, now + i * 400); }

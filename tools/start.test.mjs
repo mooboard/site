@@ -83,22 +83,30 @@ test('the hardware rows take the camera to their spot, and the scene moves card 
   assert.doesNotMatch(mount, /\n    (?:setup|help): /, 'and the cards that went have none');
 });
 
-test('the BOOT and RESET row shows their caps in place of a number as the buttons tour draws them, and so does its marker', () => {
+test('the BOOT and RESET row shows 1 and their caps in place of their names, and close up the scene labels each button', () => {
   const tour = read('hi/buttons/index.html');
   for (const id of ['k-boot', 'k-reset']) {
     const sym = tour.match(new RegExp(`<symbol id="${id}"[\\s\\S]*?</symbol>`))[0];
     assert.ok(html.includes(sym), `the tour's ${id}`);
   }
-  const caps = '<i class="pin caps" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#k-boot"/></svg><svg viewBox="0 0 24 24"><use href="#k-reset"/></svg></i>';
   const hw = between(html, 'id="hardware"', '</section>');
-  assert.ok(hw.includes(`data-spot="1" aria-pressed="false">${caps}<span class="what"><b>BOOT and RESET</b>`), 'the row');
-  assert.deepEqual([...hw.matchAll(/<i class="pin" aria-hidden="true">(\d)<\/i>/g)].map((m) => m[1]), ['2', '3', '4'], 'the others keep their numbers');
-  assert.match(hw, /<i class="pin caps" style="[^"]+" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#k-boot"\/><\/svg><svg viewBox="0 0 24 24"><use href="#k-reset"\/><\/svg><\/i>/, 'the drawing without 3d');
-  assert.doesNotMatch(hw, /<i class="pin"[^>]*>1<\/i>/, 'no 1 anywhere');
-  assert.match(css, /\.pin\.caps svg \{ width: 26px; height: 26px; \}/, 'each cap as big as a number\'s badge');
-  assert.match(mount, /const caps = n === 1/, 'the marker by the buttons');
+  const keys = '<span class="keys" role="img" aria-label="BOOT and RESET"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#k-boot"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#k-reset"/></svg></span>';
+  assert.ok(hw.includes(`data-spot="1" aria-pressed="false"><i class="pin" aria-hidden="true">1</i><span class="what">${keys}<small>Top edge</small></span>`), 'the row reads 1, BOOT\'s cap, RESET\'s cap and has a name');
+  assert.deepEqual([...hw.matchAll(/<i class="pin" aria-hidden="true">(\d)<\/i>/g)].map((m) => m[1]), ['1', '2', '3', '4'], 'every row has its number');
+  assert.deepEqual([...hw.matchAll(/<i class="pin" style="[^"]+">(\d)<\/i>/g)].map((m) => m[1]), ['1', '2', '3', '4'], 'and so does the drawing without 3d');
+  assert.doesNotMatch(hw, /BOOT and RESET<\/b>|class="pin caps"/, 'no names in words in the row');
+  // the scene + the 1 like the others + close up a label on each button where the model has its cap
+  assert.doesNotMatch(between(mount, 'function makeMarker', 'function makeLabel'), /drawCap|CAP\b/, 'the marker is a number');
+  assert.match(mount, /\[\['reset', 'RESET', true\], \['boot', 'BOOT', false\]\]/, 'a label for each button');
+  assert.match(mount, /B\.root\.getObjectByName\('cap_' \+ cap\)/, 'at its cap in the model');
+  const doc = (() => { const b = glb('assets/3d/board.glb'); return JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString('utf8')); })();
+  for (const n of ['cap_boot', 'cap_reset']) assert.ok(doc.nodes.some((x) => x.name === n), `the board model has ${n}`);
+  assert.match(mount, /f\.near = spot === 1 \? k : spotWas === 1 \? 1 - k : 0;/, 'the labels come in with the camera and go as it leaves');
+  assert.match(mount, /const k = spotFrom && !reduced \? ease\(seg\(\(now - spotAt\) \/ 1000, 0, MOVE\)\) : 1;/, 'in step with the camera, or at once with less motion');
+  assert.match(mount, /m\.material\.opacity = f\.markers \* \(k === 0 \? 1 - f\.near : 1\);/, 'the 1 gives way');
+  assert.match(mount, /l\.material\.opacity = f\.markers \* f\.near;/, 'the labels take over');
   for (const d of ['M11.4 4.2 14.6 6.6 11.4 9z', 'M15.9 8.6A5.4 5.4 0 1 1 12 6.6']) {
-    assert.ok(tour.includes(d) && mount.includes(d), 'draws RESET\'s arrow as the tour does');
+    assert.ok(tour.includes(d) && mount.includes(d), 'the labels draw RESET\'s arrow as the tour does');
   }
 });
 
@@ -214,7 +222,7 @@ test('in the box: the board, the rail with its hooks, the strips, the screws and
 
 test('hardware: where each thing is, and Watch opens the buttons tour', () => {
   const hw = between(html, 'id="hardware"', '</section>');
-  assert.deepEqual([...hw.matchAll(/<b>([^<]+)<\/b><small>([^<]+)<\/small>/g)].map((m) => [m[1], m[2]]), [
+  assert.deepEqual([...hw.matchAll(/(?:<b>([^<]+)<\/b>|<span class="keys" role="img" aria-label="([^"]+)">(?:<svg[^>]*><use[^>]*\/><\/svg>)+<\/span>)<small>([^<]+)<\/small>/g)].map((m) => [m[1] || m[2], m[3]]), [
     ['BOOT and RESET', 'Top edge'], ['Status light', 'Bottom, near the right end'], ['USB-C port', 'Bottom center'], ['NFC', 'Left side']]);
   assert.match(hw, /<a class="pill" id="watch" href="\/hi\/buttons\/" target="_blank" rel="noopener"[^>]*>[\s\S]*?Watch<\/a>/, 'in a tab of its own so its Done closes it and lands back here');
   assert.match(startJs, /'\/hi\/buttons\/\?frame=' \+ frame/, 'with the board\'s frame when the link names one');
@@ -246,11 +254,18 @@ test('Wi-Fi help is a sheet with the help card\'s words, a Close button, Escape,
   const text = words(sheet);
   for (const fact of [
     'mooboard needs a 2.4 GHz network.', 'It joins WPA2 and WPA3 Personal networks, and open ones.', 'Do not pick a guest network.',
+    'Wi-Fi with a sign-in page, like at hotels, schools, and work, won’t work.',
     'A VPN or iCloud Private Relay can hide that you are home.', 'Move the board closer to your router and scan again.',
     'Other network', 'Change Wi-Fi', 'Save and restart', 'the board shows its code again after 2 minutes',
-    'Hold BOOT for 10 seconds.', 'from amber to red with Factory resetting…', 'BOOT does nothing while the board shows its code to join.',
-    'Erase everything', 'type RESET',
   ]) assert.ok(text.includes(fact), fact);
+  // factory reset as the owner cut it + BOOT's cap in place of its name with its name for a screen reader
+  const reset = [...between(sheet, '<h3>Factory reset</h3>', '</ul>').matchAll(/<li>([\s\S]*?)<\/li>/g)].map((m) => m[1]);
+  assert.deepEqual(reset, [
+    'Hold <svg class="key" role="img" aria-label="BOOT"><use href="#k-boot"/></svg> for 10 seconds.',
+    'Then the board restarts and shows its code to join.',
+    'Or in the web app, open <b>System</b>, then <b>Advanced</b>. Under <b>Erase everything</b>, type RESET and tap <b>Erase</b>.',
+  ]);
+  assert.doesNotMatch(text, /amber to red|Factory resetting|BOOT does nothing|sign-ins/, 'the cut lines are gone');
   assert.doesNotMatch(words(html), /5 GHz|192\.168\.4\.1|WiFi/, 'nothing the firmware does not say');
   assert.ok(html.indexOf('<dialog class="sheet"') > html.indexOf('</main>'), 'outside the cards so it is never inert with them');
   const js = between(startJs, '// ---- wi-fi help', '// ---- the one scene');

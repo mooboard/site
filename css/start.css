@@ -171,11 +171,9 @@ html:not(.js) .pager { display: none; }
   background: var(--teal); color: var(--on-teal); font: 800 14px/1 var(--body); font-style: normal;
 }
 .diagram .pin { position: absolute; transform: translate(-50%, -50%); }
-/* BOOT's and RESET's caps as the buttons tour draws them + each as big as a number's badge */
-.pin.caps { display: flex; gap: 4px; width: auto; border-radius: 8px; background: none; color: var(--text); }
-.pin.caps svg { width: 26px; height: 26px; }
-.diagram .pin.caps { padding: 2px; border-radius: 9px; background: var(--card); }
-#hardware .rows .pin:not(.caps) { margin-inline: 15px; }
+/* BOOT's and RESET's caps in place of their names as the buttons tour draws them */
+.keys { display: flex; gap: 6px; padding: 1px 0 2px; color: var(--text); }
+.keys svg { width: 24px; height: 24px; }
 .key { display: inline-block; width: 1em; height: 1em; vertical-align: -.14em; margin: 0 1px; }
 
 /* ---------- 4 mounting + the chips + the 3d stage + the steps + the caption + replay ---------- */

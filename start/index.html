@@ -88,7 +88,7 @@
         <rect class="spot" x="-2.6" y="40" width="5.2" height="54.6" rx="2.6"/>
         <path class="lead-line" d="M477.3 -17V-9M443.9 151V143M259.3 151V141M-13 67.3H-6"/>
       </svg>
-      <i class="pin caps" style="left:90.24%;top:7.89%" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#k-boot"/></svg><svg viewBox="0 0 24 24"><use href="#k-reset"/></svg></i>
+      <i class="pin" style="left:90.24%;top:7.89%">1</i>
       <i class="pin" style="left:84.40%;top:91.23%">2</i>
       <i class="pin" style="left:52.07%;top:91.23%">3</i>
       <i class="pin" style="left:2.45%;top:49.69%">4</i>
@@ -97,7 +97,7 @@
   <div class="txt">
     <div class="head"><h2>Hardware</h2><a class="pill" id="watch" href="/hi/buttons/" target="_blank" rel="noopener" aria-label="Watch the buttons tour"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>Watch</a></div>
     <ol class="rows">
-      <li><button type="button" class="spot" data-spot="1" aria-pressed="false"><i class="pin caps" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#k-boot"/></svg><svg viewBox="0 0 24 24"><use href="#k-reset"/></svg></i><span class="what"><b>BOOT and RESET</b><small>Top edge</small></span></button></li>
+      <li><button type="button" class="spot" data-spot="1" aria-pressed="false"><i class="pin" aria-hidden="true">1</i><span class="what"><span class="keys" role="img" aria-label="BOOT and RESET"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#k-boot"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#k-reset"/></svg></span><small>Top edge</small></span></button></li>
       <li><button type="button" class="spot" data-spot="2" aria-pressed="false"><i class="pin" aria-hidden="true">2</i><span class="what"><b>Status light</b><small>Bottom, near the right end</small></span></button></li>
       <li><button type="button" class="spot" data-spot="3" aria-pressed="false"><i class="pin" aria-hidden="true">3</i><span class="what"><b>USB-C port</b><small>Bottom center</small></span></button></li>
       <li><button type="button" class="spot" data-spot="4" aria-pressed="false"><i class="pin" aria-hidden="true">4</i><span class="what"><b>NFC</b><small>Left side</small></span></button></li>
@@ -181,7 +181,7 @@
     <ul class="facts">
       <li>mooboard needs a 2.4 GHz network. Most routers broadcast one under the same name as the rest. It may also be its own, like Home_2.4.</li>
       <li>It joins WPA2 and WPA3 Personal networks, and open ones. Not networks that ask for a username.</li>
-      <li>Do not pick a guest network. <span class="nw">Wi-Fi</span> with a sign-in page, like at hotels, schools and work, won’t work.</li>
+      <li>Do not pick a guest network. <span class="nw">Wi-Fi</span> with a sign-in page, like at hotels, schools, and work, won’t work.</li>
       <li>A VPN or iCloud Private Relay can hide that you are home. Turn it off for your home <span class="nw">Wi-Fi</span>, so mooboard.co/hi can find the board.</li>
       <li>Can’t see your network? Move the board closer to your router and scan again.</li>
       <li>A hidden network? Tap <b>Other network</b> and type its name.</li>
@@ -195,11 +195,8 @@
     </ul>
     <h3>Factory reset</h3>
     <ul class="facts">
-      <li>Hold <b>BOOT</b> for 10 seconds.</li>
-      <li>A fill sweeps across the screen from amber to red with <b>Factory resetting…</b></li>
-      <li>At 10 seconds the words flash. Then the board restarts and shows its code to join.</li>
-      <li>It erases <span class="nw">Wi-Fi</span>, settings and sign-ins. Its own <span class="nw">Wi-Fi</span> gets a new password.</li>
-      <li>BOOT does nothing while the board shows its code to join.</li>
+      <li>Hold <svg class="key" role="img" aria-label="BOOT"><use href="#k-boot"/></svg> for 10 seconds.</li>
+      <li>Then the board restarts and shows its code to join.</li>
       <li>Or in the web app, open <b>System</b>, then <b>Advanced</b>. Under <b>Erase everything</b>, type RESET and tap <b>Erase</b>.</li>
     </ul>
   </div>
