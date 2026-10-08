@@ -227,16 +227,13 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .colors { background: var(--cbg, #D5F8EF); color: var(--ink); transition: background .8s var(--ease); overflow: hidden;
   padding: clamp(96px, 11vw, 150px) 0 clamp(64px, 8vw, 110px); }
 .colors .big { margin: 0 auto; padding: 0 var(--gut); text-align: center; font-size: clamp(44px, 8vw, 120px); }
-/* --fw: one frame's width; the row starts with the first frame centered and slides one frame plus a gap per step.
-   The top padding is the room the Special Edition tag floats in, so the tag never moves anything */
+/* --fw: one frame's width; the row starts with the first frame centered and slides one frame plus a gap per step */
 .frames { --fw: min(820px, 58vw); --fg: clamp(18px, 2.8vw, 44px); margin-top: clamp(14px, 2.6vw, 40px); padding: 56px 0 clamp(40px, 5vw, 64px); touch-action: pan-y; }
 .frames-track { display: flex; align-items: center; gap: var(--fg); width: max-content; margin-left: calc(50% - var(--fw) / 2);
   transform: translateX(calc(var(--i, 0) * -1 * (var(--fw) + var(--fg)))); transition: transform .9s var(--ease); }
 .fslide { position: relative; flex: none; width: var(--fw); cursor: pointer; transform: scale(.86); opacity: .55; transition: transform .9s var(--ease), opacity .9s var(--ease); }
 .fslide.on { transform: none; opacity: 1; cursor: default; }
-.frames .glass-colors { position: absolute; left: 50%; bottom: calc(100% + 14px); transform: translate(-50%, 6px) scale(.96); }
-.colors[data-frame="teal"] .frames .glass-colors { opacity: 1; transform: translate(-50%, 0); }
-@media (max-width: 700px) { .frames { --fw: 74vw; --fg: 12px; padding-top: 48px; } .fslide { transform: scale(.92); } .frames .glass-colors { bottom: calc(100% + 10px); } }
+@media (max-width: 700px) { .frames { --fw: 74vw; --fg: 12px; padding-top: 48px; } .fslide { transform: scale(.92); } }
 .color-pick { position: relative; z-index: 2; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 0 var(--gut); }
 .cp { display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 18px 0 8px; border-radius: 999px; background: rgba(255, 255, 255, .7); font-weight: 800; font-size: 15px; transition: transform .3s var(--ease), background .3s, box-shadow .3s; box-shadow: 0 0 0 1px rgba(14, 26, 34, .08); }
 .cp i { width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, .12) inset; }
@@ -560,32 +557,8 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
     #F5FAF8;
 }
 [data-frame="orange"].sw, [data-frame="white"].sw { box-shadow: 0 0 0 1px rgba(0, 0, 0, .12) inset; }
-.glass-note {
-  position: relative; display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 14px 0 10px; border-radius: 999px; overflow: hidden;
-  font-family: var(--display); font-weight: 600; font-size: 14px; letter-spacing: .01em; white-space: nowrap; color: #eafffa;
-  /* frosted see-through glass with a teal tint: whatever is behind shows through, softened */
-  background: linear-gradient(160deg, rgba(210, 255, 246, .26) 0%, rgba(119, 237, 215, .14) 45%, rgba(119, 237, 215, .06) 100%);
-  border: 1px solid rgba(210, 255, 244, .5);
-  backdrop-filter: blur(6px) saturate(1.6) brightness(1.08); -webkit-backdrop-filter: blur(6px) saturate(1.6) brightness(1.08);
-  box-shadow: 0 0 22px rgba(119, 237, 215, .35), inset 0 1px 0 rgba(255, 255, 255, .55), inset 0 -1px 0 rgba(14, 107, 94, .25), inset 0 0 12px rgba(119, 237, 215, .25);
-  text-shadow: 0 1px 6px rgba(14, 26, 34, .35);
-  opacity: 0; transform: translateY(6px) scale(.96); pointer-events: none;
-  transition: opacity .5s var(--ease), transform .5s var(--ease);
-}
-.glass-note i { width: 9px; height: 9px; border-radius: 50%; flex: none; background: radial-gradient(circle at 35% 30%, #fff, #77EDD7 55%, rgba(119, 237, 215, .3)); box-shadow: 0 0 10px #77EDD7; }
-.glass-note::after {
-  content: ''; position: absolute; inset: -40% auto -40% -60%; width: 45%; transform: skewX(-20deg);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent); animation: lightleak 3.6s 1s ease-in-out infinite;
-}
-/* the sweep moves by transform (left -60% to 130% of the note = 422% of its own width): no layout per frame */
-@keyframes lightleak { 0% { transform: translateX(0) skewX(-20deg); } 55%, 100% { transform: translateX(422.3%) skewX(-20deg); } }
-/* hero: the badge is a tag on top of the board's top-left corner, in the gap under the kicker (.stage keeps at least
-   40px there). It is absolutely placed, so it takes no space and nothing moves when it fades in or out */
 .stage-par { position: relative; }
-.glass-hero { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 2; }
-.stage[data-frame="teal"] .glass-hero { opacity: 1; transform: none; }
-/* Mint Glow's selection ring glows teal, and a glint travels once around it every 3.6 s: the badge's light sweep
-   (same rhythm) bent into a circle. Transform and opacity only; under reduced motion the ring just glows */
+/* Mint Glow's selection ring glows teal, and a glint travels once around it every 3.6 s. Transform and opacity only; under reduced motion the ring just glows */
 .cp i { position: relative; }
 .sw[data-frame="teal"]::before, .cp[data-frame="teal"] i::before {
   content: ''; position: absolute; z-index: 1; inset: -5px; border-radius: 50%; opacity: 0;
@@ -599,11 +572,6 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .sw.on[data-frame="teal"]::before, .cp.on[data-frame="teal"] i::before { animation: ringGlint 3.6s 1s ease-in-out infinite; }
 @keyframes ringGlint { 0% { transform: rotate(-60deg); opacity: 0; } 10%, 45% { opacity: 1; } 55%, 100% { transform: rotate(300deg); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .sw[data-frame="teal"]::before, .cp[data-frame="teal"] i::before { animation: none !important; opacity: 0; } }
-.glass-colors { color: var(--deep); text-shadow: 0 1px 0 rgba(255, 255, 255, .6); background: linear-gradient(160deg, rgba(255, 255, 255, .38), rgba(119, 237, 215, .2) 55%, rgba(119, 237, 215, .1)); border-color: rgba(119, 237, 215, .95); box-shadow: 0 0 26px rgba(119, 237, 215, .55), inset 0 1px 0 rgba(255, 255, 255, .9), inset 0 0 14px rgba(119, 237, 215, .35); }
-@media (max-width: 700px) {
-  .glass-note { font-size: 13px; height: 28px; }
-}
-@media (prefers-reduced-motion: reduce) { .glass-note::after { display: none; } }
 /* phones: the frame names sit under their dots so all four fit on one row */
 @media (max-width: 700px) {
   .color-pick { flex-wrap: nowrap; gap: 6px; width: 100%; }

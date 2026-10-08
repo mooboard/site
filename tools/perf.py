@@ -431,10 +431,10 @@ def checks(url):
             cdp.pump(2.5)
             r = pg.js(r'''(function(){
               var q=function(s){return document.querySelector(s)};
-              var gn=q('.hero .glass-hero'), gs=getComputedStyle(gn);
+              var ring=q('.hero .sw.on[data-frame="teal"]'), rs=ring&&getComputedStyle(ring,'::before');
               var ov=[].slice.call(document.querySelectorAll('body *')).filter(function(e){var r=e.getBoundingClientRect();return r.right>innerWidth+1&&getComputedStyle(e).position!=='fixed'&&r.width>0}).slice(0,5).map(function(e){return e.tagName+(e.id?'#'+e.id:'')+(e.className&&typeof e.className==='string'?'.'+e.className.split(' ')[0]:'')});
-              return {overflow:document.documentElement.scrollWidth>innerWidth, overflowers:ov, badge:gs.opacity==='1'&&gs.position==='absolute',
-                badgeText:gn.textContent.trim(), hasFrames:!!q('#story.has-frames'), chips:document.querySelectorAll('#chips .chip').length,
+              return {overflow:document.documentElement.scrollWidth>innerWidth, overflowers:ov, badge:!!q('.glass-note'),
+                ringGlint:!!rs&&rs.animationName==='ringGlint', hasFrames:!!q('#story.has-frames'), chips:document.querySelectorAll('#chips .chip').length,
                 syllables:(window.MooBoard&&MooBoard.syllables('kitchen').join('-')), hero:!!q('#hero-board canvas'),
                 colorsFirst:(q('.cp.on')||{}).dataset&&q('.cp.on').dataset.frame,
                 form:(function(){var f=q('#wl-form'),i=q('#wl-email');i.value='nope';f.dispatchEvent(new Event('submit',{cancelable:true}));var m=q('#wl-msg').textContent;i.value='';return m})(),
