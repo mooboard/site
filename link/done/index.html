@@ -26,6 +26,10 @@ main{width:100%;max-width:420px}
 .cow{display:block;width:128px;height:auto;margin:0 auto 24px}
 h1{margin:0 0 10px;font-size:1.6rem;line-height:1.2;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
 p{margin:0;color:var(--dim);text-wrap:balance}
+/* the way back to the board's setup after a sign-in that did not work */
+.back{display:inline-flex;align-items:center;justify-content:center;min-height:48px;margin-top:24px;padding:0 26px;border-radius:999px;background:#77EDD7;color:#0E1A22;font-weight:800;text-decoration:none}
+.back[hidden]{display:none}
+.back:focus-visible{outline:3px solid #0E6B5E;outline-offset:3px}
 </style>
 </head>
 <body>
@@ -34,6 +38,7 @@ p{margin:0;color:var(--dim);text-wrap:balance}
 <svg class="cow" viewBox="0 0 136 108" role="img" aria-label="mooboard"><use href="#cow"/></svg>
 <h1 id="say"></h1>
 <p id="next"></p>
+<a class="back" id="back" href="/hi/" hidden>Back to setup</a>
 </main>
 <script>
 // the result api.mooboard.co sends in r and s + plus pupils when it worked and x pupils when it did not as on /hi
@@ -46,16 +51,20 @@ p{margin:0;color:var(--dim);text-wrap:balance}
   var r = q.get('r');
   var s = q.get('s');
   var own = q.get('own') === '1';   // the person signed in through their own spotify app
+  // back is the board whose setup opened this sign-in in its own tab + a valid unit code or nothing
+  var back = unitCode(q.get('back'));
   var name = s === 'spotify' ? 'Spotify' : s === 'google' ? 'Google' : '';
   var say = 'That sign-in link expired.';
   var next = 'Go back and try again.';
   var shape = CROSS;
   var closing = false;
+  var worked = false;
   if (r === 'ok' && name) {
     say = 'Signed in to ' + name + '.';
-    next = 'Closing in 3';
+    next = back ? 'Back to setup in 3' : 'Closing in 3';
     shape = PLUS;
     closing = true;
+    worked = true;
   } else if (r === 'refused') {
     say = 'Sign-in was canceled.';
   } else if (r === 'notallowed' && s === 'spotify' && own) {
@@ -73,6 +82,36 @@ p{margin:0;color:var(--dim);text-wrap:balance}
       if (dot) dot.setAttribute('fill', INK);
     });
   });
+  // the label's alphabet with no 0 O 1 I or L + a code in any case comes back in capitals
+  function unitCode(raw) {
+    var ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    var code = typeof raw === 'string' ? raw.toUpperCase() : '';
+    if (code.length !== 4) return '';
+    for (var i = 0; i < 4; i++) if (ALPHABET.indexOf(code.charAt(i)) < 0) return '';
+    return code;
+  }
+  // with back a sign-in that worked counts down from 3 and opens the board's setup through find my board + one that
+  // did not work offers the way back and stays so it can be read
+  if (back && worked) {
+    var count = 3;
+    var row = document.getElementById('next');
+    var timer = setInterval(function () {
+      count -= 1;
+      if (count > 0) {
+        row.textContent = 'Back to setup in ' + count;
+        return;
+      }
+      clearInterval(timer);
+      location.replace('/hi/' + back);
+    }, 1000);
+    return;
+  }
+  if (back) {
+    var link = document.getElementById('back');
+    link.href = '/hi/' + back;
+    link.hidden = false;
+    return;
+  }
   // a sign-in that worked counts down from 3 and closes this tab back to the setup page (owner 2026-10-08) + the line
   // to go back by hand for a browser that keeps the tab open
   if (closing) {
