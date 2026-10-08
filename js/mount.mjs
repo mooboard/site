@@ -21,7 +21,10 @@ const FOV = 24;
 const STRIP = { len: 92.7, w: 19.05, tab: 19.05, t: 3.2, pocket: 1.0 };
 const STRIP_OUT = STRIP.t - STRIP.pocket;   // 2.2 + how far the strips hold the rail off the wall
 const HELD = 260;                            // how far from the wall the rail is held before it goes up
-const SCREW = { head: 4.8, headH: 2.6, shank: 2.0, len: 30 };   // an m4 x 30 truss head screw
+const SCREW = { head: 4.8, headH: 2.6, shank: 2.0, len: 30 };   // a black m4 x 30 truss head screw
+// a self-drilling drywall anchor + its rim stays at the wall and its body and point go in
+const ANCHOR = { len: 30, rim: 6.6, rimT: 1.4, body: 4.4, out: 0.7 };
+const STROKE = { anchor: ANCHOR.len, screw: 34 };   // how far each part travels in as it is screwed home
 const TILT = 0.035;                          // the rail's tilt before the level rights it
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -104,21 +107,26 @@ function ways(A) {
             S.pencil = tool(t, 0.6, 1.15, 4.6, 0.45, 0.25);
             S.marks = [0, 1, 2].map((k) => seg(t, inAt(0.6, 1.15, 0.45, k) - 0.1, inAt(0.6, 1.15, 0.45, k) + 0.05));
           } },
-        { dur: 5.2, cam: [[0, 1.0, 'drill']], still: 4.5,
+        { dur: 5.8, cam: [[0, 1.0, 'anchors']], still: 4.85,
           set(S, t) {
             S.pencil = null;
             const k = ease(seg(t, 0, 1.0));
             S.rail = { ...S.rail, y: lerp(0, 40, k), z: lerp(0, 170, k), o: 1 - seg(t, 0.4, 1.0) };
-            S.drill = tool(t, 1.2, 1.25, 5.0, 0.4, 0.4);
-            S.holes = [0, 1, 2].map((j) => seg(t, inAt(1.2, 1.25, 0.4, j) - 0.05, inAt(1.2, 1.25, 0.4, j) + 0.15));
+            const d = drive(A, t, 1.2, 1.4, STROKE.anchor);
+            S.anchors = d.parts;
+            S.driver = d.tool && { ...d.tool, z: A.wall.z + ANCHOR.out + d.tool.off };
+            S.seat = d.home.map((h, j) => (S.still ? (h ? 0.3 : -1) : pulse(t, d.homeAt[j], d.homeAt[j] + 0.7)));
+            S.seatOn = 'wall';
           } },
-        { dur: 4.6, cam: [[0, 1.2, 'railClose']], still: 4.6,
+        { dur: 6.0, cam: [[0, 1.2, 'screwIn']], still: 5.05,
           set(S, t) {
-            S.drill = null;
             const k = ease(seg(t, 0, 1.2));
             S.rail = { ...S.rail, y: lerp(40, 0, k), z: lerp(170, 0, k), o: seg(t, 0, 0.6) };
-            S.screws = [0, 1, 2].map((j) => (t < 1.2 + j * 0.9 ? -1 : ease(seg(t, 1.3 + j * 0.9, 2.3 + j * 0.9))));
-            S.seat = [0, 1, 2].map((j) => (S.still ? 0.3 : pulse(t, 2.3 + j * 0.9, 3.0 + j * 0.9)));
+            const d = drive(A, t, 1.4, 1.4, STROKE.screw);
+            S.screws = d.parts;
+            S.driver = d.tool && { ...d.tool, z: A.screws[0].z + SCREW.headH + d.tool.off };
+            S.seat = d.home.map((h, j) => (S.still ? (h ? 0.3 : -1) : pulse(t, d.homeAt[j], d.homeAt[j] + 0.7)));
+            S.seatOn = 'rail';
           } },
         ...hangSteps(A),
       ],
@@ -137,6 +145,24 @@ function tool(t, t0, each, gone, push, hold) {
   const from = n === 0 ? 0 : n - 1;
   const move = ease(seg(u, 0, 0.25));
   return { o, at: lerp(from, n, n === 0 ? 1 : move), k: ease(goIn) * (1 - ease(goOut)), spin: u };
+}
+
+// one screwdriver carries a part to each of the three marks from t0 every `each` seconds + turns it home + backs off
+// + the part sits on its tip until it is home + `stroke` is how far a part goes in + where the driver and parts are
+function drive(A, t, t0, each, stroke) {
+  const res = { tool: null, parts: [null, null, null], home: [false, false, false], homeAt: [0, 1, 2].map((j) => t0 + (j + 0.8) * each) };
+  if (t < t0 - 0.3) return res;
+  const n = Math.min(2, Math.max(0, Math.floor((t - t0) / each)));
+  const u = clamp01((t - t0 - n * each) / each);
+  const at = n === 0 ? 0 : lerp(n - 1, n, ease(seg(u, 0, 0.25)));
+  const a = A.screws[Math.floor(at)], b = A.screws[Math.min(2, Math.ceil(at))], f = at - Math.floor(at);
+  const x = lerp(a.x, b.x, f), y = lerp(a.y, b.y, f), p = ease(seg(u, 0.3, 0.8));
+  for (let j = 0; j < n; j++) { res.parts[j] = { x: A.screws[j].x, y: A.screws[j].y, off: 0, turn: 1 }; res.home[j] = true; }
+  res.parts[n] = u < 0.3 ? { x, y, off: stroke, turn: 0 } : { x: A.screws[n].x, y: A.screws[n].y, off: stroke * (1 - p), turn: p };
+  res.home[n] = u >= 0.8;
+  const o = seg(t, t0 - 0.3, t0) * (1 - seg(t, t0 + 3 * each - 0.1, t0 + 3 * each + 0.25));
+  res.tool = { x, y, off: u < 0.8 ? stroke * (1 - p) : stroke * ease(seg(u, 0.8, 1)), turn: p, o };
+  return res;
 }
 
 // ---- the models ----
@@ -193,28 +219,39 @@ function makePencil() {
   holder.add(g);
   return holder;
 }
-function makeDrill() {
-  const g = new THREE.Group(), spin = new THREE.Group();
-  const bit = new THREE.Mesh(new THREE.CylinderGeometry(3, 2.4, 56, 12), std('#9AA2A8', 0.35, 0.8));
-  bit.rotation.x = Math.PI / 2; bit.position.z = 28;
-  const chuck = new THREE.Mesh(new THREE.CylinderGeometry(9, 11, 28, 18), std('#2A3034', 0.5, 0.3));
-  chuck.rotation.x = Math.PI / 2; chuck.position.z = 70;
-  spin.add(bit, chuck);
+function makeDriver() {
+  const g = new THREE.Group(), steel = std('#A9B0B6', 0.3, 0.85);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(2.3, 5, 4), steel);
+  tip.rotation.x = -Math.PI / 2; tip.position.z = 2.5;
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, 70, 12), steel);
+  shaft.rotation.x = Math.PI / 2; shaft.position.z = 40;
   const ink = std('#24313A', 0.55), teal = std(TEAL, 0.5);
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(21, 80, 6, 18), ink);
-  body.rotation.x = Math.PI / 2; body.position.z = 138;
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(21.6, 21.6, 9, 24), teal);
-  band.rotation.x = Math.PI / 2; band.position.z = 100;
-  const grip = new THREE.Mesh(new THREE.BoxGeometry(26, 92, 32), ink);
-  grip.position.set(0, -58, 160); grip.rotation.x = -0.18;
-  const pack = new THREE.Mesh(new THREE.BoxGeometry(52, 24, 66), teal);
-  pack.position.set(0, -110, 168);
-  g.add(spin, body, band, grip, pack);
-  g.userData.spin = spin;
+  const handle = new THREE.Mesh(new THREE.CapsuleGeometry(10.5, 60, 6, 16), ink);
+  handle.rotation.x = Math.PI / 2; handle.position.z = 115.5;
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 8, 20), teal);
+  band.rotation.x = Math.PI / 2; band.position.z = 88;
+  g.add(tip, shaft, handle, band);
+  return g;
+}
+// the rim's front face at the origin + the body and its coarse thread go in along -z
+function makeAnchor() {
+  const g = new THREE.Group(), nylon = std('#D6D9DC', 0.55);
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(ANCHOR.rim, ANCHOR.rim, ANCHOR.rimT, 24), nylon);
+  rim.rotation.x = Math.PI / 2; rim.position.z = -ANCHOR.rimT / 2;
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(ANCHOR.body, 1.1, ANCHOR.len - ANCHOR.rimT, 16), nylon);
+  body.rotation.x = Math.PI / 2; body.position.z = -ANCHOR.rimT - (ANCHOR.len - ANCHOR.rimT) / 2;
+  g.add(rim, body);
+  for (let k = 0; k < 5; k++) {
+    const r = lerp(6.0, 3.2, k / 4), th = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.75, 1.3, 20), nylon);
+    th.rotation.x = Math.PI / 2; th.position.z = -4.5 - k * 5;
+    g.add(th);
+  }
+  const slot = std('#5C6166', 0.7);
+  for (const r of [0, Math.PI / 2]) { const c = new THREE.Mesh(new THREE.BoxGeometry(5.4, 1.2, 0.6), slot); c.rotation.z = r; c.position.z = 0.1; g.add(c); }
   return g;
 }
 function makeScrew() {
-  const g = new THREE.Group(), steel = std('#4A4E54', 0.32, 0.75);
+  const g = new THREE.Group(), steel = std('#2A2D31', 0.34, 0.65);
   const head = new THREE.Mesh(new THREE.CylinderGeometry(SCREW.head * 0.86, SCREW.head, SCREW.headH, 20), steel);
   head.rotation.x = Math.PI / 2; head.position.z = SCREW.headH / 2;
   const slot = std('#111214', 0.7);
@@ -359,11 +396,17 @@ export async function create(o) {
   scene.add(railPivot);
 
   // the tools and what they leave on the wall
-  const pencil = makePencil(), drill = makeDrill();
-  shadows(pencil, true); shadows(drill, true);
-  scene.add(pencil, drill);
+  const pencil = makePencil(), driver = makeDriver();
+  shadows(pencil, true); shadows(driver, true);
+  scene.add(pencil, driver);
+  const anchorEdge = new THREE.LineBasicMaterial({ color: '#7d8a8f', transparent: true, opacity: 0.55 });
+  const anchors = A.screws.map(() => {
+    const m = makeAnchor();
+    m.traverse((x) => { if (x.isMesh) x.add(new THREE.LineSegments(new THREE.EdgesGeometry(x.geometry, 40), anchorEdge)); });
+    shadows(m, true); scene.add(m);
+    return m;
+  });
   const marks = A.screws.map((p) => { const d = disc(2.2, '#45464A'); d.position.set(p.x, p.y, A.wall.z + 0.08); scene.add(d); return d; });
-  const holes = A.screws.map((p) => { const d = disc(3.1, '#141416'); d.position.set(p.x, p.y, A.wall.z + 0.12); scene.add(d); return d; });
   const screws = A.screws.map(() => { const s = makeScrew(); shadows(s, true); scene.add(s); return s; });
   const presses = A.pockets.map(() => { const r = ring(); scene.add(r); return r; });
   const seats = A.screws.map(() => { const r = ring(6, 8.5); scene.add(r); return r; });
@@ -378,7 +421,8 @@ export async function create(o) {
     railBack: { t: [0, C.y, C.z + HELD], az: 0.5, el: 0.34, w: 330, h: 170 },
     railWall: { t: [0, C.y + 6, C.z], az: -0.42, el: 0.22, w: 390, h: 190 },
     railClose: { t: [0, C.y - 4, C.z], az: -0.36, el: 0.16, w: 320, h: 160 },
-    drill: { t: [0, A.screws[0].y - 52, A.wall.z + 70], az: -1.0, el: 0.22, w: 470, h: 300 },
+    anchors: { t: [-14, A.screws[0].y - 8, A.wall.z + 55], az: -0.95, el: 0.24, w: 330, h: 180 },
+    screwIn: { t: [0, C.y - 4, C.z + 45], az: -0.78, el: 0.24, w: 370, h: 200 },
     hang: { t: [-24, 6, 30], az: -0.58, el: 0.4, w: 720, h: 360 },
     hung: { t: [0, 0, 0], az: -0.36, el: 0.16, w: 640, h: 250 },
   };
@@ -395,7 +439,8 @@ export async function create(o) {
   function stateAt(way, step, t, still) {
     const W = WAYS[way];
     const S = { rail: { x: 0, y: 0, z: HELD, ry: 0, rz: 0, o: 1 }, board: { x: 0, y: 0, z: 0, o: 0, g: 0 }, strips: null, level: 0,
-      pencil: null, marks: [0, 0, 0], drill: null, holes: [0, 0, 0], screws: [-1, -1, -1], seat: -1, press: -1, targets: -1,
+      pencil: null, marks: [0, 0, 0], driver: null, anchors: [null, null, null], screws: [null, null, null], seat: -1, seatOn: 'rail',
+      press: -1, targets: -1,
       arrow: -1, click: -1, clock: -1, ...W.start() };
     let camName = S.cam;
     for (let i = 0; i <= step; i++) {
@@ -463,7 +508,7 @@ export async function create(o) {
     board.visible = S.board.o > 0.001;
     board.position.set(S.board.x, S.board.y, S.board.z + z0);
     ghost(S.board.g);
-    // the tools at the screw holes + the pencil's point and the drill's bit reach the wall when in
+    // the tools at the screw holes + the pencil's point reaches the wall + the screwdriver turns each part home
     const between = (i) => {
       const a = A.screws[Math.floor(i)], b = A.screws[Math.min(2, Math.ceil(i))], f = i - Math.floor(i);
       return [lerp(a.x, b.x, f), lerp(a.y, b.y, f)];
@@ -474,25 +519,25 @@ export async function create(o) {
       pencil.position.set(x, y, A.wall.z + lerp(60, 0.3, S.pencil.k));
       pencil.rotation.set(-0.78, 0.2, 0);
     }
-    drill.visible = !!S.drill;
-    if (S.drill) {
-      const [x, y] = between(S.drill.at);
-      drill.position.set(x, y, A.wall.z + lerp(36, -8, S.drill.k));
-      drill.userData.spin.rotation.z = S.drill.k > 0.02 ? S.drill.spin * 90 : 0;
+    driver.visible = !!S.driver && S.driver.o > 0.02;
+    if (driver.visible) {
+      driver.position.set(S.driver.x, S.driver.y, S.driver.z);
+      driver.rotation.z = -S.driver.turn * 12;
     }
+    anchors.forEach((m, k) => {
+      const p = S.anchors[k];
+      m.visible = !!p;
+      if (p) { m.position.set(p.x, p.y, A.wall.z + ANCHOR.out + p.off); m.rotation.z = -p.turn * 12; }
+    });
     marks.forEach((d, k) => { d.material.opacity = S.marks[k]; d.visible = S.marks[k] > 0; });
-    holes.forEach((d, k) => { d.material.opacity = S.holes[k]; d.visible = S.holes[k] > 0; });
     screws.forEach((s, k) => {
       const p = S.screws[k];
-      s.visible = p >= 0;
-      if (p >= 0) {
-        const h = A.screws[k];
-        s.position.set(h.x, h.y, h.z + z0 + (1 - p) * 46);
-        s.rotation.z = -p * 14;
-      }
+      s.visible = !!p;
+      if (p) { s.position.set(p.x, p.y, A.screws[k].z + z0 + p.off); s.rotation.z = -p.turn * 12; }
     });
     const v = new THREE.Vector3();
-    seats.forEach((r, k) => grow(r, S.seat === -1 ? -1 : S.seat[k], v.set(A.screws[k].x, A.screws[k].y, A.front + z0 + 0.8), 0.8, 2));
+    seats.forEach((r, k) => grow(r, S.seat === -1 ? -1 : S.seat[k],
+      v.set(A.screws[k].x, A.screws[k].y, S.seatOn === 'wall' ? A.wall.z + ANCHOR.out + 0.4 : A.front + z0 + 0.8), 0.9, 2));
     presses.forEach((r, k) => {
       const q = S.press < 0 ? -1 : clamp01((S.press - (k >> 1) * 0.15) / 0.75);
       grow(r, q < 1 ? q : -1, v.set(A.pockets[k].x, A.pockets[k].y, A.front + z0 + 0.6), 0.6, 1.9);

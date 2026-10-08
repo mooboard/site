@@ -107,10 +107,11 @@ test('the five cards, in order, with one h1', () => {
   assert.deepEqual([...html.matchAll(/<h[12]>([^<]+)</g)].map((m) => m[1]), ['Meet your mooboard', 'In the box', 'Hardware', 'Mounting', 'Set up']);
 });
 
-test('in the box: the board, the rail with its hooks, the strips, the charger and the cable, and no screws', () => {
+test('in the box: the board, the rail with its hooks, the strips, the screws and anchors, the charger and the cable', () => {
   const box = between(html, 'id="box"', '</section>');
-  assert.deepEqual([...box.matchAll(/<b>([^<]+)<\/b>/g)].map((m) => m[1]), ['mooboard', 'Wall rail with 2 hooks', 'Adhesive strips', '20 W USB-C charger', '2 m USB-C cable']);
-  assert.doesNotMatch(box, /screw|anchor/i);
+  assert.deepEqual([...box.matchAll(/<b>([^<]+)<\/b>/g)].map((m) => m[1]),
+    ['mooboard', 'Wall rail with 2 hooks', 'Adhesive strips', 'Screws and anchors', '20 W USB-C charger', '2 m USB-C cable']);
+  assert.equal((box.match(/<span class="ic" aria-hidden="true"><svg/g) || []).length, 6, 'a small drawing for each');
 });
 
 test('hardware: where each thing is, and Watch opens the buttons tour', () => {
@@ -143,7 +144,7 @@ test('every mounting way has a caption for each of its steps in 3d, and stills f
   assert.deepEqual(caps('screws'), [
     'Hold the rail level on the wall.',
     'Mark the wall through the rail’s 3 holes.',
-    'Take the rail down. Drill a hole at each mark.',
+    'Take the rail down. Screw an anchor into each mark.',
     'Screw the rail on.',
     'Line up the hooks with the rail’s round holes and push in.',
     'Lift the board a little and slide it left until it clicks.',
@@ -152,6 +153,9 @@ test('every mounting way has a caption for each of its steps in 3d, and stills f
   assert.equal(own('screws') + hang, caps('screws').length);
   assert.equal((mount.match(/still: [\d.]+/g) || []).length, (mount.match(/\{ dur: /g) || []).length, 'a still for each step');
   assert.match(startJs, /if \(REDUCED\) \{\s*M\.api\.show\(way, step\)/, 'less motion shows the steps as stills and plays nothing');
+  assert.doesNotMatch(mount + html, /\bdrill\b/i, 'self-drilling anchors go in with a screwdriver, no drill');
+  assert.match(mount, /function makeDriver\(\)/);
+  assert.match(mount, /function makeAnchor\(\)/);
 });
 
 test('no em dashes, en dashes or semicolons in what a person reads, mooboard in lowercase, American English and Wi-Fi with its hyphen', () => {
