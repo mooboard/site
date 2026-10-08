@@ -157,9 +157,11 @@
 </main>
 
 <nav class="pager" aria-label="Cards">
-  <button type="button" class="back" id="back" disabled>Back</button>
   <ol class="dots" id="dots"></ol>
-  <button type="button" class="btn" id="next">Next</button>
+  <div class="dock">
+    <button type="button" class="back" id="back" hidden>Back</button>
+    <button type="button" class="btn" id="next">Next</button>
+  </div>
 </nav>
 <p class="sr" id="said" aria-live="polite"></p>
 

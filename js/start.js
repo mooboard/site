@@ -139,8 +139,8 @@
     if (i === index) return;
     index = i;
     dots.forEach(function (d, k) { if (k === i) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current'); });
-    back.disabled = i === 0;
-    next.textContent = i === cards.length - 1 ? 'Done' : 'Next';
+    back.hidden = i === 0;
+    next.textContent = i === cards.length - 1 ? 'Finish' : 'Next';
   }
   // a card is reached once the track stands still on it
   function arrive(speak) {

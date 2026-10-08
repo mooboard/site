@@ -100,6 +100,15 @@ test('a sticker link\'s trip to the start page lands with its model and code, an
   assert.equal([...html.matchAll(/href="\/hi\/" data-hi/g)].length, 2, 'both mooboard.co/hi links take the code');
 });
 
+test('the dots sit over a dock of back and next, back hides on the first card and next says Finish on the last, which opens this board', () => {
+  const pager = between(html, '<nav class="pager"', '</nav>');
+  assert.match(pager, /<ol class="dots" id="dots"><\/ol>\s*<div class="dock">\s*<button type="button" class="back" id="back" hidden>Back<\/button>\s*<button type="button" class="btn" id="next">Next<\/button>\s*<\/div>/);
+  assert.match(startJs, /back\.hidden = i === 0/);
+  assert.match(startJs, /next\.textContent = i === cards\.length - 1 \? 'Finish' : 'Next'/);
+  assert.match(startJs, /if \(index === cards\.length - 1\) location\.href = hi/);
+  assert.equal((html.match(/id="back"|id="next"|class="dots"/g) || []).length, 3, 'one back, one next and one row of dots');
+});
+
 test('the five cards, in order, with one h1', () => {
   const ids = [...html.matchAll(/<section class="card[^"]*" id="(\w+)" aria-roledescription="slide" aria-label="(\d) of 5"/g)].map((m) => [m[1], m[2]]);
   assert.deepEqual(ids, [['hello', '1'], ['box', '2'], ['hardware', '3'], ['mounting', '4'], ['setup', '5']]);
@@ -165,7 +174,7 @@ test('no em dashes, en dashes or semicolons in what a person reads, mooboard in 
   assert.doesNotMatch(text, /colour|centre|favourite|metre|organis|customis/i);
   assert.doesNotMatch(text, /\bWiFi\b|\bwifi\b|\bWifi\b/);
   assert.match(text, /Wi-Fi/);
-  for (const s of ['Next', 'Done', ' of ', 'Step ']) assert.ok(startJs.includes(`'${s}'`), s);
+  for (const s of ['Next', 'Finish', ' of ', 'Step ']) assert.ok(startJs.includes(`'${s}'`), s);
 });
 
 test('the rail model has the rail, both hooks and every place the steps use, so a new rail is one new file', () => {
