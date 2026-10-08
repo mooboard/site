@@ -117,20 +117,23 @@
   }
 
   /* ---------- text, set like the board's typesetter ---------- */
-  // The roles are the firmware's (pw::text::FaceId) in its default family, Fredoka. The lyric roles are SF Pro here
-  // (the owner, 2026-10-05: "we can use SF Pro for now"), from the visitor's system: it is never bundled.
+  // The roles are the firmware's (pw::text::FaceId) in its default family, Nunito since 2026-10-07 (the owner: the
+  // board moves from Fredoka to Nunito, the lighter weights). The Moo screen keeps its Fredoka MOO. The lyric roles
+  // are SF Pro here (the owner, 2026-10-05: "we can use SF Pro for now"), from the visitor's system: never bundled.
   var SYS = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif';
   var FAMS = {
     fredoka: { css: 'Fredoka', tracked: true, seated: true },
+    nunito: { css: 'Nunito', tracked: true, seated: true },
     sys: { css: SYS },
     // SF Pro Rounded where the browser can reach it (Safari's ui-rounded, or an installed copy), else SF Pro
     round: { css: 'ui-rounded, "SF Pro Rounded", ' + SYS }
   };
   var ROLES = {
-    label: { fam: 'fredoka', w: 600, smallDigits: true },  // LABEL, TEMP, TITLE, ROW (SfSemibold)
-    clock: { fam: 'fredoka', w: 600 },                     // SfSemiboldClock
-    medium: { fam: 'fredoka', w: 500 },                    // SfMedium (Minimal, Nixie)
-    bold: { fam: 'fredoka', w: 700 },                      // sfr bold for the celebration word
+    label: { fam: 'nunito', w: 700, smallDigits: true },  // LABEL, TEMP, TITLE, ROW (SfSemibold)
+    clock: { fam: 'nunito', w: 700 },                     // SfSemiboldClock
+    medium: { fam: 'nunito', w: 600 },                    // SfMedium (Minimal, Nixie)
+    bold: { fam: 'nunito', w: 800 },                       // sfr bold for the celebration word
+    moo: { fam: 'fredoka', w: 700 },                       // the Moo screen's MOO, kept as it was
     lyric: { fam: 'round', w: 700 },                       // SfrBold: the line being sung
     lyricSide: { fam: 'round', w: 590 },                   // SfrSemibold: the side lines
     sfSemi: { fam: 'sys', w: 590 }                         // SfSemibold in the SF Pro family (the lyric decor's time)
@@ -3578,11 +3581,11 @@
       draw: function (f, t, st) {
         // the cow and MOO as one centred group, clear of every edge
         f.fill(BLACK);
-        var cw = MARK[0].length, word = 'MOO', Lw = line('bold', 17, word), x0 = Math.round((W - (cw + 5 + Lw.inkW)) / 2);
+        var cw = MARK[0].length, word = 'MOO', Lw = line('moo', 17, word), x0 = Math.round((W - (cw + 5 + Lw.inkW)) / 2);
         drawMark(f, x0, 4, t, [119, 237, 215], st < 2.6 && !REDUCED ? hsl(Math.floor(t * 10) * 47, 1, .55) : null);
         var x = x0 + cw + 5;
         for (var i = 0; i < 3; i++) {
-          var tt = c01((st - .15 - i * .22) / .35), jump = REDUCED ? 0 : Math.round(Math.sin(tt * Math.PI) * -3), L = line('bold', 17, word[i]);
+          var tt = c01((st - .15 - i * .22) / .35), jump = REDUCED ? 0 : Math.round(Math.sin(tt * Math.PI) * -3), L = line('moo', 17, word[i]);
           if (tt > 0) drawText(f, L, penLeft(L, x), 26 + jump, null, 1, function (X, Y) { return mix(WHITE, [119, 237, 215], (Y - 8) / 18); });
           x += L.inkW + 2;
         }
