@@ -222,6 +222,12 @@ async function board3d(dots) {
     frameMat.transparent = glass; frameMat.opacity = glass ? f.opacity : 1; frameMat.depthWrite = !glass;
     frameMat.emissive.set(f.emissive || '#000000'); frameMat.emissiveIntensity = f.ei || 0;
   }
+  // a light frame keeps its outline on the light backdrop + a soft shadow under the board grounds it
+  V.lightEdges(root, ['frame']);
+  const shade = V.softShadow(620, 160, 0.42);
+  shade.rotation.x = -Math.PI / 2;
+  shade.position.y = -68.5;
+  scene.add(shade);
   // each cap from the model + it moves along its axis from where it rests
   const caps = {};
   for (const name of Object.keys(CAPS)) {

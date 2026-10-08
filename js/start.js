@@ -32,11 +32,15 @@
   function hiOf(code) {
     return code ? '/hi/' + code : '/hi/';
   }
+  // the rail and hooks as the buyer picked them + black unless the link says white
+  function railOf(search) {
+    return param(search, 'rail') === 'white' ? 'white' : 'black';
+  }
   // the ways to put it up a model has + the desk stand only for the desk board
   function waysOf(model) {
     return model === 'MB1D' ? ['strips', 'screws', 'stand'] : ['strips', 'screws'];
   }
-  var api = window.mooStart = { modelOf: modelOf, codeOf: codeOf, frameOf: frameOf, hiOf: hiOf, waysOf: waysOf };
+  var api = window.mooStart = { modelOf: modelOf, codeOf: codeOf, frameOf: frameOf, railOf: railOf, hiOf: hiOf, waysOf: waysOf };
 
   var root = document.documentElement;
   var track = document.getElementById('track');
@@ -284,7 +288,7 @@
     running(true);
     var wall = getComputedStyle(root).getPropertyValue('--wall').trim() || '#ECEAE5';
     window.mooMount = function (create) {
-      create({ canvas: $('mount-canvas'), clock: $('clock'), frame: finish, rail: 'black', wall: wall, onStep: onStep, onTime: onTime })
+      create({ canvas: $('mount-canvas'), clock: $('clock'), frame: finish, rail: railOf(search), wall: wall, onStep: onStep, onTime: onTime })
         .then(function (a) {
           if (M.state !== 'loading') return;
           M.api = a;

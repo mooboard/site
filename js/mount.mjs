@@ -10,7 +10,7 @@
    played to its end and then this one to that time + so any step can be shown or played from its start */
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { readGLB, loadModel, FINISH, RAILS } from './viewer.mjs';
+import { readGLB, loadModel, FINISH, RAILS, lightEdges, softShadow } from './viewer.mjs';
 
 const BOARD = '/assets/3d/board.glb';
 const RAIL = '/assets/3d/rail.glb';
@@ -339,6 +339,7 @@ export async function create(o) {
   for (const n of ['hook_l', 'hook_r']) {
     const h = R.root.getObjectByName(n);
     h.traverse((m) => { if (m.isMesh) m.material = hookMat; });
+    lightEdges(h, ['rail']);
     board.add(h);
   }
   // the frame in the board's own finish as the viewer paints it
@@ -365,6 +366,8 @@ export async function create(o) {
   });
   const ghostMats = B.mats.filter((m) => m.name !== 'led' && m.name !== 'rail').concat(ledMat);
   const baseOpacity = new Map(ghostMats.map((m) => [m, m === frameMat && finish.opacity != null ? finish.opacity : 1]));
+  // a light frame and a white rail and hooks keep their outline on the light wall
+  lightEdges(B.root, ['frame']);
   shadows(board, true);
   scene.add(board);
 
@@ -392,8 +395,13 @@ export async function create(o) {
   railPivot.add(level);
   level.position.sub(C);
   const levelLocal = level.position.clone();
+  lightEdges(railMesh, ['rail']);
   shadows(railPivot, true);
   scene.add(railPivot);
+  // soft contact shadows on the wall right behind the board and the rail + darker as they come close
+  const boardShade = softShadow(640, 230, 0), railShade = softShadow(330, 140, 0);
+  boardShade.position.z = railShade.position.z = A.wall.z + 0.2;
+  scene.add(boardShade, railShade);
 
   // the tools and what they leave on the wall
   const pencil = makePencil(), driver = makeDriver();
@@ -505,6 +513,11 @@ export async function create(o) {
     level.position.copy(levelLocal);
     level.position.y += (1 - out(S.level)) * 40;
     level.userData.bubble.position.x = (S.rail.rz || 0) * 260;
+    const near = (z) => clamp01(1 - z / 180);
+    railShade.position.set(C.x + S.rail.x, C.y + S.rail.y - 6, A.wall.z + 0.2);
+    railShade.material.opacity = 0.42 * S.rail.o * near(S.rail.z) * (S.strips && S.rail.ry > 1.6 ? 0 : 1);
+    boardShade.position.set(S.board.x, S.board.y - 8, A.wall.z + 0.25);
+    boardShade.material.opacity = 0.62 * S.board.o * near(S.board.z) * (1 - S.board.g);
     board.visible = S.board.o > 0.001;
     board.position.set(S.board.x, S.board.y, S.board.z + z0);
     ghost(S.board.g);

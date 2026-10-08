@@ -83,6 +83,31 @@ export function readGLB(buf) {
   return { root, mats };
 }
 
+// faint darker lines along the creases of the light parts only + a white frame or rail keeps its shape on a light
+// backdrop + `names` are the materials it may outline + a dark part gets none
+export function lightEdges(root, names, opacity = 0.48) {
+  const mat = new THREE.LineBasicMaterial({ color: '#56626B', transparent: true, opacity, depthWrite: false });
+  const lit = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b > 0.45;
+  const out = [];
+  root.traverse((m) => {
+    if (!m.isMesh || !m.material || names.indexOf(m.material.name) < 0 || !lit(m.material.color)) return;
+    const l = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 30), mat);
+    m.add(l);
+    out.push(l);
+  });
+  return { lines: out, material: mat };
+}
+
+// a soft round shadow on a plane w by h + darkest in the middle + for under a model or behind it on a wall
+export function softShadow(w, h, opacity = 0.45) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d'), grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(0,0,0,0.55)'); grad.addColorStop(0.55, 'rgba(0,0,0,0.18)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grad; g.fillRect(0, 0, 128, 128);
+  return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, opacity }));
+}
+
 // the model travels gzipped as hosts send glb plain + used as is when the host unpacked it or the browser cannot
 export async function loadModel(url) {
   const get = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error('model ' + r.status); return r; };

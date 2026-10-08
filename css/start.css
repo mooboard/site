@@ -6,7 +6,7 @@
   --bg: #E9FBF7; --card: #FFFFFF; --text: #0E1A22; --muted: #56676B; --line: #DCEBE7; --soft: #F1FAF7;
   --teal: #77EDD7; --on-teal: #0E1A22; --link: #0E6B5E; --dot: #BCD8D1; --ring: #0E6B5E;
   --shadow: 0 24px 60px -40px rgba(14, 26, 34, .45), 0 2px 6px rgba(14, 26, 34, .04);
-  --wall: #ECEAE5; --frame: #262B30; --frame-hi: #3a4047; --edge: rgba(14, 26, 34, .0);
+  --wall: #E3E8EB; --frame: #262B30; --frame-hi: #3a4047; --edge: rgba(14, 26, 34, .0);
   --dock: rgba(255, 255, 255, .72); --grey: #E3ECEA;
   --display: 'Fredoka', 'Nunito', system-ui, sans-serif;
   --body: 'Nunito', system-ui, -apple-system, sans-serif;
@@ -17,7 +17,7 @@
     color-scheme: dark;
     --bg: #0E1A22; --card: #15262F; --text: #F2FBF8; --muted: #A9BDB8; --line: #23404A; --soft: #1A2F39;
     --link: #77EDD7; --dot: #2B4A55; --ring: #77EDD7; --shadow: 0 24px 60px -40px rgba(0, 0, 0, .8);
-    --wall: #C9C5BD; --edge: rgba(255, 255, 255, .16);
+    --wall: #C3C9CE; --edge: rgba(255, 255, 255, .16);
     --dock: rgba(21, 38, 47, .78); --grey: #263D47;
   }
 }
@@ -167,9 +167,9 @@ html:not(.js) .pager { display: none; }
 .chip[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: var(--on-teal); }
 .stage {
   position: relative; width: 100%; aspect-ratio: 4 / 3; max-height: 44vh; max-height: 44dvh; border-radius: 20px; overflow: hidden;
-  background: radial-gradient(120% 90% at 50% 38%, #fbfaf7, var(--wall) 62%, #d6d3cb); flex: none;
+  background: radial-gradient(120% 90% at 50% 38%, #f6f8f9, var(--wall) 62%, #cfd6db); flex: none;
 }
-@media (prefers-color-scheme: dark) { .stage { background: radial-gradient(120% 90% at 50% 38%, #d8d5ce, var(--wall) 62%, #aaa69e); } }
+@media (prefers-color-scheme: dark) { .stage { background: radial-gradient(120% 90% at 50% 38%, #d4d9dd, var(--wall) 62%, #a7aeb4); } }
 .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .stage .busy { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: #56676B; font-weight: 800; }
 .stage .busy[hidden] { display: none; }

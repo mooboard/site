@@ -77,6 +77,23 @@ test('?frame= takes the frames boards name, and nothing else', () => {
   for (const s of ['', '?frame=', '?frame=purple', '?frame=constructor', '?frame=__proto__', '?frame=Mint']) assert.equal(frameOf(s), null, s);
 });
 
+test('?rail= picks a white rail and hooks, and anything else is black', () => {
+  const { railOf } = helpers();
+  assert.equal(railOf('?rail=white'), 'white');
+  for (const s of ['', '?rail=black', '?rail=WHITE', '?rail=', '?rail=red', '?rails=white']) assert.equal(railOf(s), 'black', s);
+});
+
+test('light parts keep an outline and a soft shadow on the light backdrops, here and on the buttons tour', () => {
+  const viewer = read('js/viewer.mjs'), tour = read('js/tour.mjs');
+  assert.match(viewer, /export function lightEdges\(/);
+  assert.match(viewer, /export function softShadow\(/);
+  assert.match(mount, /lightEdges\(B\.root, \['frame'\]\)/);
+  assert.match(mount, /lightEdges\(railMesh, \['rail'\]\)/);
+  assert.match(mount, /lightEdges\(h, \['rail'\]\)/);
+  assert.match(tour, /V\.lightEdges\(root, \['frame'\]\)/);
+  assert.match(tour, /V\.softShadow\(/);
+});
+
 test('the desk stand is a way to put it up only for the desk board, and it is coming soon', () => {
   const { waysOf } = helpers();
   assert.deepEqual([...waysOf('MB1D')], ['strips', 'screws', 'stand']);
