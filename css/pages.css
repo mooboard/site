@@ -111,6 +111,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -.01
 /* ---------- privacy ---------- */
 .band .when { font: 800 15px var(--body); letter-spacing: .02em; color: rgba(255, 255, 255, .7); }
 .doc { max-width: 720px; margin: 0 auto; padding: clamp(32px, 5vw, 64px) var(--gut) clamp(56px, 8vw, 96px); }
+.doc.wide { max-width: 800px; }
 .doc .lead { margin-top: 0; font-size: 19px; }
 .doc h2 { margin: 44px 0 10px; font-size: clamp(24px, 3vw, 30px); line-height: 1.2; }
 .doc h3 { margin: 24px 0 6px; font-size: 20px; line-height: 1.25; }
@@ -129,7 +130,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -.01
   content: counter(step); position: absolute; left: 0; top: -2px; display: grid; place-items: center; width: 34px; height: 34px;
   border-radius: 50%; background: var(--teal); color: var(--ink); font: 900 17px/1 var(--body);
 }
-.steps p { margin: 0; }
+.steps p { margin: 0; text-wrap: pretty; }
 .doc .fields { margin: 14px 0 0; padding: 0; list-style: none; border-radius: 18px; background: #fff; box-shadow: 0 20px 40px -34px rgba(14, 26, 34, .55); }
 .fields > li { display: grid; gap: 8px; padding: 14px 16px; }
 .doc .fields > li + li { margin-top: 0; border-top: 1px solid #DCEBE7; }
