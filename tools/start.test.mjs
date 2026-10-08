@@ -231,7 +231,7 @@ test('the Wi-Fi card says what the owner wrote, word for word, and its links wor
     "You can also scan the QR code with your phone's camera.",
     "Once connected, a captive portal will launch where you will input your home's Wi-Fi details.",
     "If it doesn't open, go to http://4.3.2.1 in your browser manually.",
-    'Note: mooboard can only join WPA2 and WPA3 Personal networks on the 2.4GHz band. Press here for more details.',
+    'Note: mooboard can only join WPA2, WPA3 Personal or open networks on the 2.4GHz band. Press here for more details.',
   ].join(' '));
   assert.match(card, /<a class="nw" href="http:\/\/4\.3\.2\.1" target="_blank" rel="noopener">http:\/\/4\.3\.2\.1<\/a>/, 'the address to tap');
   assert.match(card, /<a class="more" id="more" href="#help" role="button" aria-haspopup="dialog" aria-controls="help">Press here for more details\.<\/a>/);
