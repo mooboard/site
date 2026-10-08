@@ -7,8 +7,12 @@ unknown path: it finds the boards on the phone's network and opens one. `portal/
 only board on the phone's network or lists them with the last one opened on top. It installs as an app. A board's
 `/portal/<code>` link opens that board. Both run `js/finder.js` and `css/finder.css`. `hi/buttons/` is the short
 tour of the two buttons that the board's setup links to, with its frame in `?frame=`: `js/tour.mjs`, `css/tour.css`,
-`assets/3d/board-tour.glb` and the panel's frames in `assets/tour/`. GitHub Pages serves the repository as it is, at
-the domain in `CNAME`.
+`assets/3d/board-tour.glb` and the panel's frames in `assets/tour/`. `start/` is the get started page: swipe cards for a
+new board, with what is in the box, the hardware, mounting and setup. A board's sticker link (`/hi/<code>?m=<model>`)
+goes there when its board is not on the phone's network yet. It runs `js/start.js` and `css/start.css`, and its mounting
+steps are a three.js scene in `js/mount.mjs` that loads only at the mounting card, with the homepage's board model and
+`assets/3d/rail.glb`, the wall rail and its two hooks. GitHub Pages serves the repository as it is, at the domain in
+`CNAME`.
 
 ## Preview
 
@@ -23,7 +27,7 @@ previews and lyrics and the weather come from other services, so those parts nee
 
     sh tools/check-no-music.sh       # no audio, video, lyric or subtitle file, and nothing from local-music/, is in git
     python3 tools/check-lyrics.py    # every line of the archived songs lights up on the board, music/radio.json adds up
-    node --test tools/hi.test.mjs tools/portal.test.mjs    # /hi, 404 and /portal (node 18 or later)
+    node --test tools/hi.test.mjs tools/portal.test.mjs tools/start.test.mjs    # /hi, 404, /portal and /start (node 18 or later)
 
 To have git run all three before every commit, once per clone:
 
@@ -49,6 +53,13 @@ the top of its file.
 - `icon.html`: the mark at the touch icon size, and at the favicon size with `#fav`
 - `portal-icons.py`: the portal's app icons, made from the brand kit's app icon (Pillow)
 - `tour-frames.py`: the panel's frames for the buttons tour in `assets/tour/`, from the firmware's own renders (Pillow)
+
+## The rail model
+
+`assets/3d/rail.glb` holds the wall rail and its two hooks from the CAD, with the places the mounting steps use as empty
+nodes, all as the board hangs: `at_wall`, `at_top`, `at_pocket_1` to `4`, `at_screw_1` to `3`, `at_hole_l`, `at_hole_r`,
+`at_latch`, `at_entry` and `at_click` (the top of `js/mount.mjs` says what each one is). A new rail is a new `rail.glb`
+and its `rail.glb.gz` with the same node names, and nothing else changes. `tools/start.test.mjs` checks the names.
 
 ## Publishing
 

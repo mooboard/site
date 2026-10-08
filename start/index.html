@@ -1,0 +1,168 @@
+<!doctype html>
+<!-- mooboard.co/start + a new board's first steps as swipe cards + a board's sticker link comes here with ?m=<model>
+     and ?u=<code> when its board is not on this network yet + js/start.js runs the cards + js/mount.mjs and three.js
+     come in only at the mounting card + without javascript the cards stand one under the other -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#E9FBF7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1A22" media="(prefers-color-scheme: dark)">
+<title>Get started | mooboard</title>
+<meta name="description" content="Hang your mooboard and set it up.">
+<link rel="icon" href="/brand/mark-teal.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preload" href="/fonts/nunito.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin>
+<script>document.documentElement.className = 'js';</script>
+<script nomodule>document.documentElement.className = '';</script>
+<script type="importmap">{"imports":{"three":"/js/vendor/three/build/three.module.min.js","three/addons/":"/js/vendor/three/examples/jsm/"}}</script>
+<link rel="stylesheet" href="/css/start.css">
+</head>
+<body>
+<!-- the caps as the buttons tour draws them + a rounded square with a dot for BOOT and an arrow for RESET -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="k-boot" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.6" fill="currentColor"/></symbol>
+<symbol id="k-reset" viewBox="0 0 24 24"><rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.9 8.6A5.4 5.4 0 1 1 12 6.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M11.4 4.2 14.6 6.6 11.4 9z" fill="currentColor"/></symbol>
+</svg>
+
+<header class="bar">
+  <a class="logo" href="/"><img class="mark" src="/brand/mark-teal.svg" alt="" width="38" height="30"><picture><source srcset="/brand/wordmark-white.svg" media="(prefers-color-scheme: dark)"><img class="word" src="/brand/wordmark-deep.svg" alt="mooboard" width="104" height="18"></picture></a>
+</header>
+
+<main class="deck" id="deck" aria-roledescription="carousel" aria-label="Get started">
+<div class="track" id="track">
+
+<section class="card hello" id="hello" aria-roledescription="slide" aria-label="1 of 5">
+  <div class="vis">
+    <div class="tilt"><div class="bezel" data-frame="black"><div class="led" id="hello-board" role="img" aria-label="mooboard saying hello"></div></div></div>
+    <div class="shadow" aria-hidden="true"></div>
+  </div>
+  <div class="txt">
+    <h1>Meet your mooboard</h1>
+    <p class="lead">Let’s get it up and running.</p>
+  </div>
+</section>
+
+<section class="card narrow" id="box" aria-roledescription="slide" aria-label="2 of 5">
+  <div class="txt">
+    <h2>In the box</h2>
+    <ul class="rows">
+      <li><span class="ic" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="2" y="15" width="44" height="18" rx="2.6" fill="#262B30"/><rect x="4" y="17" width="40" height="14" rx="1" class="p"/><g class="t"><circle cx="9" cy="26" r="1.35"/><circle cx="13" cy="23.5" r="1.35"/><circle cx="17" cy="22" r="1.35"/><circle cx="21" cy="23.5" r="1.35"/><circle cx="25" cy="26" r="1.35"/><circle cx="29" cy="23.5" r="1.35"/><circle cx="33" cy="22" r="1.35"/><circle cx="37" cy="23.5" r="1.35"/><circle cx="41" cy="26" r="1.35"/></g></svg></span><span class="what"><b>mooboard</b></span></li>
+      <li><span class="ic" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="3" y="8" width="42" height="13" rx="2.2" class="k"/><path d="M10 14.5h-4M38 14.5h-4" stroke="var(--soft)" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="14.5" r="2.4" fill="var(--soft)"/><circle cx="36" cy="14.5" r="2.4" fill="var(--soft)"/><path class="k" d="M9.6 28.4 19.2 25a3.6 3.6 0 0 1 2.4 6.8L12.4 39.6a6.2 6.2 0 1 1-2.8-11.2z"/><path class="k" d="M38.4 28.4 28.8 25a3.6 3.6 0 0 0-2.4 6.8l9.2 7.8a6.2 6.2 0 1 0 2.8-11.2z"/><circle cx="20" cy="28.4" r="2" class="t"/><circle cx="28" cy="28.4" r="2" class="t"/></svg></span><span class="what"><b>Wall rail with 2 hooks</b></span></li>
+      <li><span class="ic" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="9" y="6" width="12" height="36" rx="2.5" class="w"/><rect x="9" y="6" width="12" height="9" rx="2.5" class="t"/><rect x="27" y="6" width="12" height="36" rx="2.5" class="w"/><rect x="27" y="6" width="12" height="9" rx="2.5" class="t"/></svg></span><span class="what"><b>Adhesive strips</b></span></li>
+      <li><span class="ic" aria-hidden="true"><svg viewBox="0 0 48 48"><rect x="18" y="4" width="3.4" height="11" rx="1.2" class="k"/><rect x="26.6" y="4" width="3.4" height="11" rx="1.2" class="k"/><rect x="10" y="13" width="28" height="30" rx="7" class="w"/><rect x="18.5" y="33" width="11" height="4.4" rx="2.2" class="k"/><path d="M25 18.5l-4 6h4l-2 5.5 5-7.5h-4z" class="t"/></svg></span><span class="what"><b>20 W USB-C charger</b></span></li>
+      <li><span class="ic" aria-hidden="true"><svg viewBox="0 0 48 48"><path class="ks" d="M30 30c6-3 9-8 8-13S30 8 23 9 10 16 11 23s8 11 14 10 9-6 8-10-6-7-11-6-7 5-6 8 5 5 8 3"/><path class="ks" d="M30 30l5 5"/><rect x="33.5" y="33.5" width="7" height="11" rx="2.2" transform="rotate(-45 37 39)" class="k"/></svg></span><span class="what"><b>2 m USB-C cable</b></span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="card split" id="hardware" aria-roledescription="slide" aria-label="3 of 5">
+  <div class="vis">
+    <!-- the board from the front in glb x + 259.3 and y down from its top edge + the caps and the light from round 4's cad -->
+    <div class="diagram">
+      <svg viewBox="-38 -46 571 228" role="img" aria-label="The front of mooboard with its buttons on the top edge near the right end, the status light on the bottom near the right end, the USB-C port at the bottom center and the NFC spot on the left side">
+        <defs><pattern id="leds" width="4" height="4" patternUnits="userSpaceOnUse" x="3.3" y="3.3"><circle cx="2" cy="2" r="1.15" fill="#1C1B21"/></pattern></defs>
+        <rect class="f" x="461.8" y="-5.5" width="11" height="9" rx="2.6"/>
+        <rect class="f" x="481.8" y="-7" width="11" height="10" rx="3.2"/>
+        <rect class="f" x="0" y="0" width="518.6" height="134.6" rx="3"/>
+        <rect x="3.3" y="3.3" width="512" height="128" rx="1" fill="#07080A"/>
+        <rect x="3.3" y="3.3" width="512" height="128" fill="url(#leds)"/>
+        <rect x="251.3" y="132.4" width="16" height="6.4" rx="3.2" fill="#C8C8C8"/>
+        <rect x="254.3" y="134.2" width="10" height="2.8" rx="1.4" fill="#2A2D31"/>
+        <circle cx="443.9" cy="137.4" r="3.6" fill="#9FD8FF"/>
+        <rect class="spot" x="-2.6" y="40" width="5.2" height="54.6" rx="2.6"/>
+        <path class="lead-line" d="M477.3 -17V-9M443.9 151V143M259.3 151V141M-13 67.3H-6"/>
+      </svg>
+      <i class="pin" style="left:90.24%;top:7.89%">1</i>
+      <i class="pin" style="left:84.40%;top:91.23%">2</i>
+      <i class="pin" style="left:52.07%;top:91.23%">3</i>
+      <i class="pin" style="left:2.45%;top:49.69%">4</i>
+    </div>
+  </div>
+  <div class="txt">
+    <h2>Hardware</h2>
+    <ol class="rows">
+      <li><i class="pin" aria-hidden="true">1</i><span class="what"><b>BOOT and RESET</b><small>Top edge</small></span><a class="pill" id="watch" href="/hi/buttons/" target="_blank" rel="noopener" aria-label="Watch the buttons tour"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>Watch</a></li>
+      <li><i class="pin" aria-hidden="true">2</i><span class="what"><b>Status light</b><small>Bottom, near the right end</small></span></li>
+      <li><i class="pin" aria-hidden="true">3</i><span class="what"><b>USB-C port</b><small>Bottom center</small></span></li>
+      <li><i class="pin" aria-hidden="true">4</i><span class="what"><b>NFC</b><small>Left side</small></span></li>
+    </ol>
+  </div>
+</section>
+
+<section class="card split mount" id="mounting" aria-roledescription="slide" aria-label="4 of 5">
+  <div class="vis">
+    <div class="stage" id="stage">
+      <canvas id="mount-canvas" aria-hidden="true"></canvas>
+      <p class="busy" id="busy" hidden>One moment<span class="dots-run" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></p>
+      <div class="clock" id="clock" aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="currentColor" stroke-width="6"/><path d="M50 50V31" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path class="hand" d="M50 50V24" stroke="#0E6B5E" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="50" r="5" fill="currentColor"/></svg></div>
+      <div class="soon" id="soon" hidden>
+        <svg viewBox="0 0 420 190" aria-hidden="true"><rect x="78" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="326" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="40" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="288" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="10" y="20" width="400" height="108" rx="4" fill="#262B30"/><rect x="13" y="23" width="394" height="102" rx="1.5" fill="#07080A"/><g fill="#77EDD7"><circle cx="150" cy="74" r="3"/><circle cx="170" cy="62" r="3"/><circle cx="190" cy="56" r="3"/><circle cx="210" cy="62" r="3"/><circle cx="230" cy="74" r="3"/><circle cx="250" cy="62" r="3"/><circle cx="270" cy="56" r="3"/></g><rect x="0" y="182" width="420" height="3" rx="1.5" fill="#B9B5AD"/></svg>
+        <span class="tag">Coming soon</span>
+      </div>
+    </div>
+  </div>
+  <div class="txt">
+    <h2>Mounting</h2>
+    <div class="chips" id="chips" role="group" aria-label="How to mount it" hidden>
+      <button type="button" class="chip" aria-pressed="true" data-way="strips">Adhesive strips</button>
+      <button type="button" class="chip" aria-pressed="false" data-way="screws">Screws</button>
+      <button type="button" class="chip" aria-pressed="false" data-way="stand" hidden>Desk stand</button>
+    </div>
+    <div class="player" id="player" hidden>
+      <ol class="segs" id="segs"></ol>
+      <p class="cap" id="cap" aria-live="polite"></p>
+      <button type="button" class="pill replay" id="replay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg>Replay</button>
+    </div>
+    <div class="seqs" id="seqs">
+      <div data-way="strips"><p class="seq-name">Adhesive strips</p><ol class="seq">
+        <li>Press a strip into each of the rail’s 4 pockets.</li>
+        <li>Hold the rail level on a clean wall and press it on.</li>
+        <li>Wait 1 hour before you hang the board.</li>
+        <li>Line up the hooks with the rail’s round holes and push in.</li>
+        <li>Lift the board a little and slide it left until it clicks.</li>
+      </ol></div>
+      <div data-way="screws"><p class="seq-name">Screws</p><ol class="seq">
+        <li>Hold the rail level on the wall.</li>
+        <li>Mark the wall through the rail’s 3 holes.</li>
+        <li>Take the rail down. Drill a hole at each mark.</li>
+        <li>Screw the rail on.</li>
+        <li>Line up the hooks with the rail’s round holes and push in.</li>
+        <li>Lift the board a little and slide it left until it clicks.</li>
+      </ol></div>
+    </div>
+  </div>
+</section>
+
+<section class="card narrow" id="setup" aria-roledescription="slide" aria-label="5 of 5">
+  <div class="txt">
+    <h2>Set up</h2>
+    <ol class="steps">
+      <li>Plug it in. Its screen shows how to join its own <span class="nw">Wi-Fi</span>.</li>
+      <li>Scan the code with your phone’s camera, or join <span class="nw">mooboard-XXXX</span> with the password shown.</li>
+      <li>The setup page opens. Pick your home <span class="nw">Wi-Fi</span>.</li>
+      <li>Come back to <a href="/hi/" data-hi>mooboard.co/hi</a>.</li>
+    </ol>
+    <p class="hint"><b>Already set up?</b> Open <a href="/hi/" data-hi>mooboard.co/hi</a> on the same <span class="nw">Wi-Fi</span> as your mooboard.</p>
+  </div>
+</section>
+
+</div>
+</main>
+
+<nav class="pager" aria-label="Cards">
+  <button type="button" class="back" id="back" disabled>Back</button>
+  <ol class="dots" id="dots"></ol>
+  <button type="button" class="btn" id="next">Next</button>
+</nav>
+<p class="sr" id="said" aria-live="polite"></p>
+
+<script src="/js/board.js" defer></script>
+<script src="/js/start.js" defer></script>
+</body>
+</html>
