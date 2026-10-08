@@ -45,6 +45,7 @@ p{margin:0;color:var(--dim);text-wrap:balance}
   var q = new URLSearchParams(location.search);
   var r = q.get('r');
   var s = q.get('s');
+  var own = q.get('own') === '1';   // the person signed in through their own spotify app
   var name = s === 'spotify' ? 'Spotify' : s === 'google' ? 'Google' : '';
   var say = 'That sign-in link expired.';
   var next = 'Go back and try again.';
@@ -57,6 +58,9 @@ p{margin:0;color:var(--dim);text-wrap:balance}
     closing = true;
   } else if (r === 'refused') {
     say = 'Sign-in was canceled.';
+  } else if (r === 'notallowed' && s === 'spotify' && own) {
+    say = 'Add your Spotify account to your app.';
+    next = 'Open your app in Spotify\u2019s dashboard, then User Management.';
   } else if (r === 'notallowed' && s === 'spotify') {
     say = 'This Spotify account is not on the tester list yet.';
     next = 'Ask the mooboard team to add it.';
