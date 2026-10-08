@@ -12,8 +12,8 @@ logo, a light window with one three.js scene, and cards to flick under it for wh
 mounting, its Wi-Fi, setup and Wi-Fi help. A board's sticker link (`/hi/<code>?m=<model>`) goes there when its board is
 not on the phone's network yet. It runs `js/start.js` and `css/start.css`. The scene is `js/scene.mjs`: it loads at the
 start with the homepage's board model and `assets/3d/rail.glb`, the wall rail and its two hooks, and moves to each
-card's pose as the cards change. Without WebGL each card shows its own drawing instead. GitHub Pages serves the repository as it is, at the domain in
-`CNAME`.
+card's pose as the cards change. Without WebGL each card shows its own drawing instead. GitHub Pages serves the
+repository as it is, at the domain in `CNAME`.
 
 ## Preview
 

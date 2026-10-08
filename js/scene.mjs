@@ -335,6 +335,7 @@ function makeMarker(n) {
 // ---- the poses ----
 // each part's place and turn and size and how much it shows + the camera + the board's face + a pose mixes into the
 // next by easing every number and turning every part the short way + a part that comes or goes keeps its place
+// unless it rides on the rail
 const ACTORS = ['board', 'rail', 'level', 'pencil', 'driver', 'charger', 'coil', 'strip0', 'strip1', 'strip2', 'strip3',
   'screw0', 'screw1', 'screw2', 'screw3', 'screw4', 'anchor0', 'anchor1', 'anchor2'];
 const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _v = new THREE.Vector3();
@@ -351,6 +352,17 @@ function mixCam(a, b, k) {
   return { t: [0, 1, 2].map((i) => lerp(a.t[i], b.t[i], k)), az: a.az + wrap(b.az - a.az) * k, el: lerp(a.el, b.el, k),
     d: Math.exp(lerp(Math.log(a.d), Math.log(b.d), k)) };
 }
+// the strips and the level sit on the rail + one that comes or goes while the rail stays rides along with it and fades
+// in the first or last part of the move
+const RIDERS = ['strip0', 'strip1', 'strip2', 'strip3', 'level'];
+const _m = new THREE.Matrix4(), _m2 = new THREE.Matrix4(), _p = new THREE.Vector3(), ONE = new THREE.Vector3(1, 1, 1);
+// x's place on the rail as the rail sat at r + carried to where the rail is at now
+function onRail(x, r, now) {
+  _m.compose(_p.fromArray(r.p), _q.fromArray(r.q), ONE).invert();
+  _m.multiply(_m2.compose(_p.fromArray(x.p), _q.fromArray(x.q), ONE));
+  _m2.compose(_p.fromArray(now.p), _q.fromArray(now.q), ONE).multiply(_m).decompose(_p, _q, _v);
+  return { p: [_p.x, _p.y, _p.z], q: [_q.x, _q.y, _q.z, _q.w] };
+}
 function mixFrame(A, B, k) {
   const f = { a: {} };
   for (const n of ACTORS) {
@@ -359,6 +371,18 @@ function mixFrame(A, B, k) {
     const pa = a.o > 0.001 ? a : b, pb = b.o > 0.001 ? b : a;
     _q.fromArray(pa.q); _q2.fromArray(pb.q); _q.slerp(_q2, k);
     f.a[n] = { p: [0, 1, 2].map((i) => lerp(pa.p[i], pb.p[i], k)), q: [_q.x, _q.y, _q.z, _q.w], s: lerp(pa.s, pb.s, k), o: lerp(a.o, b.o, k) };
+  }
+  const ra = A.a.rail, rb = B.a.rail;
+  if (ra.o > 0.001 && rb.o > 0.001) {
+    for (const n of RIDERS) {
+      const inA = A.a[n].o > 0.001, inB = B.a[n].o > 0.001;
+      if (inA === inB) continue;
+      Object.assign(f.a[n], onRail(inA ? A.a[n] : B.a[n], inA ? ra : rb, f.a.rail));
+      f.a[n].o = inA ? A.a[n].o * (1 - seg(k, 0, 0.45)) : B.a[n].o * seg(k, 0.55, 1);
+    }
+    // a board that comes onto a rail that moves a long way waits until the rail is nearly home
+    const far = Math.hypot(ra.p[0] - rb.p[0], ra.p[1] - rb.p[1], ra.p[2] - rb.p[2]) > 30;
+    if (far && A.a.board.o <= 0.001 && B.a.board.o > 0.001) f.a.board.o = B.a.board.o * seg(k, 0.55, 1);
   }
   f.cam = mixCam(A.cam, B.cam, k);
   for (const key of ['wall', 'table', 'floor', 'plug', 'markers', 'ghost', 'bubble']) f[key] = lerp(A[key], B[key], k);
@@ -446,10 +470,11 @@ export async function create(o) {
   railMat.color.set(rc.color); railMat.roughness = rc.rough; railMat.metalness = 0;
   const hookMat = railMat.clone();
   const hookColor = hookMat.color.clone(), teal = new THREE.Color(TEAL);
+  const outlines = { board: [], rail: [] };   // a light part's outline + it fades as its part does
   for (const n of ['hook_l', 'hook_r']) {
     const h = R.root.getObjectByName(n);
     h.traverse((m) => { if (m.isMesh) m.material = hookMat; });
-    lightEdges(h, ['rail']);
+    outlines.board.push(lightEdges(h, ['rail']).material);
     board.add(h);
   }
   const finish = { ...FINISH, red: RED }[o.frame] || FINISH.black;
@@ -472,9 +497,22 @@ export async function create(o) {
     m.add(l);
     edges.push(l);
   });
-  lightEdges(B.root, ['frame']);
+  outlines.board.push(lightEdges(B.root, ['frame']).material);
   const ghostMats = B.mats.filter((m) => m.name !== 'led' && m.name !== 'rail').concat(ledMat, hookMat);
   const baseOpacity = new Map(ghostMats.map((m) => [m, m === frameMat && finish.opacity != null ? finish.opacity : 1]));
+  // a board that fades in or out shows as a solid + its depth goes in after the solid parts of the scene and before
+  // anything see-through so only its front faces blend and its insides stay hidden
+  const depthOnly = new THREE.MeshBasicMaterial({ colorWrite: false, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+  const parts = [], solids = [];
+  board.traverse((m) => { if (m.isMesh && m.visible && m.parent.visible !== false) parts.push(m); });
+  for (const m of parts) {
+    const d = new THREE.Mesh(m.geometry, depthOnly);
+    d.renderOrder = 5;
+    d.visible = false;
+    m.add(d);
+    solids.push(d);
+  }
+  for (const m of outlines.board) m.userData.base = m.opacity;
   const plug = makePlug();
   plug.position.fromArray(USB);
   board.add(plug);
@@ -489,7 +527,8 @@ export async function create(o) {
   railInner.position.copy(C).negate();
   railPivot.add(railInner);
   railInner.add(railMesh);
-  lightEdges(railMesh, ['rail']);
+  outlines.rail.push(lightEdges(railMesh, ['rail']).material);
+  for (const m of outlines.rail) m.userData.base = m.opacity;
   shadows(railPivot, true);
   scene.add(railPivot);
   const ride = new THREE.Group(), rideInner = new THREE.Group(), rider = new THREE.Object3D();   // a stand-in rail for the riders' places
@@ -711,6 +750,9 @@ export async function create(o) {
     }
     edgeMat.opacity = 0.5 * g;
     for (const l of edges) l.visible = g > 0.01;
+    const solid = g < 0.05 && o2 < 0.999;
+    for (const d of solids) d.visible = solid;
+    for (const m of outlines.board) m.opacity = m.userData.base * o2;
     hookMat.color.lerpColors(hookColor, teal, g);
     shadows(board, g < 0.35 && o2 > 0.6);
   }
@@ -726,6 +768,13 @@ export async function create(o) {
     r.scale.setScalar(lerp(from, to, out(p)));
     r.material.opacity = (1 - p) * 0.95;
   }
+  // a part casts its shadow only while it shows well + the board's own rule is in ghost()
+  const casts = new Map();
+  function cast(x, on) {
+    if (casts.get(x) === on) return;
+    casts.set(x, on);
+    shadows(x, on);
+  }
   function render(f, now) {
     for (const n of ACTORS) {
       const x = objs[n], st = f.a[n];
@@ -734,9 +783,11 @@ export async function create(o) {
       x.position.fromArray(st.p);
       x.quaternion.fromArray(st.q);
       x.scale.setScalar(n === 'board' || n === 'rail' ? st.s : st.s * (0.35 + 0.65 * st.o));
+      if (n !== 'board') cast(x, st.o > 0.6);
     }
     ghost(f.ghost, f.a.board.o);
     fade(railMat, f.a.rail.o);
+    for (const m of outlines.rail) m.opacity = m.userData.base * f.a.rail.o;
     level.userData.bubble.position.x = f.bubble;
     wall.visible = f.wall > 0.01;
     fade(wallMat, f.wall);
