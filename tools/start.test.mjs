@@ -66,8 +66,8 @@ test('the logo, then the light window with the scene, then the cards to flick, t
   const order = ['<header class="bar">', '<div class="window" id="window"', '<main class="deck"', '<nav class="pager"'].map((x) => html.indexOf(x));
   assert.ok(order.every((v, i) => v > 0 && (i === 0 || v > order[i - 1])), JSON.stringify(order));
   const win = between(html, '<div class="window"', '\n</div>');
-  assert.match(win, /<canvas id="scene"><\/canvas>/);
-  assert.match(win, /<div class="poster" id="poster">/, 'the hello waits in it until the models are in');
+  assert.match(win, /<canvas id="scene" aria-hidden="true"><\/canvas>/);
+  assert.match(win, /<div class="poster" id="poster" aria-hidden="true">/, 'the hello waits in it until the models are in');
   assert.match(win, /<div class="clock" id="clock"/);
   assert.match(win, /<span class="tag">Coming soon<\/span>/);
   assert.match(css, /\.window \{[^}]*background: radial-gradient\(130% 110% at 50% 28%, #fbfcfc, #ebeff1 55%, #d8dfe3\)/, 'a very light cool grey');
@@ -173,12 +173,22 @@ test('the hardware camera keeps the whole board and all four markers inside the 
   assert.ok(Math.min(...ys) > -0.9 && Math.max(...ys) < 0.9, 'top and bottom with room');
 });
 
-test('the Hardware card has a pause right under the window that holds the camera tour until play, the card is left or a row is tapped', () => {
+test('the Hardware card has a pause in the window\'s corner that holds the camera tour until play, the card is left or a row is tapped', () => {
   const hw = between(html, 'id="hardware"', '</section>');
-  assert.match(hw, /<\/div>\n  <button type="button" class="pause" id="pause" aria-label="Pause"><svg class="i-pause"[^>]*>[\s\S]*?<\/svg><svg class="i-play"[^>]*>[\s\S]*?<\/svg><\/button>\n  <div class="txt">/, 'at the top of the card, above its words');
-  assert.equal((html.match(/class="pause"/g) || []).length, 1, 'on the Hardware card only');
-  assert.match(css, /\.pause \{[^}]*align-self: center;/, 'in the middle');
-  assert.match(css, /\.scene-ready \.pause:not\(\[hidden\]\) \{ display: inline-flex; \}/, 'only with the scene');
+  const win = between(html, '<div class="window"', '\n</div>');
+  assert.match(win, /\n  <button type="button" class="pause" id="pause" aria-label="Pause"><svg class="i-pause"[^>]*>[\s\S]*?<\/svg><svg class="i-play"[^>]*>[\s\S]*?<\/svg><\/button>$/, 'in the window over the scene (owner 2026-10-08)');
+  assert.doesNotMatch(hw, /class="pause"/, 'no longer on the card');
+  assert.equal((html.match(/class="pause"/g) || []).length, 1, 'just the one');
+  assert.match(html, /<div class="window" id="window">\n/, 'so the window is not hidden from a screen reader');
+  for (const part of ['<canvas id="scene"', '<div class="poster"', '<div class="clock"', '<div class="soon"']) {
+    assert.match(between(win, part, '>'), /aria-hidden="true"/, `${part} is still hidden from it`);
+  }
+  assert.match(css, /\.pause \{[^}]*position: absolute; right: 12px; bottom: 12px;/, 'in its bottom right corner');
+  assert.match(css, /\.pause \{[^}]*border: 2px solid #0E1A22;[^}]*background: #77EDD7; color: #0E1A22;/, 'in the markers\' teal and navy so it reads on the light window in the dark too');
+  assert.match(css, /\.pause \{[^}]*opacity: 0; visibility: hidden; transition: opacity \.35s var\(--ease\), visibility 0s \.35s;/, 'it fades out');
+  assert.match(css, /\.scene-ready \.window\[data-card="hardware"\] \.pause \{ opacity: 1; visibility: visible; transition: opacity \.35s var\(--ease\), visibility 0s; \}/, 'and fades in only with the scene and only on the Hardware card');
+  assert.match(css, /\.pause\[hidden\] \{ display: none; \}/);
+  assert.match(between(startJs, 'function mark(i)', '\n  }'), /win\.setAttribute\('data-card', cards\[i\]\.id\);/, 'the window knows the card as a swipe goes');
   assert.match(startJs, /pause\.setAttribute\('aria-label', on \? 'Play' : 'Pause'\);/, 'Pause and Play');
   assert.match(startJs, /pause\.hidden = REDUCED;/, 'nothing moves with less motion so it hides');
   assert.match(startJs, /showPaused\(!paused\);\n    S\.api\.tour\(!paused\);/, 'a tap pauses or plays');

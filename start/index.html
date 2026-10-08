@@ -63,12 +63,14 @@
   <a class="logo" href="/"><img class="mark" src="/brand/mark-teal.svg" alt="" width="38" height="30"><picture><source srcset="/brand/wordmark-white.svg" media="(prefers-color-scheme: dark)"><img class="word" src="/brand/wordmark-deep.svg" alt="mooboard" width="104" height="18"></picture></a>
 </header>
 
-<!-- the animation window + the one scene + the hello until the models are in + the wait clock + the stand coming soon -->
-<div class="window" id="window" aria-hidden="true">
-  <canvas id="scene"></canvas>
-  <div class="poster" id="poster"><div class="tilt"><div class="bezel" data-frame="black"><div class="led" id="poster-board"></div></div></div></div>
+<!-- the animation window + the one scene + the hello until the models are in + the wait clock + the stand coming soon +
+     the hardware tour's pause in its bottom right corner -->
+<div class="window" id="window">
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div class="poster" id="poster" aria-hidden="true"><div class="tilt"><div class="bezel" data-frame="black"><div class="led" id="poster-board"></div></div></div></div>
   <div class="clock" id="clock" aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="currentColor" stroke-width="6"/><path d="M50 50V31" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path class="hand" d="M50 50V24" stroke="#0E6B5E" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="50" r="5" fill="currentColor"/></svg></div>
-  <div class="soon" hidden><svg viewBox="0 0 420 190" aria-hidden="true"><rect x="78" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="326" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="40" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="288" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="10" y="20" width="400" height="108" rx="4" fill="#262B30"/><rect x="13" y="23" width="394" height="102" rx="1.5" fill="#07080A"/><g fill="#77EDD7"><circle cx="150" cy="74" r="3"/><circle cx="170" cy="62" r="3"/><circle cx="190" cy="56" r="3"/><circle cx="210" cy="62" r="3"/><circle cx="230" cy="74" r="3"/><circle cx="250" cy="62" r="3"/><circle cx="270" cy="56" r="3"/></g><rect x="0" y="182" width="420" height="3" rx="1.5" fill="#B9B5AD"/></svg><span class="tag">Coming soon</span></div>
+  <div class="soon" aria-hidden="true" hidden><svg viewBox="0 0 420 190" aria-hidden="true"><rect x="78" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="326" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="40" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="288" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="10" y="20" width="400" height="108" rx="4" fill="#262B30"/><rect x="13" y="23" width="394" height="102" rx="1.5" fill="#07080A"/><g fill="#77EDD7"><circle cx="150" cy="74" r="3"/><circle cx="170" cy="62" r="3"/><circle cx="190" cy="56" r="3"/><circle cx="210" cy="62" r="3"/><circle cx="230" cy="74" r="3"/><circle cx="250" cy="62" r="3"/><circle cx="270" cy="56" r="3"/></g><rect x="0" y="182" width="420" height="3" rx="1.5" fill="#B9B5AD"/></svg><span class="tag">Coming soon</span></div>
+  <button type="button" class="pause" id="pause" aria-label="Pause"><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11" rx="1"/><rect x="9.5" y="2.5" width="3" height="11" rx="1"/></svg><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.6v10.8L13.5 8z"/></svg></button>
 </div>
 
 <main class="deck" id="deck" aria-roledescription="carousel" aria-label="Get started">
@@ -122,7 +124,6 @@
       <i class="pin" style="left:2.45%;top:49.69%">4</i>
     </div>
   </div>
-  <button type="button" class="pause" id="pause" aria-label="Pause"><svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="2.5" width="3" height="11" rx="1"/><rect x="9.5" y="2.5" width="3" height="11" rx="1"/></svg><svg class="i-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.6v10.8L13.5 8z"/></svg></button>
   <div class="txt">
     <div class="head"><h2>Hardware</h2><a class="pill" id="watch" href="/hi/buttons/" target="_blank" rel="noopener" aria-label="Watch the buttons tour"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>Watch</a></div>
     <ol class="rows">

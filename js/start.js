@@ -208,7 +208,7 @@
   var cards = all('.card', track);
   var names = cards.map(function (c) { return c.querySelector('h1, h2').textContent; });
   var index = -1, shown = -1, settleTimer = null;
-  var back = $('back'), next = $('next'), said = $('said');
+  var back = $('back'), next = $('next'), said = $('said'), win = $('window');
   var dots = cards.map(function (c, i) {
     var li = document.createElement('li'), b = document.createElement('button');
     b.type = 'button';
@@ -235,6 +235,7 @@
   function mark(i) {
     if (i === index) return;
     index = i;
+    win.setAttribute('data-card', cards[i].id);   // the hardware tour's pause fades in on its card and out as it goes
     dots.forEach(function (d, k) { if (k === i) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current'); });
     back.hidden = i === 0;
     next.textContent = i === cards.length - 1 ? 'Finish' : 'Next';
