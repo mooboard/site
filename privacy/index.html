@@ -97,7 +97,7 @@
 <p>To disconnect Spotify or Google, use your board’s web app. You can also remove mooboard in <a href="https://www.spotify.com/account/apps/">your Spotify account’s apps</a> or in <a href="https://myaccount.google.com/connections">your Google Account’s third-party connections</a>. A factory reset erases the sign-ins saved on your board.</p>
 
 <h2>The sign-in helper</h2>
-<p>When you sign in to Spotify or Google from your board’s setup, our sign-in helper at api.mooboard.co does the sign-in for your board.</p>
+<p>When you sign in to Spotify or Google from your board’s setup, our sign-in helper at api.mooboard.co does the sign-in for your board. If you sign in to Spotify through your own Spotify app, the helper uses your app’s Client ID.</p>
 <p>It reads the name of the account you signed in with, so the web app can show which account is connected. For Spotify that’s your display name. For Google it’s your email address.</p>
 <p>It keeps your sign-in for 10 minutes at most, until your board picks it up. Then it deletes it. It never stores your sign-in after that.</p>
 <p>While your board shows your calendars, it renews its Google sign-in through the helper about once an hour. The helper passes it to Google and keeps nothing. Your board renews its Spotify sign-in with Spotify directly.</p>
