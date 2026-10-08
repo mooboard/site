@@ -36,7 +36,7 @@ test('the start page loads the site\'s own files only, and nothing from anywhere
   for (const text of [startJs, mount, css]) assert.doesNotMatch(text, /https?:\/\//, 'no other site');
   // the link preview's tags name the page and its picture on mooboard.co itself, as the other pages' tags do, and load nothing
   const previews = [...html.matchAll(/<meta property="og:(?:url|image)" content="([^"]+)">/g)].map((m) => m[1]);
-  assert.deepEqual(previews, ['https://mooboard.co/start/', 'https://mooboard.co/og.png'], 'the preview names this page and the site\'s picture');
+  assert.deepEqual(previews, ['https://mooboard.co/start/', 'https://mooboard.co/og-start.png'], 'the preview names this page and the site\'s picture');
   const page = html.replace(/<meta property="og:(?:url|image)" content="[^"]+">/g, '');
   assert.deepEqual([...new Set(page.match(/https?:\/\/[^\s"'<>)]+/g))], ['http://4.3.2.1'], 'only the hotspot address');
   assert.deepEqual(html.match(/(?:href|src)="https?:[^"]*"/g), ['href="http://4.3.2.1"'], 'as the one link a person taps on the board\'s own Wi-Fi, and never a file');

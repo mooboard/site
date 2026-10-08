@@ -50,7 +50,7 @@ the top of its file.
 - `make-placeholder-songs.py`: the original placeholder songs in `music/archive/`
 - `make-prayer.py`: the Prayer face's lettering inside `js/board.js` (uharfbuzz, freetype-py)
 - `og.html`: the social card. Serve the repo, open `/tools/og.html` in Chrome at 1200x630, let the board settle and
-  save a screenshot as `og.png`
+  save a screenshot as `og.png`. `?say=Get started` puts other words on the board, one line per `|`: `og-start.png` is `/tools/og.html?say=Get started`
 - `icon.html`: the mark at the touch icon size, and at the favicon size with `#fav`
 - `portal-icons.py`: the portal's app icons, made from the brand kit's app icon (Pillow)
 - `tour-frames.py`: the panel's frames for the buttons tour in `assets/tour/`, from the firmware's own renders (Pillow)
