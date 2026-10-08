@@ -1,4 +1,5 @@
-/* mooboard.co/start + swipe cards for a new board + light and dark + the site's fonts and colors + the hero's bezel */
+/* mooboard.co/start in one scene + the logo + a white window with one 3d scene + cards to flick under it + light and
+   dark + the site's fonts and colors + the hero's bezel for the hello before the scene is in and for a page without 3d */
 @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 500 700; font-display: swap; src: url(../fonts/fredoka.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 @font-face { font-family: 'Nunito'; font-style: normal; font-weight: 400 900; font-display: swap; src: url(../fonts/nunito.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
 :root {
@@ -243,6 +244,29 @@ html:not(.js) .mount .vis { display: none; }
 .wifi .vis { width: 100%; max-width: 520px; margin: 0 auto; perspective: 1400px; }
 .wifi .tilt { transform: rotateX(6deg) rotateY(-8deg); }
 
+/* ---------- the window + light in both themes with a very light cool grey so a white frame still reads + the scene
+   fills it + the hello waits in it until the models are in ---------- */
+.window {
+  position: relative; flex: none; width: calc(100% - 32px); max-width: 760px; margin: 2px auto 6px; aspect-ratio: 4 / 3;
+  max-height: 34vh; max-height: 34dvh; border-radius: 26px; overflow: hidden;
+  background: radial-gradient(130% 110% at 50% 28%, #fbfcfc, #ebeff1 55%, #d8dfe3);
+  box-shadow: 0 0 0 1px rgba(14, 26, 34, .06), 0 20px 50px -34px rgba(14, 26, 34, .55);
+}
+.window canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.window .poster { position: absolute; inset: 0; display: grid; align-content: center; padding: 0 8%; perspective: 1400px; transition: opacity .6s var(--ease), visibility 0s; }
+.scene-ready .window .poster { opacity: 0; visibility: hidden; transition: opacity .6s var(--ease), visibility 0s .6s; }
+.window .soon { background: radial-gradient(130% 110% at 50% 28%, #fbfcfc, #ebeff1 55%, #d8dfe3); }
+html:not(.js) .window, .flat3d .window { display: none; }
+/* the cards keep their words + their own drawings come back on a page without 3d */
+.js .card .vis { display: none; }
+.flat3d .card .vis { display: block; }
+.deck, .pager { width: min(100%, 800px); }
+.spot { display: flex; flex: 1; align-items: center; gap: 14px; min-width: 0; padding: 0; border: 0; border-radius: 12px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.spot .pin { transition: box-shadow .25s; }
+.spot[aria-pressed="true"] .pin { box-shadow: 0 0 0 3px var(--card), 0 0 0 5px var(--text); }
+.flat3d .spot { cursor: default; }
+.flat3d .spot .pin { box-shadow: none; }
+
 /* ---------- desktop + the drawing on the left and the words on the right ---------- */
 @media (min-width: 880px) {
   .card { flex-basis: calc(100% - 96px); padding: 40px 48px; }
@@ -257,6 +281,8 @@ html:not(.js) .mount .vis { display: none; }
   .steps > li { font-size: 18px; }
   .split .stage { max-height: none; }
   .split.flat:not(.stand) { display: flex; }
+  .js:not(.flat3d) .split { display: flex; }
+  .window { aspect-ratio: auto; height: min(44vh, 420px); height: min(44dvh, 420px); max-height: none; }
   .split:not(.flat) > * { margin: 0; }
   .narrow .txt { width: min(100%, 560px); margin-inline: auto; }
   .hello .tilt { width: min(100%, 720px); }

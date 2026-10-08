@@ -1,7 +1,8 @@
 <!doctype html>
-<!-- mooboard.co/start + a new board's first steps as swipe cards + a board's sticker link comes here with ?m=<model>
-     and ?u=<code> when its board is not on this network yet + js/start.js runs the cards + js/mount.mjs and three.js
-     come in only at the mounting card + without javascript the cards stand one under the other -->
+<!-- mooboard.co/start in one scene + the logo + a white window with one 3d scene that moves as the cards change + the
+     cards to flick under it + a board's sticker link comes here with ?m=<model> and ?u=<code> when its board is not on
+     this network yet + js/start.js runs the cards + js/scene.mjs and three.js load at the start + without webgl each
+     card keeps its own drawing as on the plain page + without javascript the cards stand one under the other -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -33,6 +34,14 @@
 <header class="bar">
   <a class="logo" href="/"><img class="mark" src="/brand/mark-teal.svg" alt="" width="38" height="30"><picture><source srcset="/brand/wordmark-white.svg" media="(prefers-color-scheme: dark)"><img class="word" src="/brand/wordmark-deep.svg" alt="mooboard" width="104" height="18"></picture></a>
 </header>
+
+<!-- the animation window + the one scene + the hello until the models are in + the wait clock + the stand coming soon -->
+<div class="window" id="window" aria-hidden="true">
+  <canvas id="scene"></canvas>
+  <div class="poster" id="poster"><div class="tilt"><div class="bezel" data-frame="black"><div class="led" id="poster-board"></div></div></div></div>
+  <div class="clock" id="clock" aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="currentColor" stroke-width="6"/><path d="M50 50V31" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path class="hand" d="M50 50V24" stroke="#0E6B5E" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="50" r="5" fill="currentColor"/></svg></div>
+  <div class="soon" hidden><svg viewBox="0 0 420 190" aria-hidden="true"><rect x="78" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="326" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="40" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="288" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="10" y="20" width="400" height="108" rx="4" fill="#262B30"/><rect x="13" y="23" width="394" height="102" rx="1.5" fill="#07080A"/><g fill="#77EDD7"><circle cx="150" cy="74" r="3"/><circle cx="170" cy="62" r="3"/><circle cx="190" cy="56" r="3"/><circle cx="210" cy="62" r="3"/><circle cx="230" cy="74" r="3"/><circle cx="250" cy="62" r="3"/><circle cx="270" cy="56" r="3"/></g><rect x="0" y="182" width="420" height="3" rx="1.5" fill="#B9B5AD"/></svg><span class="tag">Coming soon</span></div>
+</div>
 
 <main class="deck" id="deck" aria-roledescription="carousel" aria-label="Get started">
 <div class="track" id="track">
@@ -88,25 +97,17 @@
   <div class="txt">
     <h2>Hardware</h2>
     <ol class="rows">
-      <li><i class="pin" aria-hidden="true">1</i><span class="what"><b>BOOT and RESET</b><small>Top edge</small></span><a class="pill" id="watch" href="/hi/buttons/" target="_blank" rel="noopener" aria-label="Watch the buttons tour"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>Watch</a></li>
-      <li><i class="pin" aria-hidden="true">2</i><span class="what"><b>Status light</b><small>Bottom, near the right end</small></span></li>
-      <li><i class="pin" aria-hidden="true">3</i><span class="what"><b>USB-C port</b><small>Bottom center</small></span></li>
-      <li><i class="pin" aria-hidden="true">4</i><span class="what"><b>NFC</b><small>Left side</small></span></li>
+      <li><button type="button" class="spot" data-spot="1" aria-pressed="false"><i class="pin" aria-hidden="true">1</i><span class="what"><b>BOOT and RESET</b><small>Top edge</small></span></button><a class="pill" id="watch" href="/hi/buttons/" target="_blank" rel="noopener" aria-label="Watch the buttons tour"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>Watch</a></li>
+      <li><button type="button" class="spot" data-spot="2" aria-pressed="false"><i class="pin" aria-hidden="true">2</i><span class="what"><b>Status light</b><small>Bottom, near the right end</small></span></button></li>
+      <li><button type="button" class="spot" data-spot="3" aria-pressed="false"><i class="pin" aria-hidden="true">3</i><span class="what"><b>USB-C port</b><small>Bottom center</small></span></button></li>
+      <li><button type="button" class="spot" data-spot="4" aria-pressed="false"><i class="pin" aria-hidden="true">4</i><span class="what"><b>NFC</b><small>Left side</small></span></button></li>
     </ol>
   </div>
 </section>
 
 <section class="card split mount" id="mounting" aria-roledescription="slide" aria-label="4 of 7">
   <div class="vis">
-    <div class="stage" id="stage">
-      <canvas id="mount-canvas" aria-hidden="true"></canvas>
-      <p class="busy" id="busy" hidden>One moment<span class="dots-run" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></p>
-      <div class="clock" id="clock" aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="currentColor" stroke-width="6"/><path d="M50 50V31" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path class="hand" d="M50 50V24" stroke="#0E6B5E" stroke-width="5" stroke-linecap="round"/><circle cx="50" cy="50" r="5" fill="currentColor"/></svg></div>
-      <div class="soon" id="soon" hidden>
-        <svg viewBox="0 0 420 190" aria-hidden="true"><rect x="78" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="326" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="40" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="288" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="10" y="20" width="400" height="108" rx="4" fill="#262B30"/><rect x="13" y="23" width="394" height="102" rx="1.5" fill="#07080A"/><g fill="#77EDD7"><circle cx="150" cy="74" r="3"/><circle cx="170" cy="62" r="3"/><circle cx="190" cy="56" r="3"/><circle cx="210" cy="62" r="3"/><circle cx="230" cy="74" r="3"/><circle cx="250" cy="62" r="3"/><circle cx="270" cy="56" r="3"/></g><rect x="0" y="182" width="420" height="3" rx="1.5" fill="#B9B5AD"/></svg>
-        <span class="tag">Coming soon</span>
-      </div>
-    </div>
+    <div class="soon soon-flat" hidden><svg viewBox="0 0 420 190" aria-hidden="true"><rect x="78" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="326" y="128" width="16" height="44" rx="4" fill="#262B30"/><rect x="40" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="288" y="168" width="92" height="9" rx="4.5" fill="#262B30"/><rect x="10" y="20" width="400" height="108" rx="4" fill="#262B30"/><rect x="13" y="23" width="394" height="102" rx="1.5" fill="#07080A"/><g fill="#77EDD7"><circle cx="150" cy="74" r="3"/><circle cx="170" cy="62" r="3"/><circle cx="190" cy="56" r="3"/><circle cx="210" cy="62" r="3"/><circle cx="230" cy="74" r="3"/><circle cx="250" cy="62" r="3"/><circle cx="270" cy="56" r="3"/></g><rect x="0" y="182" width="420" height="3" rx="1.5" fill="#B9B5AD"/></svg><span class="tag">Coming soon</span></div>
   </div>
   <div class="txt">
     <h2>Mounting</h2>

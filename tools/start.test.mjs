@@ -9,7 +9,7 @@ import { json, load, nearbyOf, read } from './finder-harness.mjs';
 
 const html = read('start/index.html');
 const startJs = read('js/start.js');
-const mount = read('js/mount.mjs');
+const mount = read('js/scene.mjs');
 const css = read('css/start.css');
 const glb = (rel) => readFileSync(new URL(`../${rel}`, import.meta.url));
 
@@ -46,14 +46,44 @@ test('the start page loads the site\'s own files only, and nothing from anywhere
   assert.deepEqual([...mount.matchAll(/'(\/assets\/[^']+)'/g)].map((m) => m[1]), ['/assets/3d/board.glb', '/assets/3d/rail.glb']);
 });
 
-test('three.js and the mounting steps load only when the mounting card is reached', () => {
+test('the one scene loads at the start once the first card is up, and the page itself names none of it', () => {
   const page = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<script type="importmap">[\s\S]*?<\/script>/, '');
-  assert.doesNotMatch(page, /mount\.mjs|modulepreload|three\.module/, 'nothing of the 3d on the page itself, the import map aside');
+  assert.doesNotMatch(page, /scene\.mjs|modulepreload|three\.module/, 'nothing of the 3d on the page itself, the import map aside');
   assert.match(html, /<script type="importmap">\{"imports":\{"three":"\/js\/vendor\/three\/build\/three\.module\.min\.js"/);
   assert.doesNotMatch(startJs, /\bimport\s*\(/, 'no import syntax in the page script');
-  assert.equal(startJs.match(/'\/js\/mount\.mjs'/g).length, 1, 'one place loads it');
-  assert.match(between(startJs, 'function startMount', 'function reached'), /mount\.mjs/, 'only startMount loads it');
-  assert.match(between(startJs, 'function reached', '\n  }'), /if \(card === M\.card\) startMount\(\)/, 'and only on the mounting card');
+  assert.equal(startJs.match(/'\/js\/scene\.mjs'/g).length, 1, 'one place loads it');
+  assert.match(between(startJs, 'function startScene', 'function reached'), /scene\.mjs/, 'startScene loads it');
+  assert.match(startJs, /arrive\(false\);\n  startScene\(\);/, 'right after the first card is placed');
+  assert.match(between(startJs, 'function reached', '\n  }'), /S\.api\.card\(card\.id\)/, 'and each card moves it');
+});
+
+test('the logo, then the light window with the scene, then the cards to flick, then the dots and the dock', () => {
+  const order = ['<header class="bar">', '<div class="window" id="window"', '<main class="deck"', '<nav class="pager"'].map((x) => html.indexOf(x));
+  assert.ok(order.every((v, i) => v > 0 && (i === 0 || v > order[i - 1])), JSON.stringify(order));
+  const win = between(html, '<div class="window"', '\n</div>');
+  assert.match(win, /<canvas id="scene"><\/canvas>/);
+  assert.match(win, /<div class="poster" id="poster">/, 'the hello waits in it until the models are in');
+  assert.match(win, /<div class="clock" id="clock"/);
+  assert.match(win, /<span class="tag">Coming soon<\/span>/);
+  assert.match(css, /\.window \{[^}]*background: radial-gradient\(130% 110% at 50% 28%, #fbfcfc, #ebeff1 55%, #d8dfe3\)/, 'a very light cool grey');
+  const dark = css.slice(css.indexOf('@media (prefers-color-scheme: dark)'), css.indexOf('}\n}', css.indexOf('@media (prefers-color-scheme: dark)')));
+  assert.doesNotMatch(dark, /\.window/, 'and the same in the dark');
+  assert.match(css, /\.js \.card \.vis \{ display: none; \}/, 'the cards keep their words');
+  assert.match(css, /\.flat3d \.card \.vis \{ display: block; \}/, 'their own drawings come back without 3d');
+  assert.match(css, /\.flat3d \.window \{ display: none; \}|html:not\(\.js\) \.window, \.flat3d \.window \{ display: none; \}/);
+});
+
+test('the hardware rows take the camera to their spot, and the scene moves card to card or cuts with less motion', () => {
+  assert.deepEqual([...html.matchAll(/<button type="button" class="spot" data-spot="(\d)" aria-pressed="false">/g)].map((m) => m[1]), ['1', '2', '3', '4']);
+  assert.match(mount, /const k = reduced \? 1 : ease\(seg\(\(now - moveAt\) \/ 1000, 0, MOVE\)\)/, 'about a second with an ease, or a cut');
+  assert.match(mount, /let touring = !reduced/, 'the camera tour plays only with motion');
+  assert.match(mount, /mt\.held = reduced; mt\.playing = !reduced/, 'the steps are stills with less motion');
+  for (const id of ['hello', 'box', 'hardware', 'mounting', 'wifi', 'setup', 'help']) assert.match(mount, new RegExp('\\n    ' + id + ': '), id + ' has a pose');
+});
+
+test('the board\'s face in 3d is a board of its own with a clock that asks nothing of the network', () => {
+  assert.match(startJs, /scenes: \['hello', 'off', 'join', 'clock'\], auto: false, external: true/);
+  assert.doesNotMatch(startJs + mount, /'time'|weatherNow/, 'never the board\'s weather clock');
 });
 
 test('?m= is MB1W, MB1D or MB1P in any case, and anything else or nothing is the wall board', () => {
@@ -214,7 +244,8 @@ test('every mounting way has a caption for each of its steps in 3d, and stills f
   assert.equal(own('strips') + hang, caps('strips').length);
   assert.equal(own('screws') + hang, caps('screws').length);
   assert.equal((mount.match(/still: [\d.]+/g) || []).length, (mount.match(/\{ dur: /g) || []).length, 'a still for each step');
-  assert.match(startJs, /if \(REDUCED\) \{\s*M\.api\.show\(way, step\)/, 'less motion shows the steps as stills and plays nothing');
+  assert.match(startJs, /reduced: REDUCED/, 'the scene knows when less motion is asked for');
+  assert.match(mount, /if \(reduced\) mt\.time = WAYS\[mt\.way\]\.steps\[step\]\.still/, 'and shows each step as its still');
   assert.doesNotMatch(mount + html, /\bdrill\b/i, 'self-drilling anchors go in with a screwdriver, no drill');
   assert.match(mount, /function makeDriver\(\)/);
   assert.match(mount, /function makeAnchor\(\)/);

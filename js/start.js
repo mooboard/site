@@ -1,6 +1,7 @@
-/* mooboard.co/start + a new board's first steps as swipe cards + ?m= names the model and ?u= the board's code as the
-   sticker link hands them on + ?frame= its frame as the buttons tour takes it + a swipe or the dots or back and next
-   or the arrow keys move between the cards + js/mount.mjs and three.js load only when the mounting card is reached */
+/* mooboard.co/start in one scene + a new board's first steps as cards to flick under one 3d window + ?m= names the
+   model and ?u= the board's code as the sticker link hands them on + ?frame= its frame as the buttons tour takes it +
+   a swipe or the dots or back and next or the arrow keys move between the cards and the scene moves with them +
+   js/scene.mjs and three.js load at the start while the first card's words are already up */
 (function () {
   'use strict';
   var MODELS = ['MB1W', 'MB1D', 'MB1P'];
@@ -164,13 +165,33 @@
       };
     };
   }
+  // ---- a plain clock for the scene + the time alone in the board's clock font + it asks nothing of the network as the
+  // board's own clock faces would for their weather ----
+  function clockScene(MB) {
+    var WARM = [255, 238, 214];
+    return function () {
+      return {
+        label: 'Clock', dur: 60,
+        draw: function (f) {
+          f.fill([0, 0, 0]);
+          var d = new Date(), h = d.getHours() % 12 || 12, m = d.getMinutes(), str = h + ':' + (m < 10 ? '0' : '') + m, L = null;
+          for (var cap = 22; cap >= 8 && !L; cap -= 0.5) {
+            var c = MB.text.line('clock', cap, str);
+            if (!c.empty && c.inkW <= 118 && c.inkH <= 26) L = c;
+          }
+          if (L) drawLine(f, L, Math.floor(63.5 - (L.l + L.r) / 2), Math.floor((32 - L.inkH) / 2) - L.t, WARM);
+        }
+      };
+    };
+  }
   (function boards() {
     var MB = window.MooBoard;
     if (!MB || !MB.Board || !MB.text || !MB.scenes) return;
     MB.scenes.hello = helloScene(MB);
     MB.scenes.join = joinScene(MB);
     MB.scenes.off = function () { return { label: 'Off', dur: 10, draw: function (f) { f.fill([0, 0, 0]); } }; };
-    [['hello-board', 'hello', 30], ['join-board', 'join', 4]].forEach(function (b) {
+    MB.scenes.clock = clockScene(MB);
+    [['hello-board', 'hello', 30], ['join-board', 'join', 4], ['poster-board', 'hello', 30]].forEach(function (b) {
       var el = $(b[0]);
       if (!el) return;
       try { new MB.Board(el, { scenes: [b[1]], auto: false, fps: b[2] }); } catch (e) { /* the bezel keeps its dark panel */ }
@@ -257,9 +278,12 @@
     if (k >= 0) go(k);
   });
 
-  // ---- 4 mounting + the chips pick a way + its steps play in 3d with a caption each + replay ----
-  var M = { card: $('mounting'), way: 'strips', api: null, state: 'idle', step: 0 };
-  var segs = $('segs'), cap = $('cap'), player = $('player'), chips = $('chips'), busy = $('busy'), soon = $('soon');
+  // ---- the one scene in the window + it loads at the start + each card moves it to that card's pose + the mounting
+  // card's chips pick a way and its steps play with a caption each + the hardware rows take the camera to their spot ----
+  var M = { card: $('mounting'), way: 'strips', step: 0 };
+  var S = { api: null, state: 'idle' };
+  var segs = $('segs'), cap = $('cap'), player = $('player'), chips = $('chips');
+  var soons = all('.soon');
   var CAPS = {};
   all('#seqs > div').forEach(function (d) { CAPS[d.getAttribute('data-way')] = all('li', d).map(function (li) { return li.textContent; }); });
   chips.hidden = false;
@@ -291,29 +315,28 @@
     if (b && way === M.way) b.style.setProperty('--k', Math.min(1, k).toFixed(3));
   }
   function begin(way, step) {
-    if (!M.api) return onStep(way, step);   // the words go on while the 3d is on its way
-    if (REDUCED) {
-      M.api.show(way, step);
-      onStep(way, step);
-      onTime(way, step, 1);
-    } else M.api.play(way, step);
+    onStep(way, step);
+    if (S.api) S.api.step(step);   // the scene plays from there or shows its still with less motion
   }
   function pick(way) {
+    var changed = way !== M.way;
     M.way = way;
     all('.chip', chips).forEach(function (c) { c.setAttribute('aria-pressed', c.getAttribute('data-way') === way ? 'true' : 'false'); });
     all('#seqs > div').forEach(function (d) { d.hidden = d.getAttribute('data-way') !== way; });
     var stand = way === 'stand';
     M.card.classList.toggle('stand', stand);
-    soon.hidden = !stand;
-    $('mount-canvas').style.visibility = stand ? 'hidden' : '';
-    busy.style.visibility = stand ? 'hidden' : '';
-    player.hidden = stand || M.state === 'flat';
-    if (M.api) M.api.live(!stand && cards[shown] === M.card);
+    soons.forEach(function (x) { x.hidden = !stand; });
+    player.hidden = stand || S.state === 'flat';
     if (stand) return;
     buildSegs(way);
     onStep(way, 0);
-    begin(way, 0);
+    if (S.api && changed) S.api.way(way);
   }
+  // the hardware rows + a tap takes the camera to that spot + the row the camera is at is pressed
+  var spots = all('[data-spot]');
+  spots.forEach(function (b) { b.addEventListener('click', function () { if (S.api) S.api.spot(+b.getAttribute('data-spot')); }); });
+  function onSpot(k) { spots.forEach(function (b) { b.setAttribute('aria-pressed', +b.getAttribute('data-spot') === k ? 'true' : 'false'); }); }
+
   function webgl() {
     try {
       var c = document.createElement('canvas');
@@ -330,50 +353,47 @@
       return false;
     }
   }
-  // without webgl or the models the steps stand as a plain list under the chips
+  // without webgl or the models the page is its cards with their own drawings and the steps as a plain list
   function flat() {
-    if (M.state === 'flat') return;
-    M.state = 'flat';
-    busy.hidden = true;
+    if (S.state === 'flat') return;
+    S.state = 'flat';
+    root.classList.add('flat3d');
     M.card.classList.remove('live');
     M.card.classList.add('flat');
     player.hidden = true;
   }
-  var dotsTimer = null;
-  function running(on) {
-    busy.hidden = !on;
-    clearInterval(dotsTimer);
-    var dots = busy.querySelector('.dots-run'), n = REDUCED ? 3 : 0;
-    dots.setAttribute('data-n', String(n));
-    if (on && !REDUCED) dotsTimer = setInterval(function () { n = (n + 1) % 4; dots.setAttribute('data-n', String(n)); }, 400);
-  }
-  function startMount() {
-    if (M.state !== 'idle') return;
-    if (!webgl() || !importMaps()) return flat();
-    M.state = 'loading';
-    running(true);
-    var wall = getComputedStyle(root).getPropertyValue('--wall').trim() || '#ECEAE5';
-    window.mooMount = function (create) {
-      create({ canvas: $('mount-canvas'), clock: $('clock'), frame: finish, rail: railOf(search), wall: wall, onStep: onStep, onTime: onTime })
+  function startScene() {
+    var MB = window.MooBoard;
+    if (!webgl() || !importMaps() || !MB || !MB.Board) return flat();
+    S.state = 'loading';
+    // the board's face in 3d is a board of its own drawn into the model + the hello + off + the join card + a clock
+    var led = new MB.Board(document.createElement('div'), { scenes: ['hello', 'off', 'join', 'clock'], auto: false, external: true, minScale: 8, maxScale: 8, look: { crisp: true } });
+    var first = cards[shown] ? cards[shown].id : 'hello';
+    window.mooScene = function (create) {
+      create({ canvas: $('scene'), clock: $('clock'), led: led, frame: finish, rail: railOf(search), reduced: REDUCED,
+        wall: '#E3E8EB', card: first,
+        order: cards.map(function (c) { return c.id; }), onStep: onStep, onTime: onTime, onSpot: onSpot })
         .then(function (a) {
-          if (M.state !== 'loading') return;
-          M.api = a;
-          M.state = 'ready';
-          running(false);
-          pick(M.way);
-        }, function () { running(false); flat(); });
+          if (S.state !== 'loading') return;
+          S.api = a;
+          S.state = 'ready';
+          root.classList.add('scene-ready');
+          var now = cards[shown].id;
+          if (now !== first) a.card(now);
+          else if (now === 'mounting') a.step(0);
+          if (M.way !== 'strips' && M.way !== 'stand') a.way(M.way);
+        }, flat);
     };
     // a module of its own so this page needs no import syntax + the import map gives it three.js
     var s = document.createElement('script');
     s.type = 'module';
-    s.textContent = "import { create } from '/js/mount.mjs'; window.mooMount(create);";
-    s.addEventListener('error', function () { running(false); flat(); });
+    s.textContent = "import { create } from '/js/scene.mjs'; window.mooScene(create);";
+    s.addEventListener('error', flat);
     document.head.appendChild(s);
-    setTimeout(function () { if (M.state === 'loading') { running(false); flat(); } }, 30000);
+    setTimeout(function () { if (S.state === 'loading') flat(); }, 30000);
   }
   function reached(card) {
-    if (card === M.card) startMount();
-    if (M.api) M.api.live(card === M.card && M.way !== 'stand');
+    if (S.api) S.api.card(card.id);
   }
   M.card.classList.add('live');
   player.hidden = false;
@@ -386,16 +406,20 @@
   mark(first);
   track.scrollLeft = leftOf(first);
   arrive(false);
+  startScene();
 
-  // renders for the owner + ?shots holds the page at a card and the steps at a moment
+  // renders for the owner + ?shots holds the page at a card and the scene at a pose or a moment
   if (/[?&]shots\b/.test(search)) {
     api.go = function (i) { go(i, true); };
     api.pick = pick;
     api.ready = function () {
       return new Promise(function (res) {
-        (function wait() { if (M.state === 'ready' || M.state === 'flat') res(M.state); else setTimeout(wait, 100); })();
+        (function wait() { if (S.state === 'ready' || S.state === 'flat') res(S.state); else setTimeout(wait, 100); })();
       });
     };
-    api.show = function (step, t, look) { M.api.show(M.way, step, t, look); onStep(M.way, step); onTime(M.way, step, t == null ? 1 : 0.5); };
+    api.hold = function (spec) {
+      S.api.hold(spec);
+      if (spec.way) { onStep(spec.way, spec.step || 0); onTime(spec.way, spec.step || 0, spec.t == null ? 1 : 0.5); }
+    };
   }
 })();
