@@ -378,7 +378,7 @@ export async function create(o) {
     railBack: { t: [0, C.y, C.z + HELD], az: 0.5, el: 0.34, w: 330, h: 170 },
     railWall: { t: [0, C.y + 6, C.z], az: -0.42, el: 0.22, w: 390, h: 190 },
     railClose: { t: [0, C.y - 4, C.z], az: -0.36, el: 0.16, w: 320, h: 160 },
-    drill: { t: [0, A.screws[0].y, A.wall.z + 60], az: -1.0, el: 0.2, w: 400, h: 220 },
+    drill: { t: [0, A.screws[0].y - 52, A.wall.z + 70], az: -1.0, el: 0.22, w: 470, h: 300 },
     hang: { t: [-24, 6, 30], az: -0.58, el: 0.4, w: 720, h: 360 },
     hung: { t: [0, 0, 0], az: -0.36, el: 0.16, w: 640, h: 250 },
   };
