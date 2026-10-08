@@ -106,12 +106,62 @@ test('the BOOT and RESET row shows 1 and their caps in place of their names, and
   const doc = (() => { const b = glb('assets/3d/board.glb'); return JSON.parse(b.subarray(20, 20 + b.readUInt32LE(12)).toString('utf8')); })();
   for (const n of ['cap_boot', 'cap_reset']) assert.ok(doc.nodes.some((x) => x.name === n), `the board model has ${n}`);
   assert.match(mount, /f\.near = spot === 1 \? k : spotWas === 1 \? 1 - k : 0;/, 'the labels come in with the camera and go as it leaves');
-  assert.match(mount, /const k = spotFrom && !reduced \? ease\(seg\(\(now - spotAt\) \/ 1000, 0, MOVE\)\) : 1;/, 'in step with the camera, or at once with less motion');
+  assert.match(mount, /const k = held != null \? held : spotFrom && !reduced \? ease\(seg\(\(now - spotAt\) \/ 1000, 0, MOVE\)\) : 1;/, 'in step with the camera, or at once with less motion');
   assert.match(mount, /m\.material\.opacity = f\.markers \* \(k === 0 \? 1 - f\.near : 1\);/, 'the 1 gives way');
   assert.match(mount, /l\.material\.opacity = f\.markers \* f\.near;/, 'the labels take over');
   for (const d of ['M11.4 4.2 14.6 6.6 11.4 9z', 'M15.9 8.6A5.4 5.4 0 1 1 12 6.6']) {
     assert.ok(tour.includes(d) && mount.includes(d), 'the labels draw RESET\'s arrow as the tour does');
   }
+});
+
+test('the page is a phone\'s width on any screen and Hardware is one column', () => {
+  assert.match(css, /--phone: 430px;/);
+  assert.match(css, /body \{\n  width: min\(100%, var\(--phone\)\); margin: 0 auto;/, 'the whole page in the middle at a phone\'s width');
+  assert.doesNotMatch(css, /@media \(min-width/, 'no wider layout on a computer');
+  assert.doesNotMatch(css, /grid-template-columns/, 'every list one column');
+  assert.match(css, /\.sheet \{[^}]*max-width: var\(--phone\)/, 'Wi-Fi help too');
+  assert.match(css, /h1 \{ font-size: clamp\(30px, 8vw, 34px\); \}/, 'type as big as on a 430 px phone at most');
+  assert.match(css, /h2 \{ font-size: clamp\(27px, 7vw, 30px\); \}/);
+});
+
+test('the hardware camera keeps the whole board and all four markers inside the window', () => {
+  // the camera as js/scene.mjs aims it + its first spot and the markers read from it + the window's 4 by 3
+  const num = (v) => +v;
+  const spot = /const SPOTS = \[\n  \{ t: \[([^\]]+)\], az: ([-\d.]+), el: ([-\d.]+), w: (\d+), h: (\d+) \}/.exec(mount);
+  const marks = JSON.parse(/const MARKS = (\[\[.*?\]\]);/.exec(mount)[1]);
+  const fov = num(/const FOV = (\d+);/.exec(mount)[1]);
+  const [t, az, el, w, h] = [spot[1].split(',').map(num), num(spot[2]), num(spot[3]), num(spot[4]), num(spot[5])];
+  const tv = Math.tan((fov / 2) * Math.PI / 180), aspect = 4 / 3, th = tv * aspect, d = Math.max(w / 2 / th, h / 2 / tv);
+  const eye = [t[0] + d * Math.cos(el) * Math.sin(az), t[1] + d * Math.sin(el), t[2] + d * Math.cos(el) * Math.cos(az)];
+  const sub = (a, b) => a.map((v, i) => v - b[i]), dot = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const unit = (a) => { const n = Math.hypot(...a); return a.map((v) => v / n); };
+  const f = unit(sub(t, eye)), r = unit(cross(f, [0, 1, 0])), u = cross(r, f);
+  const ndc = (p) => { const q = sub(p, eye); return [dot(q, r) / (dot(q, f) * th), dot(q, u) / (dot(q, f) * tv)]; };
+  const corners = [];
+  for (const x of [-259.3, 259.3]) for (const y of [-67.3, 67.3]) for (const z of [-22, 22]) corners.push([x, y, z]);
+  const rad = 0.05 / tv / 2;   // a marker's half size as js/scene.mjs draws it at 0.05
+  const xs = corners.map((p) => ndc(p)[0]).concat(marks.flatMap((p) => [ndc(p)[0] - rad / aspect, ndc(p)[0] + rad / aspect]));
+  const ys = corners.map((p) => ndc(p)[1]).concat(marks.flatMap((p) => [ndc(p)[1] - rad, ndc(p)[1] + rad]));
+  assert.ok(Math.min(...xs) > -0.9 && Math.max(...xs) < 0.9, `left and right with room ${Math.min(...xs).toFixed(3)} ${Math.max(...xs).toFixed(3)}`);
+  assert.ok(Math.min(...ys) > -0.9 && Math.max(...ys) < 0.9, 'top and bottom with room');
+});
+
+test('the Hardware card has a pause right under the window that holds the camera tour until play, the card is left or a row is tapped', () => {
+  const hw = between(html, 'id="hardware"', '</section>');
+  assert.match(hw, /<\/div>\n  <button type="button" class="pause" id="pause" aria-label="Pause"><svg class="i-pause"[^>]*>[\s\S]*?<\/svg><svg class="i-play"[^>]*>[\s\S]*?<\/svg><\/button>\n  <div class="txt">/, 'at the top of the card, above its words');
+  assert.equal((html.match(/class="pause"/g) || []).length, 1, 'on the Hardware card only');
+  assert.match(css, /\.pause \{[^}]*align-self: center;/, 'in the middle');
+  assert.match(css, /\.scene-ready \.pause:not\(\[hidden\]\) \{ display: inline-flex; \}/, 'only with the scene');
+  assert.match(startJs, /pause\.setAttribute\('aria-label', on \? 'Play' : 'Pause'\);/, 'Pause and Play');
+  assert.match(startJs, /pause\.hidden = REDUCED;/, 'nothing moves with less motion so it hides');
+  assert.match(startJs, /showPaused\(!paused\);\n    S\.api\.tour\(!paused\);/, 'a tap pauses or plays');
+  assert.match(between(startJs, 'function reached', '\n  }'), /showPaused\(false\)/, 'leaving the card forgets it');
+  assert.match(startJs, /showPaused\(true\); S\.api\.spot\(/, 'a tapped row holds the camera at its spot');
+  assert.match(mount, /const k = held != null \? held : spotFrom && !reduced/, 'the camera holds how far it had come');
+  assert.match(mount, /if \(id === 'hardware'\) \{ touring = !reduced; spotPick = 0; spotShown = -1; tourAt = now; held = null; \}/, 'the tour plays again on the way back');
+  assert.match(between(mount, '    spot(k) {', '    },'), /held = null;/, 'a row still moves the camera while paused');
+  assert.match(between(mount, '    tour(on) {', '\n    },'), /tourAt = now - startOf\(/, 'play goes on from the spot it held');
 });
 
 test('the board\'s face in 3d is a board of its own with a clock that asks nothing of the network', () => {

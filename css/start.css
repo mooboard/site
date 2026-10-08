@@ -9,6 +9,7 @@
   --shadow: 0 24px 60px -40px rgba(14, 26, 34, .45), 0 2px 6px rgba(14, 26, 34, .04);
   --wall: #E3E8EB; --frame: #262B30; --frame-hi: #3a4047; --edge: rgba(14, 26, 34, .0);
   --dock: rgba(255, 255, 255, .72); --grey: #E3ECEA;
+  --phone: 430px;   /* the page is a phone's width on any screen (owner 2026-10-08) */
   --display: 'Fredoka', 'Nunito', system-ui, sans-serif;
   --body: 'Nunito', system-ui, -apple-system, sans-serif;
   --ease: cubic-bezier(.2, .8, .2, 1);
@@ -25,7 +26,7 @@
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; height: 100%; background: var(--bg); }
 body {
-  margin: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden;
+  width: min(100%, var(--phone)); margin: 0 auto; height: 100%; display: flex; flex-direction: column; overflow: hidden;
   background: var(--bg); color: var(--text); font: 500 17px/1.5 var(--body); -webkit-font-smoothing: antialiased;
 }
 img, svg, canvas { display: block; }
@@ -33,8 +34,8 @@ a { color: var(--link); text-underline-offset: 3px; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; border-radius: 8px; }
 h1, h2 { margin: 0; font-family: var(--display); font-weight: 700; letter-spacing: -.01em; line-height: 1.1; text-wrap: balance; }
-h1 { font-size: clamp(30px, 8vw, 46px); }
-h2 { font-size: clamp(27px, 7vw, 38px); }
+h1 { font-size: clamp(30px, 8vw, 34px); }
+h2 { font-size: clamp(27px, 7vw, 30px); }
 h1:focus, h2:focus { outline: none; }
 .nw { white-space: nowrap; }
 .sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
@@ -80,7 +81,7 @@ h1:focus, h2:focus { outline: none; }
 }
 .card.more-below::after { opacity: 1; }
 html:not(.js) .card::after { content: none; }
-.lead { margin: 0; font: 600 clamp(18px, 4.8vw, 22px)/1.35 var(--display); color: var(--muted); text-wrap: balance; }
+.lead { margin: 0; font: 600 clamp(18px, 4.8vw, 21px)/1.35 var(--display); color: var(--muted); text-wrap: balance; }
 html:not(.js) .track { flex-direction: column; overflow: visible; }
 html:not(.js) body { height: auto; overflow: auto; }
 html:not(.js) .card { flex-basis: auto; margin: 0 20px; overflow: visible; }
@@ -176,6 +177,18 @@ html:not(.js) .pager { display: none; }
 .keys svg { width: 24px; height: 24px; }
 .key { display: inline-block; width: 1em; height: 1em; vertical-align: -.14em; margin: 0 1px; }
 
+/* ---------- the hardware card's pause + a small pill at the top of the card right under the window + its pause while
+   the camera tours and its play once it holds + only with the scene and only with motion ---------- */
+.pause {
+  display: none; align-self: center; flex: none; align-items: center; justify-content: center; width: 52px; height: 32px;
+  margin: -12px 0 -8px; padding: 0; border: 2px solid var(--link); border-radius: 999px; background: none; color: var(--link); cursor: pointer;
+}
+.scene-ready .pause:not([hidden]) { display: inline-flex; }
+.pause:hover { background: var(--soft); }
+.pause svg { width: 14px; height: 14px; fill: currentColor; }
+.pause .i-play, .pause.paused .i-pause { display: none; }
+.pause.paused .i-play { display: block; }
+
 /* ---------- 4 mounting + the chips + the 3d stage + the steps + the caption + replay ---------- */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
@@ -269,7 +282,7 @@ html:not(.js) .window, .flat3d .window { display: none; }
 /* ---------- wi-fi help + a sheet up from the bottom over the cards + the title and close stay put and the body scrolls
    + in the middle of a computer's screen ---------- */
 .sheet {
-  width: 100%; max-width: 560px; max-height: min(88vh, 760px); max-height: min(88dvh, 760px); margin: auto auto 0; padding: 0;
+  width: 100%; max-width: var(--phone); max-height: min(88vh, 760px); max-height: min(88dvh, 760px); margin: auto auto 0; padding: 0;
   border: 0; border-radius: 28px 28px 0 0; background: var(--card); color: var(--text); box-shadow: 0 -20px 60px -30px rgba(14, 26, 34, .6);
   overflow: hidden; overscroll-behavior: contain;
 }
@@ -277,7 +290,7 @@ html:not(.js) .window, .flat3d .window { display: none; }
 .sheet::backdrop { background: rgba(14, 26, 34, .48); }
 @keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } }
 .sheet-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 22px 14px; border-bottom: 1px solid var(--line); }
-.sheet-head h2 { font-size: clamp(25px, 6.4vw, 32px); }
+.sheet-head h2 { font-size: clamp(25px, 6.4vw, 28px); }
 .close {
   flex: none; height: 40px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--grey); color: var(--text);
   font: 600 17px var(--display); cursor: pointer;
@@ -295,34 +308,8 @@ html:not(.js) .window, .flat3d .window { display: none; }
 html:not(.js) .sheet { display: block; position: static; max-height: none; margin: 20px; border-radius: 28px; overflow: visible; }
 html:not(.js) .sheet .close { display: none; }
 
-/* ---------- desktop + the drawing on the left and the words on the right ---------- */
-@media (min-width: 880px) {
-  .card { flex-basis: calc(100% - 96px); --px: 48px; --py: 30px; }
-  .card:first-child { margin-left: 48px; }
-  .card:last-child { margin-right: 48px; }
-  .split { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(280px, 1fr); align-items: center; gap: 44px; }
-  h1 { font-size: 50px; }
-  h2 { font-size: 42px; }
-  .cap { font-size: 21px; }
-  .rows b { font-size: 18px; }
-  .rows small { font-size: 16px; }
-  .split .stage { max-height: none; }
-  .split.flat:not(.stand) { display: flex; }
-  .js:not(.flat3d) .split { display: flex; }
-  .window { aspect-ratio: auto; height: min(40vh, 400px); height: min(40dvh, 400px); max-height: none; }
-  .split:not(.flat) > * { margin: 0; }
-  .narrow .txt, .js:not(.flat3d) .split .txt { width: min(100%, 560px); margin-inline: auto; }
-  /* what is in the box and where things are in two columns where there is room + the wi-fi words in longer lines */
-  #box .txt, .js:not(.flat3d) #hardware .txt { width: min(100%, 760px); }
-  #wifi .txt { width: min(100%, 700px); }
-  #box .rows, .js:not(.flat3d) #hardware .rows { display: grid; grid-template-columns: 1fr 1fr; column-gap: 36px; }
-  #box .rows > li:nth-child(2), .js:not(.flat3d) #hardware .rows > li:nth-child(2) { border-top: 0; }
-  .sheet { margin: auto; border-radius: 28px; max-height: min(84vh, 760px); max-height: min(84dvh, 760px); }
-  .sheet-head { padding: 28px 32px 16px; }
-  .sheet-body { --sx: 32px; --sb: 30px; padding: 6px var(--sx) var(--sb); }
-  .hello .tilt { width: min(100%, 720px); }
-}
-@media (max-height: 720px) and (max-width: 879px) {
+/* ---------- a short window + tighter cards ---------- */
+@media (max-height: 720px) {
   .card { --px: 18px; --py: 18px; --gap: 14px; }
   .stage { aspect-ratio: 16 / 10; }
   .chip { height: 36px; padding: 0 14px; }

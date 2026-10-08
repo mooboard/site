@@ -450,7 +450,7 @@ function mixFrame(A, B, k) {
 
 // the hardware card's camera + the whole board with its four markers + then each spot close up + board coordinates
 const SPOTS = [
-  { t: [0, 0, 0], az: -0.3, el: 0.16, w: 620, h: 270 },
+  { t: [-40, 0, 0], az: -0.3, el: 0.16, w: 660, h: 270 },   // aimed left of the middle so the board sits right with room round all four markers
   { t: [218, 64, -12], az: 0.32, el: 0.95, w: 190, h: 130 },
   { t: [184.6, -64, -14], az: 0.38, el: -0.72, w: 190, h: 130 },
   { t: [0, -64, -12], az: -0.12, el: -0.78, w: 190, h: 130 },
@@ -458,6 +458,7 @@ const SPOTS = [
 ];
 const MARKS = [[218, 88, -15], [184.6, -88, -17.7], [0, -90, -13], [-284, 0, 6]];   // where each marker sits by the board
 const TOUR = [2.6, 3.0, 3.0, 3.0, 3.0];   // seconds at each spot as the camera goes round + then round again
+const startOf = (spot) => TOUR.slice(0, Math.max(0, spot)).reduce((a, b) => a + b, 0);   // when a spot's turn begins
 const MOVE = 1.0;                         // seconds a change of card takes
 const USB = [0, -65.8, -13];              // the usb-c port's mouth under the board
 
@@ -746,7 +747,7 @@ export async function create(o) {
     return f;
   }
   // hardware + the board facing you + the camera goes round its four spots + a tapped row takes it there
-  let touring = !reduced, spotPick = 0, spotShown = -1, spotWas = -1, spotFrom = null, spotAt = 0, tourAt = 0;
+  let touring = !reduced, spotPick = 0, spotShown = -1, spotWas = -1, spotFrom = null, spotAt = 0, tourAt = 0, held = null;
   function tourSpot(now) {
     const total = TOUR.reduce((a, b) => a + b, 0);
     let t = ((now - tourAt) / 1000) % total;
@@ -765,7 +766,8 @@ export async function create(o) {
       o.onSpot && o.onSpot(spot);
     }
     const to = shotCam(SPOTS[spot]);
-    const k = spotFrom && !reduced ? ease(seg((now - spotAt) / 1000, 0, MOVE)) : 1;
+    // paused + the camera holds how far it had come
+    const k = held != null ? held : spotFrom && !reduced ? ease(seg((now - spotAt) / 1000, 0, MOVE)) : 1;
     f.cam = k < 1 ? mixCam(spotFrom, to, k) : to;
     // close up at the buttons + their labels take over from the 1 as the camera comes in and give way as it leaves
     f.near = spot === 1 ? k : spotWas === 1 ? 1 - k : 0;
@@ -928,7 +930,7 @@ export async function create(o) {
   function busy(now) {
     if (!reduced && now - moveAt < MOVE * 1000) return true;
     if (card === 'mounting' && mt.playing) return true;
-    if (card === 'hardware' && (touring || now - spotAt < MOVE * 1000)) return true;
+    if (card === 'hardware' && (touring || (held == null && now - spotAt < MOVE * 1000))) return true;
     if (card === 'hello' && !reduced) return true;
     if (now - ledAt < 1200) return true;
     return false;
@@ -993,7 +995,7 @@ export async function create(o) {
       from = last;
       moveAt = now;
       card = id;
-      if (id === 'hardware') { touring = !reduced; spotPick = 0; spotShown = -1; tourAt = now; }
+      if (id === 'hardware') { touring = !reduced; spotPick = 0; spotShown = -1; tourAt = now; held = null; }
       if (id === 'mounting') {
         if (was >= 0 && was > order.indexOf('mounting')) {
           const steps = WAYS[mt.way].steps;
@@ -1009,15 +1011,33 @@ export async function create(o) {
     // a step of the way + it plays from there or shows its still with less motion
     step(s) { playMount(s); },
     steps: (w) => WAYS[w].steps.length,
-    // a spot on the hardware card + the camera goes there and the tour stops
-    spot(k) { touring = false; spotPick = k; kick(); },
+    // a spot on the hardware card + the camera goes there and the tour stops + from where it was held if paused
+    spot(k) {
+      if (held != null) { spotAt = performance.now() - easeTo(held) * MOVE * 1000; held = null; }
+      touring = false; spotPick = k; kick();
+    },
+    // the hardware card's pause + the camera holds where it is at a spot or on its way + play goes on from there
+    tour(on) {
+      const now = performance.now();
+      if (!on) {
+        held = spotFrom && !reduced ? ease(seg((now - spotAt) / 1000, 0, MOVE)) : 1;
+        touring = false;
+        spotPick = Math.max(0, spotShown);
+      } else {
+        if (held != null) spotAt = now - easeTo(held) * MOVE * 1000;
+        held = null;
+        touring = !reduced;
+        tourAt = now - startOf(Math.max(0, spotShown)) * 1000;
+      }
+      kick();
+    },
     live(on) { live = !!on; if (live) kick(); else if (raf) { cancelAnimationFrame(raf); raf = 0; } },
     // renders for the owner + a card held at a moment + or two cards' poses mixed k of the way
     hold(spec) {
       const now = performance.now();
       if (spec.way) { mt.way = spec.way; mt.step = spec.step || 0; mt.time = spec.t == null ? WAYS[mt.way].steps[mt.step].still : spec.t; mt.playing = false; mt.held = spec.t == null; }
       if (spec.spot != null) {
-        touring = false; spotPick = spec.spot; spotShown = spec.spot; spotWas = spec.from_spot == null ? -1 : spec.from_spot;
+        touring = false; held = null; spotPick = spec.spot; spotShown = spec.spot; spotWas = spec.from_spot == null ? -1 : spec.from_spot;
         // a held move from one spot to another + at seconds into it
         spotFrom = spec.from_spot == null ? null : shotCam(SPOTS[spec.from_spot]);
         spotAt = now - (spec.at || 0) * 1000;

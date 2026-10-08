@@ -383,9 +383,23 @@
     onStep(way, 0);
     if (S.api && changed) S.api.way(way);
   }
-  // the hardware rows + a tap takes the camera to that spot + the row the camera is at is pressed
+  // the hardware rows + a tap takes the camera to that spot and holds it there + the row the camera is at is pressed
   var spots = all('[data-spot]');
-  spots.forEach(function (b) { b.addEventListener('click', function () { if (S.api) S.api.spot(+b.getAttribute('data-spot')); }); });
+  spots.forEach(function (b) { b.addEventListener('click', function () { if (S.api) { showPaused(true); S.api.spot(+b.getAttribute('data-spot')); } }); });
+  // the hardware card's pause + it holds the camera tour where it is + play goes on + a row still moves the camera +
+  // leaving the card forgets it so the tour plays when you come back + nothing moves with less motion so it hides
+  var pause = $('pause'), paused = false;
+  function showPaused(on) {
+    paused = on;
+    pause.classList.toggle('paused', on);
+    pause.setAttribute('aria-label', on ? 'Play' : 'Pause');
+  }
+  pause.hidden = REDUCED;
+  pause.addEventListener('click', function () {
+    if (!S.api) return;
+    showPaused(!paused);
+    S.api.tour(!paused);
+  });
   function onSpot(k) { spots.forEach(function (b) { b.setAttribute('aria-pressed', +b.getAttribute('data-spot') === k ? 'true' : 'false'); }); }
 
   function webgl() {
@@ -444,6 +458,7 @@
     setTimeout(function () { if (S.state === 'loading') flat(); }, 30000);
   }
   function reached(card) {
+    showPaused(false);
     if (S.api) S.api.card(card.id);
   }
   M.card.classList.add('live');
@@ -471,6 +486,7 @@
       });
     };
     api.help = function (on) { if (on) openHelp(); else closeHelp(); };
+    api.pause = function () { pause.click(); };
     api.hold = function (spec) {
       S.api.hold(spec);
       if (spec.way) { onStep(spec.way, spec.step || 0); onTime(spec.way, spec.step || 0, spec.t == null ? 1 : 0.5); }
