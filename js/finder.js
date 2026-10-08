@@ -11,8 +11,10 @@
   var DOT_MS = 400;    // the board's loading dots + none then . .. ... each for 400 ms as on its updating card
   var PORTAL_GO_MS = 1500;          // how long the portal says it is opening a board before it goes
   var MINE = 'mooboard.portal';     // where the portal keeps the board it opened last
+  var MODELS = ['MB1W', 'MB1D', 'MB1P'];   // the models a board's sticker link names in ?m= + anything else there is the wall board
   var view = document.getElementById('view');
   var start = route(location.pathname);
+  var model = start.kind === 'code' ? modelOf(location.search) : null;   // a board link with ?m= is the sticker on a board
   var onPortal = start.kind === 'portal';
   var keeps = onPortal || start.keep === true;   // the portal and a board link under it remember the board they open
   // each eye's middle three by three dots by their place round its centre + a pupil lights some and the rest stay
@@ -71,6 +73,15 @@
     var w = /^\/(hi|hello|wall|my|moo|go|open)\/?$/i.exec(path);
     if (w) return w[1].toLowerCase() === 'hi' ? { kind: 'nearby' } : { kind: 'toHi' };
     return { kind: 'missing' };
+  }
+
+  // the model in a sticker link's ?m= + exactly MB1W MB1D or MB1P in any case + anything else is the wall board + null
+  // when the link has no m= so it works as it always has
+  function modelOf(search) {
+    var m = /(?:^\?|&)m=([^&#]*)/.exec(search || '');
+    if (!m) return null;
+    var v = m[1].toUpperCase();
+    return MODELS.indexOf(v) >= 0 ? v : 'MB1W';
   }
 
   // an eye's middle dots by their place round its centre
@@ -677,7 +688,8 @@
     if (root && root.classList) root.classList.toggle('tip-below', on);
   }
 
-  // A printed link: straight to that board when this phone is on its network.
+  // a printed link opens its board when this phone is on its network + the sticker on a board names its model in ?m=
+  // and a sticker board this network does not have is a new one so the start page shows how to put it up
   function direct(code) {
     retry = function () { direct(code); };
     showLoading('Finding your mooboard');
@@ -685,6 +697,7 @@
       if (data && data.found === true && privateIPv4(data.localIp)) {
         return go(data.localIp, typeof data.name === 'string' && data.name !== '' ? data.name : '', data.frameColor, code);
       }
+      if (model) return location.replace('/start/?m=' + model + '&u=' + code);
       showNone();
     }, showDown);
   }

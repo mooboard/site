@@ -179,6 +179,83 @@ test('a printed link says the api could not be reached, not that the Wi-Fi is wr
   }
 });
 
+// the start page a new board's sticker link goes to + its model and its code
+const START = (m) => `/start/?m=${m}&u=5KAS`;
+
+test('a sticker link names the model in ?m= and goes to the start page when the api has no board for it on this network', async () => {
+  const answers = {
+    'not found': () => json({ found: false }),
+    'a public address': () => json({ found: true, localIp: '8.8.8.8', name: 'x' }),
+    'a bad address': () => json({ found: true, localIp: 'http://evil.example/', name: 'x' }),
+    'not an object': () => json(null),
+  };
+  for (const path of ['/hi/5KAS', '/hi/5kas/', '/HI/5KAS', '/5KAS', '/wall/5KAS', '/portal/5KAS']) {
+    for (const [why, answer] of Object.entries(answers)) {
+      const page = load(path, answer, { search: '?m=MB1W' });
+      assert.equal(page.h1(), 'Finding your mooboard', path);
+      await page.settle();
+      assert.deepEqual(page.fetches.map((f) => f.url), [`${API}/lookup/5KAS`], `${path} ${why}`);
+      assert.deepEqual(page.replaced, [START('MB1W')], `${path} ${why}`);
+      assert.equal(page.store.size, 0, 'nothing kept');
+    }
+  }
+});
+
+test('the model in ?m= is exactly MB1W, MB1D or MB1P in any case, and anything else there is the wall board', async () => {
+  const cases = [
+    ['?m=MB1W', 'MB1W'], ['?m=MB1D', 'MB1D'], ['?m=MB1P', 'MB1P'], ['?m=mb1d', 'MB1D'], ['?m=Mb1p', 'MB1P'], ['?m=mB1w', 'MB1W'],
+    ['?m=MB1X', 'MB1W'], ['?m=MB1', 'MB1W'], ['?m=MB1DD', 'MB1W'], ['?m=', 'MB1W'], ['?m=%4DB1D', 'MB1W'], ['?m=MB1D%20', 'MB1W'],
+    ['?m=<b>MB1D', 'MB1W'], ['?m=MB1D&x=1', 'MB1D'], ['?x=1&m=MB1P', 'MB1P'], ['?m=MB1D&m=MB1P', 'MB1D'],
+  ];
+  for (const [search, want] of cases) {
+    const page = load('/hi/5KAS', () => json({ found: false }), { search });
+    await page.settle();
+    assert.deepEqual(page.replaced, [START(want)], search);
+  }
+});
+
+test('a sticker link opens its board as any printed link does when the api finds it on this network', async () => {
+  for (const search of ['?m=MB1W', '?m=MB1D', '?m=MB1P', '?m=nope']) {
+    const page = load('/hi/5KAS', () => json({ found: true, localIp: '192.168.0.110', name: 'Kitchen' }), { search });
+    await page.settle();
+    assert.deepEqual(page.replaced, ['http://192.168.0.110/'], search);
+    assert.equal(page.h1(), 'Opening Kitchen…', search);
+  }
+});
+
+test('a sticker link says the api could not be reached when it fails, as any printed link does', async () => {
+  for (const answer of [() => json({ error: 'store' }, 503), () => Promise.reject(new TypeError('Failed to fetch'))]) {
+    const page = load('/hi/5KAS', answer, { search: '?m=MB1D' });
+    await page.settle();
+    assertDown(page);
+  }
+});
+
+test('a link without m= works as it always has, whatever else its query says', async () => {
+  for (const search of ['', '?x=1', '?mm=MB1W', '?am=MB1D', '?M=MB1W', '?model=MB1W', '?m']) {
+    const page = load('/hi/5KAS', () => json({ found: false }), { search });
+    await page.settle();
+    assertSameWifi(page);
+  }
+});
+
+test('?m= changes only a board code link: /hi, the other words and the not-found page stay as they were', async () => {
+  const near = load('/hi', nearbyOf([]), { search: '?m=MB1W' });
+  await near.settle();
+  assert.deepEqual(near.fetches.map((f) => f.url), [`${API}/nearby`]);
+  assertSameWifi(near);
+  const word = load('/wall', undefined, { search: '?m=MB1W' });
+  await word.settle();
+  assert.deepEqual(word.replaced, ['/hi/']);
+  for (const path of ['/hi/OOPS', '/start', '/hi/5KAS/x']) {
+    const page = load(path, undefined, { search: '?m=MB1W' });
+    await page.settle();
+    assert.equal(page.h1(), 'Page not found', path);
+    assert.deepEqual(page.replaced, [], path);
+    assert.deepEqual(page.fetches, [], path);
+  }
+});
+
 test('Try again looks again, from the same-Wi-Fi page and from the api-down page', async () => {
   let lookups = 0;
   const page = load('/5KAS', () => (lookups++ ? json({ found: true, localIp: '192.168.0.110', name: 'Kitchen' }) : json({ found: false })));

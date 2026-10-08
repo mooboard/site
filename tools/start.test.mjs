@@ -87,6 +87,19 @@ test('the desk stand is a way to put it up only for the desk board, and it is co
   assert.match(html, /<span class="tag">Coming soon<\/span>/);
 });
 
+test('a sticker link\'s trip to the start page lands with its model and code, and its links go back to that board without ?m=', async () => {
+  const page = load('/hi/5KAS', () => json({ found: false }), { search: '?m=mb1d' });
+  await page.settle();
+  const [to] = page.replaced;
+  assert.equal(to, '/start/?m=MB1D&u=5KAS');
+  const { modelOf, codeOf, hiOf } = helpers();
+  const search = to.slice(to.indexOf('?'));
+  assert.equal(modelOf(search), 'MB1D');
+  assert.equal(codeOf(search), '5KAS');
+  assert.equal(hiOf(codeOf(search)), '/hi/5KAS', 'no ?m= so a board still away shows the same-Wi-Fi page and never comes round again');
+  assert.equal([...html.matchAll(/href="\/hi\/" data-hi/g)].length, 2, 'both mooboard.co/hi links take the code');
+});
+
 test('the five cards, in order, with one h1', () => {
   const ids = [...html.matchAll(/<section class="card[^"]*" id="(\w+)" aria-roledescription="slide" aria-label="(\d) of 5"/g)].map((m) => [m[1], m[2]]);
   assert.deepEqual(ids, [['hello', '1'], ['box', '2'], ['hardware', '3'], ['mounting', '4'], ['setup', '5']]);
