@@ -32,6 +32,10 @@
   function hiOf(code) {
     return code ? '/hi/' + code : '/hi/';
   }
+  // mooboard.co/portal for this board once it is set up + its own link opens it + else the boards near you
+  function portalOf(code) {
+    return code ? '/portal/' + code : '/portal/';
+  }
   // the rail and hooks as the buyer picked them + black unless the link says white
   function railOf(search) {
     return param(search, 'rail') === 'white' ? 'white' : 'black';
@@ -40,7 +44,7 @@
   function waysOf(model) {
     return model === 'MB1D' ? ['strips', 'screws', 'stand'] : ['strips', 'screws'];
   }
-  var api = window.mooStart = { modelOf: modelOf, codeOf: codeOf, frameOf: frameOf, railOf: railOf, hiOf: hiOf, waysOf: waysOf };
+  var api = window.mooStart = { modelOf: modelOf, codeOf: codeOf, frameOf: frameOf, railOf: railOf, hiOf: hiOf, portalOf: portalOf, waysOf: waysOf };
 
   var root = document.documentElement;
   var track = document.getElementById('track');
@@ -56,6 +60,7 @@
 
   // ---- what the link says about the board ----
   all('[data-hi]').forEach(function (a) { a.setAttribute('href', hi); });
+  all('[data-portal]').forEach(function (a) { a.setAttribute('href', portalOf(code)); });
   all('.bezel').forEach(function (b) { b.setAttribute('data-frame', finish); });
   root.setAttribute('data-frame', finish);
   if (frame) $('watch').setAttribute('href', '/hi/buttons/?frame=' + frame);
@@ -104,11 +109,72 @@
       };
     };
   }
-  (function hello() {
-    var MB = window.MooBoard, el = $('hello-board');
-    if (!MB || !MB.Board || !MB.text || !MB.scenes || !el) return;
+  // ---- the join card as the board shows it while it waits for a phone + a code to scan on the left with its light
+  // border + Scan to set up in teal + its wi-fi name + PW in dim with its digits as dots here + the code is drawn to look
+  // like the board's and holds nothing a phone could join ----
+  function codeModules(n) {
+    var m = [], seed = 20261008;
+    var rnd = function () { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    var finder = function (x, y) {
+      for (var j = -1; j <= 7; j++) for (var i = -1; i <= 7; i++) {
+        var X = x + i, Y = y + j;
+        if (X < 0 || Y < 0 || X >= n || Y >= n) continue;
+        var ring = Math.max(Math.abs(i - 3), Math.abs(j - 3));
+        m[Y * n + X] = i >= 0 && j >= 0 && i <= 6 && j <= 6 && ring !== 2 ? 1 : 2;
+      }
+    };
+    finder(0, 0); finder(n - 7, 0); finder(0, n - 7);
+    for (var k = 8; k < n - 8; k++) { m[6 * n + k] = m[6 * n + k] || (k % 2 ? 2 : 1); m[k * n + 6] = m[k * n + 6] || (k % 2 ? 2 : 1); }
+    for (var j = -2; j <= 2; j++) for (var i = -2; i <= 2; i++) {
+      var ring = Math.max(Math.abs(i), Math.abs(j));
+      m[(n - 7 + j) * n + (n - 7 + i)] = ring === 1 ? 2 : 1;
+    }
+    for (var q = 0; q < n * n; q++) if (!m[q]) m[q] = rnd() < 0.5 ? 1 : 2;
+    return m;   // 1 dark + 2 light
+  }
+  function drawLine(f, L, pen, base, color, alpha) {
+    L.spans.forEach(function (s) {
+      var g = s.g;
+      if (!g.w) return;
+      for (var yy = 0; yy < g.h; yy++) for (var xx = 0; xx < g.w; xx++) {
+        var a = g.a[yy * g.w + xx], X = pen + s.x + g.x + xx, Y = base + g.y + yy;
+        if (a && X >= 1 && Y >= 1 && X <= 126 && Y <= 30) f.blend(X, Y, color, a / 255 * (alpha == null ? 1 : alpha));
+      }
+    });
+  }
+  function joinScene(MB) {
+    var N = 25, Q = codeModules(N), LIGHT = [205, 210, 212], TEAL = [119, 237, 215], WHITE = [255, 255, 255];
+    var LEFT = 32, WIDE = 92;
+    var fit = function (caps, str) { for (var i = 0; i < caps.length; i++) { var L = MB.text.line('label', caps[i], str); if (!L.empty && L.inkW <= WIDE) return L; } return MB.text.line('label', caps[caps.length - 1], str); };
+    return function () {
+      return {
+        label: 'Join', dur: 12,
+        draw: function (f) {
+          f.fill([0, 0, 0]);
+          for (var y = -1; y <= N; y++) for (var x = -1; x <= N; x++) {
+            var lit = x < 0 || y < 0 || x >= N || y >= N || Q[y * N + x] === 2;
+            if (lit) f.set(3 + x, 4 + y, LIGHT);
+          }
+          var a = fit([7, 6.5, 6], 'Scan to set up'), b = fit([7, 6.5, 6], 'mooboard-XXXX'), c = fit([6, 5.5, 5], 'PW ••••••••');
+          var gap = 3, h = a.inkH + b.inkH + c.inkH + 2 * gap, top = Math.floor((32 - h) / 2);
+          drawLine(f, a, LEFT - a.l, top - a.t, TEAL);
+          drawLine(f, b, LEFT - b.l, top + a.inkH + gap - b.t, WHITE);
+          drawLine(f, c, LEFT - c.l, top + a.inkH + b.inkH + 2 * gap - c.t, WHITE, 0.7);
+        }
+      };
+    };
+  }
+  (function boards() {
+    var MB = window.MooBoard;
+    if (!MB || !MB.Board || !MB.text || !MB.scenes) return;
     MB.scenes.hello = helloScene(MB);
-    try { new MB.Board(el, { scenes: ['hello'], auto: false, fps: 30 }); } catch (e) { /* the bezel keeps its dark panel */ }
+    MB.scenes.join = joinScene(MB);
+    MB.scenes.off = function () { return { label: 'Off', dur: 10, draw: function (f) { f.fill([0, 0, 0]); } }; };
+    [['hello-board', 'hello', 30], ['join-board', 'join', 4]].forEach(function (b) {
+      var el = $(b[0]);
+      if (!el) return;
+      try { new MB.Board(el, { scenes: [b[1]], auto: false, fps: b[2] }); } catch (e) { /* the bezel keeps its dark panel */ }
+    });
   })();
 
   // ---- the cards ----

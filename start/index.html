@@ -37,7 +37,7 @@
 <main class="deck" id="deck" aria-roledescription="carousel" aria-label="Get started">
 <div class="track" id="track">
 
-<section class="card hello" id="hello" aria-roledescription="slide" aria-label="1 of 5">
+<section class="card hello" id="hello" aria-roledescription="slide" aria-label="1 of 7">
   <div class="vis">
     <div class="tilt"><div class="bezel" data-frame="black"><div class="led" id="hello-board" role="img" aria-label="mooboard saying hello"></div></div></div>
     <div class="shadow" aria-hidden="true"></div>
@@ -48,7 +48,7 @@
   </div>
 </section>
 
-<section class="card narrow" id="box" aria-roledescription="slide" aria-label="2 of 5">
+<section class="card narrow" id="box" aria-roledescription="slide" aria-label="2 of 7">
   <div class="txt">
     <h2>In the box</h2>
     <ul class="rows">
@@ -62,7 +62,7 @@
   </div>
 </section>
 
-<section class="card split" id="hardware" aria-roledescription="slide" aria-label="3 of 5">
+<section class="card split" id="hardware" aria-roledescription="slide" aria-label="3 of 7">
   <div class="vis">
     <!-- the board from the front in glb x + 259.3 and y down from its top edge + the caps and the light from round 4's cad -->
     <div class="diagram">
@@ -96,7 +96,7 @@
   </div>
 </section>
 
-<section class="card split mount" id="mounting" aria-roledescription="slide" aria-label="4 of 5">
+<section class="card split mount" id="mounting" aria-roledescription="slide" aria-label="4 of 7">
   <div class="vis">
     <div class="stage" id="stage">
       <canvas id="mount-canvas" aria-hidden="true"></canvas>
@@ -140,16 +140,95 @@
   </div>
 </section>
 
-<section class="card narrow" id="setup" aria-roledescription="slide" aria-label="5 of 5">
+<section class="card narrow wifi" id="wifi" aria-roledescription="slide" aria-label="5 of 7">
+  <div class="vis">
+    <div class="tilt"><div class="bezel" data-frame="black"><div class="led" id="join-board" role="img" aria-label="mooboard showing a code to scan, Scan to set up, its Wi-Fi name and PW with its password"></div></div></div>
+  </div>
+  <div class="txt">
+    <h2>Join its <span class="nw">Wi-Fi</span></h2>
+    <p class="lede">Plug it in. Its screen shows how to join its own <span class="nw">Wi-Fi</span>.</p>
+    <ul class="facts">
+      <li>A code to scan and <b>Scan to set up</b>.</li>
+      <li>Its <span class="nw">Wi-Fi</span> name, <b class="nw">mooboard-XXXX</b>.</li>
+      <li><b>PW</b> and its password, 8 digits.</li>
+      <li>The status light breathes blue while it waits.</li>
+    </ul>
+    <p class="lede">Scan the code with your phone’s camera, or join <span class="nw">mooboard-XXXX</span> with the password shown.</p>
+    <h3>Scan the code</h3>
+    <ul class="facts">
+      <li><b>iPhone:</b> open the Camera and point it at the code. Tap the <span class="nw">Wi-Fi</span> banner, then Join.</li>
+      <li><b>Android:</b> open the Camera or Google Lens and point it at the code. Tap to join the network.</li>
+    </ul>
+    <h3>Or join it by hand</h3>
+    <ul class="facts">
+      <li><b>iPhone:</b> open Settings, then <span class="nw">Wi-Fi</span>. Pick <span class="nw">mooboard-XXXX</span> and type the 8 digits after PW.</li>
+      <li><b>Android:</b> open Settings, then your <span class="nw">Wi-Fi</span> list. Pick <span class="nw">mooboard-XXXX</span> and type the 8 digits after PW.</li>
+    </ul>
+    <p class="hint"><b>Already set up?</b> Open <a href="/portal/" data-portal>mooboard.co/portal</a> on the same <span class="nw">Wi-Fi</span> as your mooboard.</p>
+  </div>
+</section>
+
+<section class="card narrow" id="setup" aria-roledescription="slide" aria-label="6 of 7">
   <div class="txt">
     <h2>Set up</h2>
-    <ol class="steps">
-      <li>Plug it in. Its screen shows how to join its own <span class="nw">Wi-Fi</span>.</li>
-      <li>Scan the code with your phone’s camera, or join <span class="nw">mooboard-XXXX</span> with the password shown.</li>
-      <li>The setup page opens. Pick your home <span class="nw">Wi-Fi</span>.</li>
+    <p class="lede">The setup page opens. Pick your home <span class="nw">Wi-Fi</span>.</p>
+    <ul class="facts">
+      <li>If it doesn’t open, go to <b class="nw">http://4.3.2.1</b> in your browser.</li>
+      <li>Type its password and tap <b>Join</b>. It can take up to a minute.</li>
+    </ul>
+    <h3>On the board</h3>
+    <ul class="rows boardsays">
+      <li><span class="panel"><b>Setting up <span class="nw">Wi-Fi</span></b></span><span class="what">Your phone has the setup page open.</span></li>
+      <li><span class="panel"><b>Joining</b><i>your network</i></span><span class="what">It is joining your home <span class="nw">Wi-Fi</span>.</span></li>
+      <li><span class="panel"><b>Connected</b><i>mooboard.co/hi</i></span><span class="what">It joined your <span class="nw">Wi-Fi</span>.</span></li>
+      <li><span class="panel"><b class="err">Wrong password</b><i>try again.</i></span><span class="what">For 10 seconds. Then it shows its code again.</span></li>
+    </ul>
+    <h3>If it can’t join</h3>
+    <p>The page says why, and the board shows its code again. The page can say:</p>
+    <ul class="facts quotes">
+      <li>That password did not work. Check it and try again.</li>
+      <li>mooboard could not find your network. It needs a 2.4 GHz network, close enough to hear.</li>
+      <li>This network is incompatible. Please join a WPA2 or WPA3 Personal network on 2.4 GHz.</li>
+      <li>mooboard could not join your network. Check the router is on, then try again.</li>
+    </ul>
+    <h3>After it joins</h3>
+    <ul class="facts">
+      <li>The board restarts onto your <span class="nw">Wi-Fi</span>, and its own <span class="nw">Wi-Fi</span> goes away.</li>
+      <li>Join your phone back to your home <span class="nw">Wi-Fi</span>.</li>
       <li>Come back to <a href="/hi/" data-hi>mooboard.co/hi</a>.</li>
-    </ol>
-    <p class="hint"><b>Already set up?</b> Open <a href="/hi/" data-hi>mooboard.co/hi</a> on the same <span class="nw">Wi-Fi</span> as your mooboard.</p>
+      <li>Setup carries on there. <b>mooboard.local</b> also works.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="card narrow" id="help" aria-roledescription="slide" aria-label="7 of 7">
+  <div class="txt">
+    <h2><span class="nw">Wi-Fi</span> help</h2>
+    <h3>Tips</h3>
+    <ul class="facts">
+      <li>mooboard needs a 2.4 GHz network. Most routers broadcast one under the same name as the rest. It may also be its own, like Home_2.4.</li>
+      <li>It joins WPA2 and WPA3 Personal networks, and open ones. Not networks that ask for a username.</li>
+      <li>Do not pick a guest network. <span class="nw">Wi-Fi</span> with a sign-in page, like at hotels, schools and work, won’t work.</li>
+      <li>A VPN or iCloud Private Relay can hide that you are home. Turn it off for your home <span class="nw">Wi-Fi</span>, so mooboard.co/hi can find the board.</li>
+      <li>Can’t see your network? Move the board closer to your router and scan again.</li>
+      <li>A hidden network? Tap <b>Other network</b> and type its name.</li>
+    </ul>
+    <h3>Change <span class="nw">Wi-Fi</span> later</h3>
+    <ul class="facts">
+      <li>In the web app, open <b>System</b>, then <b>Board</b>. On <b><span class="nw">Wi-Fi</span> Status</b>, tap <b>Change <span class="nw">Wi-Fi</span></b>.</li>
+      <li>Pick the network, type its password and tap <b>Save and restart</b>.</li>
+      <li>Then join your phone to your home <span class="nw">Wi-Fi</span> and open <a href="/portal/" data-portal>mooboard.co/portal</a>.</li>
+      <li>If the new network fails, the board shows its code again after 2 minutes.</li>
+    </ul>
+    <h3>Factory reset</h3>
+    <ul class="facts">
+      <li>Hold <b>BOOT</b> for 10 seconds.</li>
+      <li>A fill sweeps across the screen from amber to red with <b>Factory resetting…</b></li>
+      <li>At 10 seconds the words flash. Then the board restarts and shows its code to join.</li>
+      <li>It erases <span class="nw">Wi-Fi</span>, settings and sign-ins. Its own <span class="nw">Wi-Fi</span> gets a new password.</li>
+      <li>BOOT does nothing while the board shows its code to join.</li>
+      <li>Or in the web app, open <b>System</b>, then <b>Advanced</b>. Under <b>Erase everything</b>, type RESET and tap <b>Erase</b>.</li>
+    </ul>
   </div>
 </section>
 

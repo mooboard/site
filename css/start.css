@@ -222,6 +222,27 @@ html:not(.js) .mount .vis { display: none; }
 .hint { margin: 4px 0 0; padding: 14px 16px; border-radius: 16px; background: var(--soft); color: var(--muted); font-size: 15px; font-weight: 700; }
 .hint b { color: var(--text); }
 
+/* ---------- 5 to 7 wi-fi + a lead line + short lists + section headers under a divider + the board's own words on
+   a little dark panel + the setup page's words as quotes ---------- */
+.lede { margin: 0; font-weight: 700; text-wrap: pretty; }
+.txt h3 { margin: 4px 0 -4px; padding-top: 14px; border-top: 1px solid var(--line); font: 800 13px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.facts { margin: 0; padding-left: 1.2em; }
+.facts li { text-wrap: pretty; }
+.facts li + li { margin-top: 6px; }
+.facts li::marker { color: var(--muted); }
+.facts.quotes { padding: 0; list-style: none; }
+.facts.quotes li { padding: 8px 12px; border-left: 3px solid var(--line); border-radius: 0 10px 10px 0; background: var(--soft); font-size: 15px; }
+.boardsays > li { gap: 12px; }
+.panel {
+  flex: none; display: grid; place-content: center; width: 128px; min-height: 46px; padding: 6px 8px; border-radius: 8px;
+  background: #07080A; box-shadow: inset 0 0 0 2px #262B30; text-align: center; color: #fff; font: 800 13px/1.2 var(--body);
+}
+.panel b { font-weight: 800; }
+.panel i { display: block; font-style: normal; font-weight: 700; font-size: 12px; color: #A3ACB0; }
+.panel .err { color: #FF6464; }
+.wifi .vis { width: 100%; max-width: 520px; margin: 0 auto; perspective: 1400px; }
+.wifi .tilt { transform: rotateX(6deg) rotateY(-8deg); }
+
 /* ---------- desktop + the drawing on the left and the words on the right ---------- */
 @media (min-width: 880px) {
   .card { flex-basis: calc(100% - 96px); padding: 40px 48px; }

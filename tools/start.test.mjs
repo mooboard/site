@@ -24,7 +24,7 @@ function helpers() {
 // the words a person reads on the page + its text and its labels + no markup, scripts, styles, drawings or comments
 function words(page) {
   const text = page.replace(/<!--[\s\S]*?-->/g, ' ').replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<style[\s\S]*?<\/style>/g, ' ')
-    .replace(/<svg[\s\S]*?<\/svg>/g, ' ').replace(/<[^>]+>/g, ' ');
+    .replace(/<svg[\s\S]*?<\/svg>/g, ' ').replace(/<\/?(?:span|b|i|a|small)\b[^>]*>/g, '').replace(/<[^>]+>/g, ' ');
   const labels = [...page.matchAll(/(?:aria-label|alt|content)="([^"]*)"/g)].map((m) => m[1]);
   return [text, ...labels].join(' ').replace(/\s+/g, ' ');
 }
@@ -32,8 +32,10 @@ const items = (block) => [...block.matchAll(/<li>([\s\S]*?)<\/li>/g)].map((m) =>
 const between = (s, a, b) => s.slice(s.indexOf(a), s.indexOf(b, s.indexOf(a) + a.length));
 
 test('the start page loads the site\'s own files only, and nothing from anywhere else', () => {
+  for (const text of [startJs, mount, css]) assert.doesNotMatch(text, /https?:\/\//, 'no other site');
+  assert.deepEqual([...new Set(html.match(/https?:\/\/[^\s"'<>)]+/g))], ['http://4.3.2.1'], 'only the hotspot address, as words to type');
+  assert.doesNotMatch(html, /(?:href|src)="https?:/, 'and never as a link or a file');
   for (const text of [html, startJs, mount, css]) {
-    assert.doesNotMatch(text, /https?:\/\//, 'no other site');
     assert.doesNotMatch(text, /@import/);
     assert.doesNotMatch(text, /\/\/(?:fonts|cdn|unpkg|ajax)\./);
   }
@@ -114,7 +116,11 @@ test('a sticker link\'s trip to the start page lands with its model and code, an
   assert.equal(modelOf(search), 'MB1D');
   assert.equal(codeOf(search), '5KAS');
   assert.equal(hiOf(codeOf(search)), '/hi/5KAS', 'no ?m= so a board still away shows the same-Wi-Fi page and never comes round again');
-  assert.equal([...html.matchAll(/href="\/hi\/" data-hi/g)].length, 2, 'both mooboard.co/hi links take the code');
+  assert.equal([...html.matchAll(/href="\/hi\/" data-hi/g)].length, 1, 'the mooboard.co/hi link takes the code');
+  assert.equal([...html.matchAll(/href="\/portal\/" data-portal/g)].length, 2, 'and both mooboard.co/portal links');
+  const { portalOf } = helpers();
+  assert.equal(portalOf('5KAS'), '/portal/5KAS');
+  assert.equal(portalOf(null), '/portal/');
 });
 
 test('the dots sit over a dock of back and next, back hides on the first card and next says Finish on the last, which opens this board', () => {
@@ -126,11 +132,12 @@ test('the dots sit over a dock of back and next, back hides on the first card an
   assert.equal((html.match(/id="back"|id="next"|class="dots"/g) || []).length, 3, 'one back, one next and one row of dots');
 });
 
-test('the five cards, in order, with one h1', () => {
-  const ids = [...html.matchAll(/<section class="card[^"]*" id="(\w+)" aria-roledescription="slide" aria-label="(\d) of 5"/g)].map((m) => [m[1], m[2]]);
-  assert.deepEqual(ids, [['hello', '1'], ['box', '2'], ['hardware', '3'], ['mounting', '4'], ['setup', '5']]);
+test('the seven cards, in order, with one h1', () => {
+  const ids = [...html.matchAll(/<section class="card[^"]*" id="(\w+)" aria-roledescription="slide" aria-label="(\d) of 7"/g)].map((m) => [m[1], m[2]]);
+  assert.deepEqual(ids, [['hello', '1'], ['box', '2'], ['hardware', '3'], ['mounting', '4'], ['wifi', '5'], ['setup', '6'], ['help', '7']]);
   assert.equal(html.match(/<h1>/g).length, 1);
-  assert.deepEqual([...html.matchAll(/<h[12]>([^<]+)</g)].map((m) => m[1]), ['Meet your mooboard', 'In the box', 'Hardware', 'Mounting', 'Set up']);
+  assert.deepEqual([...html.matchAll(/<h[12]>([\s\S]*?)<\/h[12]>/g)].map((m) => m[1].replace(/<[^>]+>/g, '')),
+    ['Meet your mooboard', 'In the box', 'Hardware', 'Mounting', 'Join its Wi-Fi', 'Set up', 'Wi-Fi help']);
 });
 
 test('in the box: the board, the rail with its hooks, the strips, the screws and anchors, the charger and the cable', () => {
@@ -148,12 +155,41 @@ test('hardware: where each thing is, and Watch opens the buttons tour', () => {
   assert.match(startJs, /'\/hi\/buttons\/\?frame=' \+ frame/, 'with the board\'s frame when the link names one');
 });
 
-test('set up uses the words /hi uses for a new board, and says where a board that is set up is', async () => {
+test('the setup cards keep the words /hi uses for a new board, in order, and say where a board that is set up is', async () => {
   const hi = load('/hi', nearbyOf([]));
   await hi.settle();
   const theirs = hi.setup().children[1].children.map((li) => li.textContent);
-  assert.deepEqual(items(between(html, '<ol class="steps">', '</ol>')), theirs);
-  assert.equal(items(`<li>${between(html, '<p class="hint">', '</p>').slice(16)}</li>`)[0], 'Already set up? Open mooboard.co/hi on the same Wi-Fi as your mooboard.');
+  const text = words(html);
+  let at = 0;
+  for (const line of theirs) {
+    const i = text.indexOf(line, at);
+    assert.ok(i >= at, line);
+    at = i + line.length;
+  }
+  assert.ok(text.includes('Already set up? Open mooboard.co/portal on the same Wi-Fi as your mooboard.'), 'the address the firmware gives once setup is done');
+});
+
+test('the Wi-Fi cards say what the firmware does, in its own words', () => {
+  const text = words(html);
+  for (const fact of [
+    'Scan to set up', 'mooboard-XXXX', 'its password, 8 digits', 'The status light breathes blue while it waits.',
+    'go to http://4.3.2.1 in your browser', 'It can take up to a minute.',
+    'For 10 seconds.',
+    'That password did not work. Check it and try again.',
+    'mooboard could not find your network. It needs a 2.4 GHz network, close enough to hear.',
+    'This network is incompatible. Please join a WPA2 or WPA3 Personal network on 2.4 GHz.',
+    'mooboard could not join your network. Check the router is on, then try again.',
+    'mooboard.local also works', 'mooboard needs a 2.4 GHz network.', 'Do not pick a guest network.',
+    'A VPN or iCloud Private Relay can hide that you are home.', 'Move the board closer to your router and scan again.',
+    'Other network', 'Change Wi-Fi', 'Save and restart', 'the board shows its code again after 2 minutes',
+    'Hold BOOT for 10 seconds.', 'from amber to red with Factory resetting…', 'BOOT does nothing while the board shows its code to join.',
+    'Erase everything', 'type RESET',
+  ]) assert.ok(text.includes(fact), fact);
+  assert.doesNotMatch(text, /5 GHz|192\.168\.4\.1|WiFi/, 'nothing the firmware does not say');
+  // the board's own cards as their lines read on its screen
+  const panels = [...html.matchAll(/<span class="panel">([\s\S]*?)<\/span><span class="what">/g)]
+    .map((m) => [...m[1].replace(/<span class="nw">|<\/span>/g, '').matchAll(/<(?:b|i)[^>]*>([^<]+)</g)].map((x) => x[1]));
+  assert.deepEqual(panels, [['Setting up Wi-Fi'], ['Joining', 'your network'], ['Connected', 'mooboard.co/hi'], ['Wrong password', 'try again.']]);
 });
 
 test('every mounting way has a caption for each of its steps in 3d, and stills for less motion', () => {
