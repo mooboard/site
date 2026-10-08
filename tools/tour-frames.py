@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""the panel frames for /hi/buttons/ + assets/tour/panel.png from the firmware's own 128 x 32 renders
+"""the panel frames for the buttons tour on /start + assets/tour/panel.png from the firmware's own 128 x 32 renders
 
   ~/.pixelwall-build/venv/bin/python tools/tour-frames.py <sim frames> <cards>
 

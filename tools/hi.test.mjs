@@ -105,16 +105,17 @@ test('routing: /hi asks for the boards near you, the other words go to /hi', asy
   }
 });
 
-test('routing: the buttons tour is never a board code, and another spelling of its address goes to its folder with its frame', async () => {
-  for (const [path, search, to] of [['/hi/buttons', '', '/hi/buttons/'], ['/hi/Buttons/', '', '/hi/buttons/'],
-    ['/HI/BUTTONS', '?frame=red', '/hi/buttons/?frame=red'], ['/hi/Buttons/index.html', '?frame=mint', '/hi/buttons/?frame=mint']]) {
+test('routing: the buttons tour is a sheet on the start page now, and every spelling of its old address goes there with its frame', async () => {
+  for (const [path, search, to] of [['/hi/buttons', '', '/start/#buttons'], ['/hi/buttons/', '?frame=midnight', '/start/?frame=midnight#buttons'],
+    ['/hi/Buttons/', '', '/start/#buttons'], ['/HI/BUTTONS', '?frame=red', '/start/?frame=red#buttons'],
+    ['/hi/buttons/index.html', '?frame=mint', '/start/?frame=mint#buttons'], ['/hi/Buttons/index.html', '?frame=mint', '/start/?frame=mint#buttons']]) {
     const page = load(path, undefined, { search });
     await page.settle();
     assert.deepEqual(page.replaced, [to], path);
     assert.deepEqual(page.fetches, [], path);
   }
-  // the folder itself only reaches this page when it is missing + not found rather than round and round
-  for (const path of ['/hi/buttons/', '/hi/buttons/index.html', '/hi/buttons/x', '/hi/buttonss', '/buttons']) {
+  // never a board code + other words are not found
+  for (const path of ['/hi/buttons/x', '/hi/buttonss', '/buttons']) {
     const page = load(path);
     await page.settle();
     assert.equal(page.h1(), 'Page not found', path);

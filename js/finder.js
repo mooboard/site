@@ -66,8 +66,9 @@
     // a board code under /portal from the card on the board + it opens that board as /hi does and the portal keeps it
     var p = /^\/portal\/([A-Za-z0-9]{4})\/?$/i.exec(path);
     if (p && validCode(p[1].toUpperCase())) return { kind: 'code', code: p[1].toUpperCase(), keep: true };
-    // the buttons tour lives in its own folder + another spelling of it goes there + never round again to itself
-    if (/^\/hi\/buttons\/?$/i.test(path)) return path === '/hi/buttons/' ? { kind: 'missing' } : { kind: 'buttons' };
+    // the buttons tour is a sheet on the start page now (owner 2026-10-08) + its old address from a board's setup goes
+    // there with its frame + the tour open
+    if (/^\/hi\/buttons\/?$/i.test(path)) return { kind: 'buttons' };
     var m = /^\/(?:(?:hi|hello|wall|my|moo|go|open)\/)?([A-Za-z0-9]{4})\/?$/i.exec(path);
     if (m && validCode(m[1].toUpperCase())) return { kind: 'code', code: m[1].toUpperCase() };
     var w = /^\/(hi|hello|wall|my|moo|go|open)\/?$/i.exec(path);
@@ -728,6 +729,6 @@
   else if (start.kind === 'code') direct(start.code);
   else if (start.kind === 'nearby') nearby();
   else if (start.kind === 'toHi') location.replace('/hi/');
-  else if (start.kind === 'buttons') location.replace('/hi/buttons/' + location.search);
+  else if (start.kind === 'buttons') location.replace('/start/' + location.search + '#buttons');
   else showMissing();
 })();

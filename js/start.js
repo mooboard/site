@@ -70,7 +70,6 @@
   all('[data-ssid]').forEach(function (s) { s.textContent = ssid; });
   all('.bezel').forEach(function (b) { b.setAttribute('data-frame', finish); });
   root.setAttribute('data-frame', finish);
-  if (frame) $('watch').setAttribute('href', '/hi/buttons/?frame=' + frame);
   var ways = waysOf(model);
   all('.chip').forEach(function (c) { c.hidden = ways.indexOf(c.getAttribute('data-way')) < 0; });
 
@@ -283,6 +282,7 @@
   window.addEventListener('hashchange', function () {
     var ids = cards.map(function (c) { return c.id; });
     if (location.hash === '#help') { go(ids.indexOf('wifi')); openHelp(); return; }
+    if (location.hash === '#buttons') { go(ids.indexOf('hardware')); openTour(); return; }
     var k = ids.indexOf(location.hash.slice(1));
     if (k >= 0) go(k);
   });
@@ -328,6 +328,56 @@
     var first = f[0], last = f[f.length - 1];
     if (e.shiftKey && (document.activeElement === first || !help.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && (document.activeElement === last || !help.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+  });
+
+  // ---- the buttons tour + a sheet like wi-fi help + watch on the hardware card opens it + the board in its own frame +
+  // its steps play one after another + the scene under it rests while it is open + its module loads the first time
+  // (owner 2026-10-08) ----
+  var tour = $('buttons'), watch = $('watch'), tourClose = $('buttons-close'), T = null, tourLoad = null;
+  function loadTour() {
+    if (tourLoad) return tourLoad;
+    tourLoad = new Promise(function (res) {
+      window.mooTour = function (create) { res(create(tour, { finish: finish, reduced: REDUCED })); };
+      var s = document.createElement('script');
+      s.type = 'module';
+      s.textContent = "import { create } from '/js/tour.mjs'; window.mooTour(create);";
+      document.head.appendChild(s);
+      setTimeout(function () { res(null); }, 20000);
+    }).then(function (t) {
+      T = t;
+      if (!t) tour.classList.add('still');   // no tour + all three steps' words one under the other
+      return t;
+    });
+    return tourLoad;
+  }
+  function openTour() {
+    if (tour.open) return;
+    if (modal) tour.showModal(); else tour.setAttribute('open', '');
+    var body = tour.querySelector('.sheet-body');
+    body.scrollTop = 0;
+    edge(body);
+    tourClose.focus();
+    if (S.api) S.api.live(false);
+    loadTour().then(function (t) { if (t && tour.open) t.open(); });
+  }
+  function closeTour() {
+    if (!tour.open) return;
+    if (T) T.close();
+    if (modal) tour.close(); else tour.removeAttribute('open');
+    if (S.api) S.api.live(true);
+    try { watch.focus({ preventScroll: true }); } catch (e) { watch.focus(); }
+  }
+  watch.addEventListener('click', function (e) { e.preventDefault(); openTour(); });
+  tourClose.addEventListener('click', closeTour);
+  tour.addEventListener('click', function (e) { if (e.target === tour) closeTour(); });   // a tap on the dim outside it
+  tour.addEventListener('cancel', function (e) { e.preventDefault(); closeTour(); });   // escape
+  tour.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); closeTour(); return; }
+    if (e.key !== 'Tab') return;
+    var f = all('a[href], button:not([disabled])', tour);
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !tour.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || !tour.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
   });
 
   // ---- the one scene in the window + it loads at the start + each card moves it to that card's pose + the mounting
@@ -448,6 +498,7 @@
           if (now !== first) a.card(now);
           else if (now === 'mounting') a.step(0);
           if (M.way !== 'screws' && M.way !== 'stand') a.way(M.way);
+          if (tour.open) a.live(false);   // the buttons tour opened first + the scene rests under it
         }, flat);
     };
     // a module of its own so this page needs no import syntax + the import map gives it three.js
@@ -468,14 +519,16 @@
   onStep('screws', 0);
   all('#seqs > div').forEach(function (d) { d.hidden = d.getAttribute('data-way') !== M.way; });
 
-  // ---- the first card + the address's #card + #help is the wi-fi card with its help open + else the hello + quietly ----
+  // ---- the first card + the address's #card + #help is the wi-fi card with its help open + #buttons is the hardware
+  // card with the buttons tour open + else the hello + quietly ----
   var ids = cards.map(function (c) { return c.id; }), asked = location.hash;
-  var first = Math.max(0, ids.indexOf(asked === '#help' ? 'wifi' : asked.slice(1)));
+  var first = Math.max(0, ids.indexOf(asked === '#help' ? 'wifi' : asked === '#buttons' ? 'hardware' : asked.slice(1)));
   mark(first);
   track.scrollLeft = leftOf(first);
   arrive(false);
   startScene();
   if (asked === '#help') openHelp();
+  if (asked === '#buttons') openTour();
 
   // renders for the owner + ?shots holds the page at a card and the scene at a pose or a moment
   if (/[?&]shots\b/.test(search)) {
@@ -487,6 +540,7 @@
       });
     };
     api.help = function (on) { if (on) openHelp(); else closeHelp(); };
+    api.buttons = function (on) { if (on) openTour(); else closeTour(); return loadTour(); };
     api.pause = function () { pause.click(); };
     api.hold = function (spec) {
       S.api.hold(spec);

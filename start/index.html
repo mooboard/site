@@ -125,7 +125,7 @@
     </div>
   </div>
   <div class="txt">
-    <div class="head"><h2>Hardware</h2><a class="pill" id="watch" href="/hi/buttons/" target="_blank" rel="noopener" aria-label="Watch the buttons tour"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>Watch</a></div>
+    <div class="head"><h2>Hardware</h2><a class="pill" id="watch" href="#buttons" role="button" aria-haspopup="dialog" aria-controls="buttons" aria-label="Watch the buttons tour"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9.5-5.5z"/></svg>Watch</a></div>
     <ol class="rows">
       <li><button type="button" class="spot" data-spot="1" aria-pressed="false"><i class="pin" aria-hidden="true">1</i><span class="what"><span class="keys" role="img" aria-label="BOOT and RESET"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#k-boot"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#k-reset"/></svg></span><small>Top edge</small></span></button></li>
       <li><button type="button" class="spot" data-spot="2" aria-pressed="false"><i class="pin" aria-hidden="true">2</i><span class="what"><b>Status light</b><small>Bottom, near the right end</small></span></button></li>
@@ -229,6 +229,25 @@
       <li>Then the board restarts and shows its code to join.</li>
       <li>Or in the web app, open <b>System</b>, then <b>Advanced</b>. Under <b>Erase everything</b>, type RESET and tap <b>Erase</b>.</li>
     </ul>
+  </div>
+</dialog>
+
+<!-- the buttons tour + a sheet like wi-fi help + the Hardware card's Watch opens it + the board in 3d in its own frame +
+     its steps play one after another and start over (owner 2026-10-08, it was the page mooboard.co/hi/buttons) -->
+<dialog class="sheet tour" id="buttons" aria-labelledby="buttons-title">
+  <div class="sheet-head">
+    <h2 id="buttons-title">Buttons</h2>
+    <button type="button" class="close" id="buttons-close">Close</button>
+  </div>
+  <div class="sheet-body tour-body">
+    <div class="tour-stage" aria-hidden="true"><canvas></canvas></div>
+    <div class="tour-steps">
+      <section class="tour-step on"><h3>Tap <svg class="key" role="img" aria-label="BOOT"><use href="#k-boot"/></svg></h3><p>Shows the guide.</p></section>
+      <section class="tour-step"><h3>Hold <svg class="key" role="img" aria-label="BOOT"><use href="#k-boot"/></svg> for 1 to 5 seconds</h3><p>Shows mooboard.co/portal.</p></section>
+      <section class="tour-step"><h3>Press <svg class="key" role="img" aria-label="RESET"><use href="#k-reset"/></svg></h3><p>Restarts the board.</p></section>
+    </div>
+    <ol class="dots tour-dots"><li><button type="button" aria-label="1 of 3" aria-current="step"></button></li><li><button type="button" aria-label="2 of 3"></button></li><li><button type="button" aria-label="3 of 3"></button></li></ol>
+    <p class="tour-warn">Holding <svg class="key" role="img" aria-label="BOOT"><use href="#k-boot"/></svg> for 10 seconds or more factory resets the board.</p>
   </div>
 </dialog>
 <p class="sr" id="said" aria-live="polite"></p>

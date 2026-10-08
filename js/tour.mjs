@@ -1,13 +1,13 @@
-/* mooboard.co/hi/buttons + a short tour of the two buttons + the board in 3d in its own frame from ?frame= + the camera
-   goes to a cap + the cap presses + the camera shows the panel doing what the board does + the panel's frames are the
-   firmware's own renders in assets/tour/panel.png + three.js and the viewer's model reader come in by the page's import
-   map + without webgl the panel alone in its bezel as the finder draws a board */
+/* the buttons tour in a sheet on mooboard.co/start + the Hardware card's Watch opens it in the board's own frame (owner
+   2026-10-08, it was the page mooboard.co/hi/buttons) + a short tour of the two buttons + the board in 3d + the camera
+   goes to a cap + the cap presses + the camera shows the panel doing what the board does + the steps play one after
+   another and start over + the panel's frames are the firmware's own renders in assets/tour/panel.png + three.js and
+   the viewer's model reader come in by the page's import map + without webgl the panel alone in its bezel as the
+   finder draws a board */
 const W = 128, H = 32, S = 8;                  // the panel in leds + texture pixels a led as the viewer's face
 const STRIP = '/assets/tour/panel.png';
 const MODEL = '/assets/3d/board-tour.glb';
 const FOV = 18;                                // the viewer's long lens
-// each frame as boards name it + the site's name for it + midnight when ?frame= names none or one it does not know
-const SITE_FRAMES = { midnight: 'black', moonlight: 'white', sunset: 'orange', mint: 'teal', red: 'red' };
 const RED = { color: '#BB3D43', rough: 0.6 };  // the red edition frame as finder.css draws it
 // each cap in assets/3d/board-tour.glb + pressed along its axis + its switch travels 0.4 mm which no camera that shows
 // both caps can see so the tour presses it 1 mm
@@ -30,23 +30,13 @@ const PLAY = [
     frame: (t) => (t < 2.1 ? CLOCK : t < 4.5 ? DARK : t < 6.5 ? STARTING + Math.floor((t - 4.5) * 10) : READY) },
 ];
 const CARRY = 0.8;   // the panel keeps what the last step left on it until the camera has turned away
+const NEXT = 1.4;    // a step holds its last look this long before the next one plays + the last one goes back to the first
 // with less motion asked for + still frames that cut from one to the next + each at a time with its shot and cap and panel
 const STILL = [
   { cap: 'boot', end: 1.8, beats: [[0, 'cap', 1, CLOCK], [1.8, 'panel', 0, GUIDE]] },
   { cap: 'boot', end: 3.6, beats: [[0, 'cap', 1, CLOCK], [1.8, 'panel', 1, HOLD + 50], [3.6, 'panel', 0, PORTAL]] },
   { cap: 'reset', end: 4.6, beats: [[0, 'cap', 1, CLOCK], [1.8, 'panel', 0, DARK], [2.8, 'panel', 0, STARTING + 19], [4.6, 'panel', 0, READY]] },
 ];
-
-const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const steps = [...document.querySelectorAll('.step')];
-const dotsEl = [...document.querySelectorAll('#dots li')];
-const nav = document.getElementById('nav');
-const stage = document.getElementById('stage');
-const canvas = document.getElementById('board');
-const want = new URLSearchParams(location.search).get('frame');
-const finish = Object.prototype.hasOwnProperty.call(SITE_FRAMES, want) ? SITE_FRAMES[want] : 'black';
-
-let index = 0, time = 0, playing = false, from = null, carry = null, view = null, panel = null, raf = 0, last = 0;
 
 // the panel + a frame of the strip as round leds as board.js draws the viewer's face
 function makeCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
@@ -105,96 +95,13 @@ function pressAt(press, t) {
   if (t < press[1]) return Math.min(1, (t - press[0]) / 0.08);
   return Math.max(0, 1 - (t - press[1]) / 0.12);
 }
-// where the step stands at time t + the camera + the cap and how far down + the panel's frame
-function stateAt(i, t) {
-  if (reduced) {
-    const sc = STILL[i];
-    let b = sc.beats[0];
-    for (const beat of sc.beats) if (t >= beat[0]) b = beat;
-    return { cam: view ? view.shot(b[1], sc.cap) : null, cap: sc.cap, down: b[2], frame: b[3] };
-  }
-  const sc = PLAY[i];
-  let cam = from;
-  if (view) {
-    for (const [t0, t1, name] of sc.moves) {
-      const to = view.shot(name, sc.cap);
-      if (t >= t1) { cam = to; continue; }
-      if (t > t0) cam = mixCam(cam, to, ease((t - t0) / (t1 - t0)));
-      break;
-    }
-  }
-  return { cam, cap: sc.cap, down: pressAt(sc.press, t), frame: carry !== null && t < CARRY ? carry : sc.frame(t) };
-}
-function apply() {
-  const s = stateAt(index, time);
-  const changed = panel ? panel.paint(s.frame) : false;
-  if (view) view.draw(s, changed);
-  return s;
-}
-function tick(now) {
-  raf = 0;
-  const dt = Math.min(0.1, (now - last) / 1000);
-  last = now;
-  const end = (reduced ? STILL : PLAY)[index].end;
-  if (playing) {
-    time = Math.min(end, time + dt);
-    if (time >= end) playing = false;
-  }
-  apply();
-  if (playing) raf = requestAnimationFrame(tick);
-}
-function run() {
-  if (raf || !panel) return;
-  last = performance.now();
-  raf = requestAnimationFrame(tick);
-}
-
-// the steps + the words + the dots + back from the second + next and done on the last
-function button(cls, text, onClick) {
-  const b = document.createElement('button');
-  b.type = 'button'; b.className = cls; b.textContent = text;
-  b.addEventListener('click', onClick);
-  return b;
-}
-// done closes the tab the setup opened + else it goes to mooboard.co/hi + a tab that will not close goes there too
-function done() {
-  if (history.length <= 1) {
-    window.close();
-    setTimeout(() => { location.href = '/hi/'; }, 300);
-    return;
-  }
-  location.href = '/hi/';
-}
-function showStep(i, focus) {
-  steps.forEach((s, k) => s.classList.toggle('on', k === i));
-  dotsEl.forEach((d, k) => d.classList.toggle('on', k === i));
-  nav.textContent = '';
-  if (i > 0) nav.appendChild(button('back', 'Back', () => go(i - 1)));
-  nav.appendChild(i < steps.length - 1 ? button('btn', 'Next', () => go(i + 1)) : button('btn', 'Done', done));
-  if (focus) {
-    const h = steps[i].querySelector('h1');
-    h.setAttribute('tabindex', '-1');
-    h.focus();
-  }
-}
-// a step plays from its start + the camera sets off from wherever it is
-function go(i, focus = true) {
-  if (view) from = view.current();
-  carry = panel && !reduced ? panel.shown() : null;
-  index = i; time = 0; playing = true;
-  showStep(i, focus);
-  apply();
-  run();
-}
-
 // the board in 3d
-async function board3d(dots) {
+async function board3d(canvas, dots, finish, onResize) {
   const [THREE, env, V] = await Promise.all([
     import('three'), import('three/addons/environments/RoomEnvironment.js'), import('./viewer.mjs'),
   ]);
   const buf = await V.loadModel(MODEL);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
   renderer.toneMapping = THREE.NeutralToneMapping;
   const scene = new THREE.Scene();
   // the viewer's light + a room environment + a key light from the front left + a mint rim light from behind
@@ -247,8 +154,10 @@ async function board3d(dots) {
     const m = CAP_SHOT.mid, lean = cap === 'boot' ? CAP_SHOT.lean : -CAP_SHOT.lean;
     return { t: [m[0] + lean, m[1], m[2]], az: CAP_SHOT.az, el: CAP_SHOT.el, d: CAP_SHOT.d };
   }
+  // a page scaled up with css zoom draws at its size on screen so the board stays sharp
   function resize() {
     const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
+    renderer.setPixelRatio(Math.min((window.devicePixelRatio || 1) * (canvas.currentCSSZoom || 1), 3));
     renderer.setSize(w, h, false);
     aspect = w / h;
     cam.aspect = aspect;
@@ -273,13 +182,13 @@ async function board3d(dots) {
     renderer.render(scene, cam);
     dirty = false;
   }
-  if (window.ResizeObserver) new ResizeObserver(() => { resize(); apply(); }).observe(canvas);
-  else addEventListener('resize', () => { resize(); apply(); });
+  if (window.ResizeObserver) new ResizeObserver(() => { resize(); onResize(); }).observe(canvas);
+  else addEventListener('resize', () => { resize(); onResize(); });
   resize();
   return { shot, draw, current: () => cur || shot('over') };
 }
 // no webgl + the panel alone in its bezel as the finder draws a board
-function flat(dots) {
+function flat(stage, canvas, dots, finish) {
   stage.classList.add('flat');
   canvas.remove();
   const bz = document.createElement('span'), led = document.createElement('span');
@@ -290,38 +199,131 @@ function flat(dots) {
   stage.appendChild(bz);
 }
 
-// the frames and the 3d load side by side + the tour starts once both are in
-async function start() {
-  const strip = new Image();
-  strip.src = STRIP;
-  const p = painter(strip);
-  const three = window.WebGLRenderingContext ? board3d(p.dots).catch(() => null) : Promise.resolve(null);
-  await strip.decode();
-  view = await three;
-  if (view) from = view.shot('over');
-  else flat(p.dots);
-  panel = p;
-  apply();
-  stage.addEventListener('click', () => go(index, false));   // a tap on the board plays the step again
-  return new Promise((resolve) => setTimeout(() => { go(index, false); resolve(); }, reduced ? 0 : 500));
-}
+// the sheet + finish is the site's name for the board's frame + reduced is less motion
+export function create(el, { finish = 'black', reduced = false } = {}) {
+  const steps = [...el.querySelectorAll('.tour-step')];
+  const dots = [...el.querySelectorAll('.tour-dots button')];
+  const stage = el.querySelector('.tour-stage');
+  const canvas = stage.querySelector('canvas');
+  const plays = reduced ? STILL : PLAY;
+  let index = 0, time = 0, playing = false, from = null, carry = null, view = null, panel = null, raf = 0, last = 0;
+  let next = 0, on = false, loading = null;
 
-showStep(0, false);
-// the frames that will not load leave the words and the buttons to teach alone
-const ready = start().catch(() => { stage.hidden = true; });
-// renders for the owner + ?shots holds the tour at a step and a time
-if (/[?&]shots\b/.test(location.search)) {
-  window.mooTour = {
-    ready,
+  // where the step stands at time t + the camera + the cap and how far down + the panel's frame
+  function stateAt(i, t) {
+    if (reduced) {
+      const sc = STILL[i];
+      let b = sc.beats[0];
+      for (const beat of sc.beats) if (t >= beat[0]) b = beat;
+      return { cam: view ? view.shot(b[1], sc.cap) : null, cap: sc.cap, down: b[2], frame: b[3] };
+    }
+    const sc = PLAY[i];
+    let cam = from;
+    if (view) {
+      for (const [t0, t1, name] of sc.moves) {
+        const to = view.shot(name, sc.cap);
+        if (t >= t1) { cam = to; continue; }
+        if (t > t0) cam = mixCam(cam, to, ease((t - t0) / (t1 - t0)));
+        break;
+      }
+    }
+    return { cam, cap: sc.cap, down: pressAt(sc.press, t), frame: carry !== null && t < CARRY ? carry : sc.frame(t) };
+  }
+  function apply() {
+    const s = stateAt(index, time);
+    const changed = panel ? panel.paint(s.frame) : false;
+    if (view) view.draw(s, changed);
+    return s;
+  }
+  // a step plays to its end + holds + the next one plays + the last goes back to the first
+  function tick(now) {
+    raf = 0;
+    if (!on) return;
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    if (playing) {
+      time = Math.min(plays[index].end, time + dt);
+      if (time >= plays[index].end) {
+        playing = false;
+        next = setTimeout(() => go((index + 1) % steps.length), NEXT * 1000);
+      }
+    }
+    apply();
+    if (playing) raf = requestAnimationFrame(tick);
+  }
+  function run() {
+    if (raf || !panel || !on) return;
+    last = performance.now();
+    raf = requestAnimationFrame(tick);
+  }
+  // the step's words + its dot
+  function showStep(i) {
+    steps.forEach((s, k) => s.classList.toggle('on', k === i));
+    dots.forEach((d, k) => { if (k === i) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current'); });
+  }
+  // a step plays from its start + the camera sets off from wherever it is
+  function go(i) {
+    clearTimeout(next);
+    if (view) from = view.current();
+    carry = panel && !reduced ? panel.shown() : null;
+    index = i; time = 0; playing = true;
+    showStep(i);
+    if (!panel) return;
+    apply();
+    run();
+  }
+  dots.forEach((d, k) => d.addEventListener('click', () => go(k)));
+  stage.addEventListener('click', () => go(index));   // a tap on the board plays the step again
+
+  // the frames and the 3d load side by side the first time it opens + the words show meanwhile + frames that will not
+  // load leave the words to teach alone
+  function load() {
+    if (loading) return loading;
+    loading = (async () => {
+      const strip = new Image();
+      strip.src = STRIP;
+      const p = painter(strip);
+      const three = window.WebGLRenderingContext ? board3d(canvas, p.dots, finish, apply).catch(() => null) : Promise.resolve(null);
+      await strip.decode();
+      view = await three;
+      if (!view) flat(stage, canvas, p.dots, finish);
+      panel = p;
+    })().catch(() => { el.classList.add('still'); });
+    return loading;
+  }
+
+  return {
+    // the sheet opened + the whole board + the first step plays after a beat
+    open() {
+      on = true;
+      clearTimeout(next);
+      index = 0; time = 0; playing = false; carry = null;
+      showStep(0);
+      load().then(() => {
+        if (!on || !panel) return;
+        if (view) from = view.shot('over');
+        apply();
+        next = setTimeout(() => go(index), reduced ? 0 : 500);
+      });
+    },
+    // the sheet shut + nothing runs under it
+    close() {
+      on = false; playing = false;
+      clearTimeout(next);
+      if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    },
+    ready: () => load(),
+    // renders for the owner + the tour held at a step and a time
     seek(i, t) {
+      clearTimeout(next);
       playing = false;
       if (raf) { cancelAnimationFrame(raf); raf = 0; }
       index = i; time = t;
       if (view) from = i > 0 ? view.shot('panel') : view.shot('over');
       carry = i > 0 && !reduced ? PLAY[i - 1].frame(PLAY[i - 1].end) : null;
-      showStep(i, false);
+      showStep(i);
       return apply();
     },
-    end: (i) => (reduced ? STILL : PLAY)[i].end,
+    end: (i) => plays[i].end,
   };
 }

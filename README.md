@@ -5,11 +5,12 @@ plus the ES module `js/viewer.mjs` for the 3D viewer), `fonts/`, `renders/`, `as
 `privacy/` and `support/` pages. `hi/index.html` and `404.html` are the same page, served at `/hi` and at every
 unknown path: it finds the boards on the phone's network and opens one. `portal/` is the everyday way in. It opens the
 only board on the phone's network or lists them with the last one opened on top. It installs as an app. A board's
-`/portal/<code>` link opens that board. Both run `js/finder.js` and `css/finder.css`. `hi/buttons/` is the short
-tour of the two buttons that the board's setup links to, with its frame in `?frame=`: `js/tour.mjs`, `css/tour.css`,
-`assets/3d/board-tour.glb` and the panel's frames in `assets/tour/`. `start/` is the get started page for a new board: the
-logo, a light window with one three.js scene, and cards to flick under it for what is in the box, the hardware,
-mounting and joining its Wi-Fi, with Wi-Fi help in a sheet over them. A board's sticker link (`/hi/<code>?m=<model>`)
+`/portal/<code>` link opens that board. Both run `js/finder.js` and `css/finder.css`. `start/` is the get started page
+for a new board: the logo, a light window with one three.js scene, and cards to flick under it for what is in the box,
+the hardware, mounting and joining its Wi-Fi, with Wi-Fi help in a sheet over them. The Hardware card's Watch opens the
+buttons tour in a sheet too, in the board's frame from `?frame=`, its steps playing one after another: `js/tour.mjs`,
+`assets/3d/board-tour.glb` and the panel's frames in `assets/tour/`. The board's setup links to the Hardware card, and
+the tour's old address, `/hi/buttons/`, goes to `/start/#buttons` with its frame. A board's sticker link (`/hi/<code>?m=<model>`)
 goes there when its board is not on the phone's network yet, and its Wi-Fi shows as `mooboard-<code>`. It runs
 `js/start.js` and `css/start.css`. On a screen wider than a phone it shows the phone page scaled up to the
 window's height. The scene is `js/scene.mjs`: it loads at the start with the homepage's board model

@@ -88,10 +88,8 @@ test('the hardware rows take the camera to their spot, and the scene moves card 
 });
 
 test('the BOOT and RESET row shows 1 and their caps in place of their names, and close up the scene labels each button', () => {
-  const tour = read('hi/buttons/index.html');
   for (const id of ['k-boot', 'k-reset']) {
-    const sym = tour.match(new RegExp(`<symbol id="${id}"[\\s\\S]*?</symbol>`))[0];
-    assert.ok(html.includes(sym), `the tour's ${id}`);
+    assert.equal((html.match(new RegExp(`<symbol id="${id}"`, 'g')) || []).length, 1, `one ${id} for the row, wi-fi help and the buttons tour`);
   }
   const hw = between(html, 'id="hardware"', '</section>');
   const keys = '<span class="keys" role="img" aria-label="BOOT and RESET"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#k-boot"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#k-reset"/></svg></span>';
@@ -110,7 +108,7 @@ test('the BOOT and RESET row shows 1 and their caps in place of their names, and
   assert.match(mount, /m\.material\.opacity = f\.markers \* \(k === 0 \? 1 - f\.near : 1\);/, 'the 1 gives way');
   assert.match(mount, /l\.material\.opacity = f\.markers \* f\.near;/, 'the labels take over');
   for (const d of ['M11.4 4.2 14.6 6.6 11.4 9z', 'M15.9 8.6A5.4 5.4 0 1 1 12 6.6']) {
-    assert.ok(tour.includes(d) && mount.includes(d), 'the labels draw RESET\'s arrow as the tour does');
+    assert.ok(html.includes(d) && mount.includes(d), 'the labels draw RESET\'s arrow as its cap does');
   }
 });
 
@@ -198,6 +196,39 @@ test('the Hardware card has a pause in the window\'s corner that holds the camer
   assert.match(mount, /if \(id === 'hardware'\) \{ touring = !reduced; spotPick = 0; spotShown = -1; tourAt = now; held = null; \}/, 'the tour plays again on the way back');
   assert.match(between(mount, '    spot(k) {', '    },'), /held = null;/, 'a row still moves the camera while paused');
   assert.match(between(mount, '    tour(on) {', '\n    },'), /tourAt = now - startOf\(/, 'play goes on from the spot it held');
+});
+
+test('Watch opens the buttons tour in a sheet in the board\'s frame, its steps play one after another, and the old page is gone', () => {
+  const hw = between(html, 'id="hardware"', '</section>');
+  assert.match(hw, /<a class="pill" id="watch" href="#buttons" role="button" aria-haspopup="dialog" aria-controls="buttons" aria-label="Watch the buttons tour">/, 'Watch opens the sheet, not a new tab');
+  const sheet = between(html, '<dialog class="sheet tour" id="buttons" aria-labelledby="buttons-title">', '</dialog>');
+  assert.match(sheet, /<h2 id="buttons-title">Buttons<\/h2>\n    <button type="button" class="close" id="buttons-close">Close<\/button>/, 'a title and Close like wi-fi help');
+  assert.match(sheet, /<div class="tour-stage" aria-hidden="true"><canvas><\/canvas><\/div>/, 'the board in 3d');
+  const boot = '<svg class="key" role="img" aria-label="BOOT"><use href="#k-boot"/></svg>', reset = '<svg class="key" role="img" aria-label="RESET"><use href="#k-reset"/></svg>';
+  assert.deepEqual([...sheet.matchAll(/<section class="tour-step[^"]*"><h3>([\s\S]*?)<\/h3><p>([\s\S]*?)<\/p><\/section>/g)].map((m) => [m[1], m[2]]), [
+    [`Tap ${boot}`, 'Shows the guide.'],
+    [`Hold ${boot} for 1 to 5 seconds`, 'Shows mooboard.co/portal.'],
+    [`Press ${reset}`, 'Restarts the board.'],
+  ], 'the three steps in the words the page had');
+  assert.match(sheet, new RegExp(`<p class="tour-warn">Holding ${boot.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')} for 10 seconds or more factory resets the board\\.</p>`), 'and its warning');
+  assert.equal((sheet.match(/<li><button type="button" aria-label="\d of 3"/g) || []).length, 3, 'a dot for each step');
+  // the module + loads the first time + in the board's frame + the scene rests under it + #buttons opens it
+  assert.match(startJs, /create\(tour, \{ finish: finish, reduced: REDUCED \}\)/, 'in the board\'s frame from ?frame=');
+  assert.match(startJs, /s\.textContent = "import \{ create \} from '\/js\/tour\.mjs'; window\.mooTour\(create\);";/);
+  assert.match(between(startJs, 'function openTour', '\n  }'), /S\.api\.live\(false\)/, 'the scene rests under it');
+  assert.match(between(startJs, 'function closeTour', '\n  }'), /S\.api\.live\(true\)/, 'and goes on after');
+  assert.match(startJs, /if \(location\.hash === '#buttons'\) \{ go\(ids\.indexOf\('hardware'\)\); openTour\(\); return; \}/, '#buttons is the hardware card with the tour open');
+  assert.match(startJs, /if \(asked === '#buttons'\) openTour\(\);/);
+  assert.doesNotMatch(startJs, /hi\/buttons/, 'no link to the old page');
+  // the tour + one sheet at a time + each step to its end + a beat + the next + the last back to the first
+  const tourJs = read('js/tour.mjs');
+  assert.match(tourJs, /export function create\(el, \{ finish = 'black', reduced = false \} = \{\}\)/);
+  assert.match(tourJs, /next = setTimeout\(\(\) => go\(\(index \+ 1\) % steps\.length\), NEXT \* 1000\);/, 'the steps play one after another and start over');
+  assert.match(tourJs, /dots\.forEach\(\(d, k\) => d\.addEventListener\('click', \(\) => go\(k\)\)\);/, 'a dot plays its step');
+  assert.doesNotMatch(tourJs, /location\.|document\.(?:querySelector|getElementById)|window\.close/, 'it reads only its sheet and never leaves the page');
+  assert.match(css, /\.js \.tour-step \{ grid-area: 1 \/ 1;/, 'the steps\' words in one place so the sheet keeps its height');
+  // the page and its styles are gone + its address goes to the sheet
+  for (const gone of ['hi/buttons/index.html', 'css/tour.css']) assert.throws(() => read(gone), gone + ' is gone');
 });
 
 test('the board\'s face in 3d is a board of its own with a clock that asks nothing of the network', () => {
@@ -314,8 +345,7 @@ test('hardware: where each thing is, and Watch opens the buttons tour', () => {
   const hw = between(html, 'id="hardware"', '</section>');
   assert.deepEqual([...hw.matchAll(/(?:<b>([^<]+)<\/b>|<span class="keys" role="img" aria-label="([^"]+)">(?:<svg[^>]*><use[^>]*\/><\/svg>)+<\/span>)<small>([^<]+)<\/small>/g)].map((m) => [m[1] || m[2], m[3]]), [
     ['BOOT and RESET', 'Top edge'], ['Status light', 'Bottom, near the right end'], ['USB-C port', 'Bottom center'], ['NFC', 'Left side']]);
-  assert.match(hw, /<a class="pill" id="watch" href="\/hi\/buttons\/" target="_blank" rel="noopener"[^>]*>[\s\S]*?Watch<\/a>/, 'in a tab of its own so its Done closes it and lands back here');
-  assert.match(startJs, /'\/hi\/buttons\/\?frame=' \+ frame/, 'with the board\'s frame when the link names one');
+  assert.match(hw, /<a class="pill" id="watch" href="#buttons"[^>]*>[\s\S]*?Watch<\/a>/, 'in a sheet on this page (owner 2026-10-08)');
 });
 
 test('the Wi-Fi card says what the owner wrote, word for word, and its links work', () => {

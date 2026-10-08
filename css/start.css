@@ -8,7 +8,7 @@
   --teal: #77EDD7; --on-teal: #0E1A22; --link: #0E6B5E; --dot: #BCD8D1; --ring: #0E6B5E;
   --shadow: 0 24px 60px -40px rgba(14, 26, 34, .45), 0 2px 6px rgba(14, 26, 34, .04);
   --wall: #E3E8EB; --frame: #262B30; --frame-hi: #3a4047; --edge: rgba(14, 26, 34, .0);
-  --dock: rgba(255, 255, 255, .72); --grey: #E3ECEA;
+  --dock: rgba(255, 255, 255, .72); --grey: #E3ECEA; --warn: #9A5B00;
   --phone: 430px;   /* the page is a phone's width on any screen (owner 2026-10-08) */
   --base: 411px;    /* and a wider screen scales up the owner's phone's page from this width */
   --display: 'Fredoka', 'Nunito', system-ui, sans-serif;
@@ -21,7 +21,7 @@
     --bg: #0E1A22; --card: #15262F; --text: #F2FBF8; --muted: #A9BDB8; --line: #23404A; --soft: #1A2F39;
     --link: #77EDD7; --dot: #2B4A55; --ring: #77EDD7; --shadow: 0 24px 60px -40px rgba(0, 0, 0, .8);
     --wall: #C3C9CE; --edge: rgba(255, 255, 255, .16);
-    --dock: rgba(21, 38, 47, .78); --grey: #263D47;
+    --dock: rgba(21, 38, 47, .78); --grey: #263D47; --warn: #FFB81C;
   }
 }
 * { box-sizing: border-box; }
@@ -312,11 +312,38 @@ html:not(.js) .window, .flat3d .window { display: none; }
 html:not(.js) .sheet { display: block; position: static; max-height: none; margin: 20px; border-radius: 28px; overflow: visible; }
 html:not(.js) .sheet .close { display: none; }
 
+/* ---------- the buttons tour + a sheet like wi-fi help + the board in a light studio + the steps' words stacked in one
+   place so the sheet keeps its height as they change + its dots + the warning at the foot (owner 2026-10-08) ---------- */
+.tour-body { padding-top: 18px; }
+.tour-body > * + * { margin-top: 16px; }
+.tour-stage {
+  position: relative; width: 100%; aspect-ratio: 4 / 3; max-height: 42vh; max-height: 42dvh; border-radius: 22px; overflow: hidden;
+  background: radial-gradient(110% 75% at 50% 42%, #f2f5f7, #e0e6ea 58%, #cad2d9); cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.tour-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tour-stage.flat .bezel { position: absolute; left: 18px; right: 18px; top: 50%; transform: translateY(-50%); }
+.tour-stage.flat .led canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tour-steps { display: grid; text-align: center; }
+.tour-step h3 { margin: 0 0 6px; font: 700 clamp(22px, 5.8vw, 25px)/1.2 var(--display); text-wrap: balance; }
+.tour-step p { margin: 0; font-size: 17px; font-weight: 700; color: var(--muted); }
+.js .tour-step { grid-area: 1 / 1; visibility: hidden; opacity: 0; transition: opacity .3s var(--ease), visibility 0s .3s; }
+.js .tour-step.on { visibility: visible; opacity: 1; transition: opacity .3s var(--ease), visibility 0s; }
+.tour-dots { justify-content: center; }
+.tour-body > .tour-dots { margin-top: 6px; }
+.tour-warn { margin-bottom: 0; text-align: center; font-size: 15px; font-weight: 700; color: var(--warn); text-wrap: balance; }
+html:not(.js) .tour-stage, html:not(.js) .tour-dots { display: none; }
+html:not(.js) .tour-step + .tour-step { margin-top: 18px; }
+/* no tour + the three steps' words one under the other */
+.tour.still .tour-stage, .tour.still .tour-dots { display: none; }
+.tour.still .tour-step { grid-area: auto; visibility: visible; opacity: 1; }
+.tour.still .tour-step + .tour-step { margin-top: 18px; }
+
 /* ---------- a wider screen + the phone page scaled up to the window's height + the head script sets --k and --lh + a
    height in vh would grow with the scale so the page's own height stands in for it ---------- */
 .wide body { width: var(--base); zoom: var(--k); }
 .wide .window { max-height: calc(.34 * var(--lh)); }
 .wide .sheet { max-width: var(--base); max-height: min(calc(.88 * var(--lh)), 760px); }
+.wide .tour-stage { max-height: calc(.42 * var(--lh)); }
 
 /* ---------- a short window + tighter cards ---------- */
 @media (max-height: 720px) {
