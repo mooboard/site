@@ -17,6 +17,13 @@ window's height. The scene is `js/scene.mjs`: it loads at the start with the hom
 and `assets/3d/rail.glb`, the wall rail and its two hooks, and moves to each card's pose as the cards change. Without
 WebGL each card shows its own drawing instead. GitHub Pages serves the repository as it is, at the domain in `CNAME`.
 
+`fonts/tool/` is the font tool a board's web app imports when someone adds a font to the board (Settings > Display >
+Font): `fonttool.mjs` cuts the font down to the characters the board draws with HarfBuzz's subsetter
+(`harfbuzz-subset.wasm`, npm harfbuzzjs 1.6.3, `LICENSES.txt`), in the browser, and the web app uploads the result to
+the board. Its Download SF Pro fetches Apple's faces in the browser from the mirror `sf-pro.json` names, so a mirror that
+goes away is changed in that file alone. The site never hosts the font. GitHub Pages sends every file with
+`Access-Control-Allow-Origin: *`, which lets a board's `http://` page import the module.
+
 ## Preview
 
     python3 tools/serve.py                       # http://127.0.0.1:8091/
@@ -31,6 +38,7 @@ previews and lyrics and the weather come from other services, so those parts nee
     sh tools/check-no-music.sh       # no audio, video, lyric or subtitle file, and nothing from local-music/, is in git
     python3 tools/check-lyrics.py    # every line of the archived songs lights up on the board, music/radio.json adds up
     node --test tools/hi.test.mjs tools/portal.test.mjs tools/start.test.mjs    # /hi, 404, /portal and /start (node 18 or later)
+    node --test tools/fonttool.test.mjs    # fonts/tool, the font tool a board's web app imports
 
 To have git run all three before every commit, once per clone:
 

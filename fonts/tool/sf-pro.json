@@ -1,0 +1,19 @@
+{
+  "family": "SF Pro",
+  "license": "https://developer.apple.com/fonts/",
+  "base": "https://raw.githubusercontent.com/sahibjotsaggu/San-Francisco-Pro-Fonts/master/",
+  "roles": {
+    "SfMedium": "SF-Pro-Text-Medium.otf",
+    "SfSemibold": "SF-Pro-Text-Semibold.otf",
+    "SfSemiboldClock": "SF-Pro-Display-Semibold.otf",
+    "SfrSemibold": "SF-Pro-Rounded-Semibold.otf",
+    "SfrBold": "SF-Pro-Rounded-Bold.otf"
+  },
+  "styles": {
+    "SfMedium": "Text Medium",
+    "SfSemibold": "Text Semibold",
+    "SfSemiboldClock": "Display Semibold",
+    "SfrSemibold": "Rounded Semibold",
+    "SfrBold": "Rounded Bold"
+  }
+}
