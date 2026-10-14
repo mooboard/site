@@ -24,10 +24,4 @@
 
 <br>
 
-The site at mooboard.co, served by GitHub Pages from this repo.
-
-```sh
-python3 tools/serve.py    # http://127.0.0.1:8091
-```
-
 <sub>© 2026 mooboard co. Fonts and scripts keep their own licenses. More in <a href="docs/notes.md">notes</a>.</sub>
