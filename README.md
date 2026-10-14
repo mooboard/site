@@ -8,7 +8,7 @@
 <p align="center">Put your wall in a good mood.</p>
 
 <p align="center">
-  <a href="https://mooboard.co">mooboard.co</a> &nbsp;·&nbsp; <a href="https://mooboard.co/start/">Get started</a>
+  <a href="https://mooboard.co">mooboard.co</a> &nbsp;·&nbsp; <a href="https://mooboard.co/start/">Get started</a> &nbsp;·&nbsp; <a href="https://mooboard.co/discord">Discord</a>
 </p>
 
 <p align="center"><img src="docs/readme/hero.webp" alt="mooboard on a mint wall" width="820"></p>

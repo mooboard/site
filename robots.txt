@@ -6,6 +6,7 @@ Allow: /hi
 Allow: /portal
 Allow: /privacy
 Allow: /support
+Allow: /discord
 Allow: /css/
 Allow: /js/
 Allow: /fonts/
