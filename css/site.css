@@ -312,7 +312,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 @keyframes marq { to { transform: translateX(-50%); } }
 
 /* ---------- waitlist ---------- */
-.waitlist { position: relative; padding: clamp(110px, 14vw, 180px) var(--gut) clamp(48px, 6vw, 80px); text-align: center; background: radial-gradient(80% 60% at 50% 30%, #123c37, var(--ink) 70%); overflow: hidden; }
+.waitlist { --wl-end: clamp(24px, 3.5vw, 40px); position: relative; padding: clamp(110px, 14vw, 180px) var(--gut) var(--wl-end); text-align: center; background: radial-gradient(80% 60% at 50% 30%, #123c37, var(--ink) 70%); overflow: hidden; }
 .wl-board { width: min(640px, 100%); margin: 0 auto; }
 .wl-price { margin-top: 56px; }
 .tag { display: inline-block; padding: 6px 14px; border-radius: 999px; background: var(--pink); color: var(--ink); font-weight: 900; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
@@ -331,7 +331,12 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .wl-form .btn { flex: 0 0 auto; }
 .wl-msg { flex-basis: 100%; min-height: 24px; margin: 8px 0 0; font-weight: 800; color: var(--accent-lite); }
 .wl-form.soon input:not(:focus), .wl-form.done input:not(:focus) { border-color: var(--teal); }
-.wl-note { flex-basis: 100%; margin: 4px 0 0; font-size: 14px; font-weight: 700; color: rgba(255, 255, 255, .55); }
+.wl-msg:empty { min-height: 0; margin: 0; }
+.wl-note { flex-basis: 100%; margin: 10px 0 0; font-size: 14px; font-weight: 700; color: rgba(255, 255, 255, .55); }
+.wl-social { display: flex; justify-content: center; margin: var(--wl-end) 0 0; }
+.wl-social a { display: grid; place-items: center; width: 44px; height: 44px; margin: -10px 0; color: rgba(255, 255, 255, .55); transition: color .3s; }
+.wl-social a:hover { color: var(--accent-lite); }
+.wl-social svg { width: 24px; height: 24px; fill: currentColor; }
 .foot-links a:hover { color: var(--accent-lite); }
 
 /* ---------- footer ---------- */
@@ -507,7 +512,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 @media (max-width: 700px) {
   :root { --bar: calc(64px + env(safe-area-inset-bottom)); }
   .foot { padding-bottom: calc(var(--bar) + 40px); }
-  .waitlist { padding-bottom: calc(var(--bar) + 60px); }
+  .waitlist { padding-bottom: calc(var(--bar) + var(--wl-end)); }
   .pl { width: 44px; height: 44px; }
   .np { min-height: 48px; }
   .chip, .sw, .cp { position: relative; }
