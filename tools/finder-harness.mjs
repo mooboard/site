@@ -18,6 +18,7 @@ export class El {
     this.html = null;
     this.className = '';
     this.parent = null;
+    this.style = { props: {}, setProperty: (k, v) => { this.style.props[k] = String(v); } };   // the custom properties set on it inline
   }
 
   get textContent() {
@@ -328,6 +329,8 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
     links: () => view.all().filter((e) => e.tagName === 'A' && e.className !== 'ident').map((a) => [a.textContent, a.getAttribute('href')]),
     scripts: () => head.children.filter((e) => e.tagName === 'SCRIPT').map((e) => e.src),
     frames: (root) => root.all().filter((e) => e.className === 'bezel').map((e) => e.getAttribute('data-frame')),
+    // the colors set on each of those boards itself + none for a frame the css draws
+    colors: (root) => root.all().filter((e) => e.className === 'bezel').map((e) => ({ ...e.style.props })),
     // each eye's pupil: the dots it lights as PLUS and CROSS list them (c the centre) and their colours + the rest are white
     eyes: () => ['pl', 'pr'].map((eye) => {
       const fill = (place) => pupils[place ? `${eye}-${place}` : eye].getAttribute('fill');

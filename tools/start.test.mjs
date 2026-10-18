@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { test } from 'node:test';
 import vm from 'node:vm';
-import { json, load, nearbyOf, read } from './finder-harness.mjs';
+import { KITCHEN, json, load, nearbyOf, read } from './finder-harness.mjs';
 
 const html = read('start/index.html');
 const startJs = read('js/start.js');
@@ -21,6 +21,32 @@ function helpers() {
   vm.createContext(context);
   vm.runInContext(startJs, context);
   return window.mooStart;
+}
+// js/start.js in node as far as the boards it dresses + each one's data-frame and colors + the page's own data-frame
+function dressed(search) {
+  const stop = new Error('the rest of the page');
+  const bezel = () => {
+    const b = { attrs: {}, props: {} };
+    b.setAttribute = (k, v) => { b.attrs[k] = String(v); };
+    b.style = { setProperty: (k, v) => { b.props[k] = String(v); } };
+    return b;
+  };
+  const bezels = [bezel(), bezel(), bezel()];
+  const root = { attrs: {}, classList: { contains: () => true }, setAttribute(k, v) { this.attrs[k] = String(v); } };
+  let past = false;
+  const document = {
+    getElementById: (id) => (id === 'track' ? {} : null),
+    documentElement: root,
+    querySelectorAll: (sel) => {
+      if (past) throw stop;   // the first thing it looks for after the boards ends the run
+      past = sel === '.bezel';
+      return sel === '.bezel' ? bezels : [];
+    },
+  };
+  const context = { window: {}, location: { search }, document, matchMedia: () => ({ matches: false }) };
+  vm.createContext(context);
+  assert.throws(() => vm.runInContext(startJs, context), (e) => e === stop);
+  return { bezels, root };
 }
 // the words a person reads on the page + its text and its labels + no markup, scripts, styles, drawings or comments
 function words(page) {
@@ -269,6 +295,54 @@ test('?frame= takes the frames boards name, and nothing else', () => {
   const { frameOf } = helpers();
   for (const f of ['midnight', 'moonlight', 'sunset', 'mint', 'red']) assert.equal(frameOf('?frame=' + f), f);
   for (const s of ['', '?frame=', '?frame=purple', '?frame=constructor', '?frame=__proto__', '?frame=Mint']) assert.equal(frameOf(s), null, s);
+  assert.equal(frameOf('?frame=%23ff0000'), null, 'a hex is not a name, so the 3d scene and the tour keep to the five finishes they know');
+});
+
+// the light and dark edge of a hex frame by its color + worked out apart from the scripts
+const EDGES = {
+  '#ff0000': ['#ff2e2e', '#d10000'], '#00ff00': ['#2eff2e', '#00d100'], '#0000ff': ['#2e2eff', '#0000d1'], '#17191c': ['#414245', '#131517'],
+  '#000000': ['#2e2e2e', '#000000'], '#ffffff': ['#ffffff', '#d1d1d1'], '#3dc4e0': ['#60cfe6', '#32a1b8'], '#de4343': ['#e46565', '#b63737'],
+  '#808080': ['#979797', '#696969'], '#ff7a21': ['#ff9249', '#d1641b'], '#f5f3ef': ['#f7f5f2', '#c9c7c4'], '#010203': ['#2f3030', '#010202'],
+  '#fefdfc': ['#fefdfd', '#d0cfcf'],
+};
+
+test('?frame= also takes any color as a hex, written %23rrggbb in a link', () => {
+  const { hexOf } = helpers();
+  const cases = [['?frame=%23ff0000', '#ff0000'], ['?frame=%23FF0000', '#ff0000'], ['?m=MB1W&frame=%2317191c&u=5KAS', '#17191c'], ['?frame=%23Ab12cD', '#ab12cd']];
+  for (const [search, want] of cases) assert.equal(hexOf(search), want, search);
+  for (const s of ['', '?frame=', '?frame=ff0000', '?frame=%23', '?frame=%23ff00', '?frame=%23ff00000', '?frame=%23gg0000', '?frame=%2523ff0000',
+    '?frame=%23ff0000%20', '?frame=%23ff0000%0A', '?frame=%23ff0000;', '?frame=%23ffffff80', '?frame=%E0%A4%A', '?frame=%', '?frame=mint', '?frames=%23ff0000']) {
+    assert.equal(hexOf(s), null, s);
+  }
+});
+
+test('a hex ?frame= draws the boards on the page in that color, and the five names and no frame draw as before', () => {
+  const [hi, lo] = EDGES['#ff0000'];
+  const red = dressed('?m=MB1W&u=5KAS&frame=%23ff0000');
+  assert.deepEqual(red.bezels.map((b) => b.attrs), Array(3).fill({ 'data-frame': 'custom' }));
+  assert.deepEqual(red.bezels.map((b) => b.props), Array(3).fill({ '--frame-c': '#ff0000', '--hi-c': hi, '--lo-c': lo }));
+  assert.equal(red.root.attrs['data-frame'], 'custom');
+  const cases = [['?frame=midnight', 'black'], ['?frame=moonlight', 'white'], ['?frame=sunset', 'orange'], ['?frame=mint', 'teal'], ['?frame=red', 'red'],
+    ['', 'black'], ['?frame=purple', 'black'], ['?frame=%23ff00', 'black']];
+  for (const [search, want] of cases) {
+    const page = dressed(search);
+    assert.deepEqual(page.bezels.map((b) => b.attrs), Array(3).fill({ 'data-frame': want }), search);
+    assert.deepEqual(page.bezels.map((b) => b.props), Array(3).fill({}), search);
+    assert.equal(page.root.attrs['data-frame'], want, search);
+  }
+  assert.match(css, /\.bezel \{\s+--frame-c: [^;]+; --hi-c: [^;]+; --lo-c: [^;]+;/, 'the names start.css reads a bezel\'s colors by');
+  assert.match(startJs, /var finish = frame \? SITE_FRAMES\[frame\] : 'black';/, 'the scene and the tour get one of the five finishes, black for a hex');
+  assert.match(startJs, /create\(tour, \{ finish: finish, reduced: REDUCED \}\)/);
+  assert.match(startJs, /frame: finish, rail: railOf\(search\)/);
+});
+
+test('a hex frame has the same light and dark edge on the start page as on the portal list', async () => {
+  for (const [hex, [hi, lo]] of Object.entries(EDGES)) {
+    const list = load('/hi', nearbyOf([{ ...KITCHEN, frameColor: hex }]));
+    await list.settle();
+    assert.deepEqual(list.colors(list.cards()[0]), [{ '--frame': hex, '--hi': hi, '--lo': lo }], `${hex}: the portal list`);
+    assert.deepEqual(dressed(`?frame=${encodeURIComponent(hex)}`).bezels[0].props, { '--frame-c': hex, '--hi-c': hi, '--lo-c': lo }, `${hex}: the start page`);
+  }
 });
 
 test('?rail= picks a white rail and hooks, and anything else is black', () => {

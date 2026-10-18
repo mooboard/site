@@ -47,7 +47,7 @@ a{color:#77EDD7}
 .card:active{background:#1B313C}
 .mini{flex:none;display:block;width:72px}
 .bezel{--frame:#17191C;--hi:#33373d;--lo:#0c0d0f;display:block;padding:3px;border-radius:4px;background:linear-gradient(160deg,var(--hi),var(--frame) 30%,var(--frame) 70%,var(--lo));box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 -1px 0 rgba(0,0,0,.25) inset}
-.bezel[data-frame="black"]{box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 -1px 0 rgba(0,0,0,.25) inset,0 0 0 1px rgba(255,255,255,.16)}
+.bezel[data-frame="black"],.bezel[data-frame="custom"]{box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 -1px 0 rgba(0,0,0,.25) inset,0 0 0 1px rgba(255,255,255,.16)}   /* a hex frame sets --frame + --hi + --lo on the bezel itself + the outline keeps a dark one in view */
 .bezel[data-frame="white"]{--frame:#F5F3EF;--hi:#fff;--lo:#d9d5cd}
 .bezel[data-frame="orange"]{--frame:#FF7A21;--hi:#ff9f5c;--lo:#d45a0c}
 .bezel[data-frame="red"]{--frame:var(--red);--hi:var(--red);--lo:var(--red)}

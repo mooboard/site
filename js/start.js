@@ -8,6 +8,7 @@
   var MODELS = ['MB1W', 'MB1D', 'MB1P'];
   var ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';   // the label's + no 0 or O + no 1 I or L
   var SITE_FRAMES = { midnight: 'black', moonlight: 'white', sunset: 'orange', mint: 'teal', red: 'red' };
+  var EDGE = 0.18;   // how far a hex frame's light and dark edges lean toward white and toward black
 
   function param(search, name) {
     var m = new RegExp('(?:^\\?|&)' + name + '=([^&#]*)').exec(search || '');
@@ -30,6 +31,26 @@
     var v = param(search, 'frame');
     return v !== null && Object.prototype.hasOwnProperty.call(SITE_FRAMES, v) ? v : null;
   }
+  // the frame as a hex color + a link writes its # as %23 + none when it is not one
+  function hexOf(search) {
+    var v = param(search, 'frame');
+    if (v === null) return null;
+    try {
+      v = decodeURIComponent(v).toLowerCase();
+    } catch (e) {
+      return null;
+    }
+    return /^#[0-9a-f]{6}$/.test(v) ? v : null;
+  }
+  // a hex color mixed by EDGE toward 255 for a light edge or toward 0 for a dark edge
+  function edgeOf(hex, to) {
+    var out = '#';
+    for (var i = 1; i < 7; i += 2) {
+      var c = parseInt(hex.slice(i, i + 2), 16), v = Math.round(c + (to - c) * EDGE);
+      out += (v < 16 ? '0' : '') + v.toString(16);
+    }
+    return out;
+  }
   // the board's own wi-fi while it waits for a phone + named after its code + the Xs when the link has no code
   function ssidOf(search) {
     return 'mooboard-' + (codeOf(search) || 'XXXX');
@@ -50,7 +71,7 @@
   function waysOf(model) {
     return model === 'MB1D' ? ['screws', 'strips', 'stand'] : ['screws', 'strips'];
   }
-  var api = window.mooStart = { modelOf: modelOf, codeOf: codeOf, ssidOf: ssidOf, frameOf: frameOf, railOf: railOf, hiOf: hiOf, portalOf: portalOf, waysOf: waysOf };
+  var api = window.mooStart = { modelOf: modelOf, codeOf: codeOf, ssidOf: ssidOf, frameOf: frameOf, hexOf: hexOf, railOf: railOf, hiOf: hiOf, portalOf: portalOf, waysOf: waysOf };
 
   var root = document.documentElement;
   var track = document.getElementById('track');
@@ -60,16 +81,23 @@
   var REDUCED = false;
   try { REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { /* no media queries + motion stays on */ }
   var search = location.search;
-  var model = modelOf(search), code = codeOf(search), frame = frameOf(search);
+  var model = modelOf(search), code = codeOf(search), frame = frameOf(search), hex = hexOf(search);
   var finish = frame ? SITE_FRAMES[frame] : 'black';
+  var look = hex ? 'custom' : finish;   // a hex shows on the boards of the page only + the 3d scene and the tour know the five finishes
   var hi = hiOf(code), ssid = ssidOf(search);
 
   // ---- what the link says about the board ----
   all('[data-hi]').forEach(function (a) { a.setAttribute('href', hi); });
   all('[data-portal]').forEach(function (a) { a.setAttribute('href', portalOf(code)); });
   all('[data-ssid]').forEach(function (s) { s.textContent = ssid; });
-  all('.bezel').forEach(function (b) { b.setAttribute('data-frame', finish); });
-  root.setAttribute('data-frame', finish);
+  all('.bezel').forEach(function (b) {
+    b.setAttribute('data-frame', look);
+    if (!hex) return;
+    b.style.setProperty('--frame-c', hex);   // start.css reads a bezel's colors by these names
+    b.style.setProperty('--hi-c', edgeOf(hex, 255));
+    b.style.setProperty('--lo-c', edgeOf(hex, 0));
+  });
+  root.setAttribute('data-frame', look);
   var ways = waysOf(model);
   all('.chip').forEach(function (c) { c.hidden = ways.indexOf(c.getAttribute('data-way')) < 0; });
 

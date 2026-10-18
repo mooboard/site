@@ -817,6 +817,72 @@ test('red draws the red edition frame, its shade one constant the owner can swap
   assert.match(css, /\.bezel\[data-frame="red"\]\{--frame:var\(--red\)/);
 });
 
+// a hex frame as a board saves it + its light edge and its dark edge 18 percent toward white and toward black
+const HEX_FRAMES = [['#ff0000', '#ff2e2e', '#d10000'], ['#17191c', '#414245', '#131517'], ['#3dc4e0', '#60cfe6', '#32a1b8'],
+  ['#000000', '#2e2e2e', '#000000'], ['#ffffff', '#ffffff', '#d1d1d1']];
+const colorsOf = ([frame, hi, lo]) => ({ '--frame': frame, '--hi': hi, '--lo': lo });
+const RED_HEX = colorsOf(HEX_FRAMES[0]);
+
+test('a hex frameColor draws the board in that color: custom, with its own light and dark edge', async () => {
+  for (const hex of HEX_FRAMES) {
+    const page = load('/hi', nearbyOf([{ ...KITCHEN, frameColor: hex[0] }]));
+    await page.settle();
+    assert.deepEqual(page.frames(page.cards()[0]), ['custom'], `${hex[0]}: the countdown`);
+    assert.deepEqual(page.colors(page.cards()[0]), [colorsOf(hex)], `${hex[0]}: the countdown`);
+    page.buttons().find((b) => b.textContent === 'Stay here').click();
+    assert.deepEqual(page.colors(page.view), [colorsOf(hex)], `${hex[0]}: after Stay here`);
+    page.cards()[0].click();
+    assert.deepEqual(page.frames(page.hero), ['custom'], `${hex[0]}: on top while it opens`);
+    assert.deepEqual(page.colors(page.hero), [colorsOf(hex)], `${hex[0]}: on top while it opens`);
+    assert.equal(page.hero.children[0].getAttribute('aria-label'), 'Kitchen, a Custom mooboard', hex[0]);
+  }
+  for (const frameColor of ['#FF0000', '#Ff0000']) {
+    const page = load('/hi', nearbyOf([{ ...KITCHEN, frameColor }]));
+    await page.settle();
+    assert.deepEqual(page.colors(page.cards()[0]), [RED_HEX], `${frameColor}: capitals draw as lowercase`);
+  }
+});
+
+test('only a hex sets colors on the board: the five names leave them to the css and anything near a hex draws midnight', async () => {
+  for (const frameColor of ['midnight', 'moonlight', 'sunset', 'mint', 'red']) {
+    const page = load('/hi', nearbyOf([{ ...KITCHEN, frameColor }]));
+    await page.settle();
+    assert.deepEqual(page.colors(page.cards()[0]), [{}], frameColor);
+  }
+  const near = ['#ff00', '#ff00000', '#gg0000', '#ff 000', 'ff0000', '0xff0000', '##ff0000', ' #ff0000', '#ff0000 ', '#ff0000\n', '\n#ff0000',
+    '#ff0000;', '#ff0000"', '#fff', '#ffffff80', '#-f0000', 'rgb(255,0,0)', 'red ', 'RED', ['#ff0000']];
+  for (const frameColor of near) {
+    const page = load('/hi', nearbyOf([{ ...KITCHEN, frameColor }]));
+    await page.settle();
+    const why = JSON.stringify(frameColor);
+    assert.deepEqual(page.frames(page.cards()[0]), ['black'], why);
+    assert.deepEqual(page.colors(page.cards()[0]), [{}], why);
+    page.timers.advance(3000);
+    assert.deepEqual(page.frames(page.hero), ['black'], why);
+    assert.equal(page.hero.children[0].getAttribute('aria-label'), 'Kitchen, a Midnight mooboard', why);
+  }
+});
+
+test('a hex from /lookup is drawn, not the color the list had', async () => {
+  const page = load('/hi', (url) => (url === `${API}/nearby`
+    ? json({ boards: SHARED.map((b) => ({ ...b, frameColor: 'sunset' })), shared: true })
+    : json({ found: true, localIp: '192.168.0.120', name: 'Kitchen', frameColor: '#ff0000' })));
+  await page.settle();
+  assert.deepEqual(page.frames(page.cards()[1]), ['orange'], 'the list has sunset');
+  page.cards()[1].click();
+  await page.settle();
+  assert.equal(page.h1(), 'Opening Kitchen…');
+  assert.deepEqual(page.frames(page.hero), ['custom']);
+  assert.deepEqual(page.colors(page.hero), [RED_HEX]);
+  const printed = load('/5KAS', () => json({ found: true, localIp: '192.168.0.110', name: 'Kitchen', frameColor: '#ff0000' }));
+  await printed.settle();
+  assert.deepEqual(printed.colors(printed.hero), [RED_HEX], 'a printed link');
+});
+
+test('a hex frame keeps the black frame\'s outline so a dark color shows on the dark page', () => {
+  assert.match(css, /\.bezel\[data-frame="black"\],\.bezel\[data-frame="custom"\]\{box-shadow:[^}]*0 0 0 1px rgba\(255,255,255,\.16\)\}/);
+});
+
 test('the connecting page takes the colour from /lookup, else from the list', async () => {
   const cases = [[{ frameColor: 'mint' }, 'sunset', 'teal'], [{}, 'sunset', 'orange'], [{ frameColor: 'black' }, 'sunset', 'orange'], [{}, undefined, 'black']];
   for (const [extra, listed, want] of cases) {

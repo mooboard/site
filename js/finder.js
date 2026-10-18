@@ -29,6 +29,8 @@
   var hero = document.getElementById('hero');
   // each frame as boards name it + the site frame attribute and its name there
   var FRAMES = { midnight: ['black', 'Midnight'], moonlight: ['white', 'Moonlight'], sunset: ['orange', 'Sunset'], mint: ['teal', 'Mint Glow'], red: ['red', 'Red'] };
+  var CUSTOM = ['custom', 'Custom'];   // a frame in any #rrggbb color + the board carries its colors itself
+  var EDGE = 0.18;                     // how far a hex frame's light and dark edges lean toward white and toward black
   var BOARD_JS = '/js/board.js';
   var mooBoard = null;     // the board js api once it is in
   var waiting = null;      // what waits for it
@@ -188,12 +190,24 @@
     p.appendChild(document.createTextNode(' Your phone and mooboard need to be on the same home\u00a0network.'));
     return p;
   }
-  function isFrame(c) {
-    return typeof c === 'string' && Object.prototype.hasOwnProperty.call(FRAMES, c);
+  function isHex(c) {
+    return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c);
   }
-  // a board in its own frame + midnight when the api names none or one it does not know
+  function isFrame(c) {
+    return isHex(c) || (typeof c === 'string' && Object.prototype.hasOwnProperty.call(FRAMES, c));
+  }
+  // a board in its own frame + custom for a hex color + midnight when the api names none or one it does not know
   function frameOf(c) {
-    return FRAMES[isFrame(c) ? c : 'midnight'];
+    return isHex(c) ? CUSTOM : FRAMES[isFrame(c) ? c : 'midnight'];
+  }
+  // a hex color mixed by EDGE toward 255 for a light edge or toward 0 for a dark edge
+  function edgeOf(hex, to) {
+    var out = '#';
+    for (var i = 1; i < 7; i += 2) {
+      var c = parseInt(hex.slice(i, i + 2), 16), v = Math.round(c + (to - c) * EDGE);
+      out += (v < 16 ? '0' : '') + v.toString(16);
+    }
+    return out;
   }
   // fn gets the board js api + it loads the first time a board is shown and never again after a failure
   function withBoards(fn) {
@@ -229,6 +243,12 @@
   function mooboard(color) {
     var bz = el('span', 'bezel');
     bz.setAttribute('data-frame', frameOf(color)[0]);
+    if (isHex(color)) {   // a hex frame sets its own color and edges since the css has no name for it
+      var hex = color.toLowerCase();
+      bz.style.setProperty('--frame', hex);
+      bz.style.setProperty('--hi', edgeOf(hex, 255));
+      bz.style.setProperty('--lo', edgeOf(hex, 0));
+    }
     var led = el('span', 'led');
     bz.appendChild(led);
     unlit.push(led);

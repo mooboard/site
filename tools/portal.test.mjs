@@ -246,6 +246,28 @@ test('no board on this network: the board opened last is looked up by its code a
   assert.deepEqual(first.fetches.map((f) => f.url), [`${API}/nearby`], 'and nothing to look up');
 });
 
+test('a board with a hex frame is kept with its hex, and drawn in it from the memory when it is not on this network', async () => {
+  const red = { '--frame': '#ff0000', '--hi': '#ff2e2e', '--lo': '#d10000' };
+  const page = openPortal(nearbyOf([{ ...KITCHEN, frameColor: '#ff0000' }]));
+  await page.settle();
+  assert.equal(page.h1(), 'Opening Kitchen…');
+  assert.deepEqual(page.frames(page.hero), ['custom']);
+  assert.deepEqual(page.colors(page.hero), [red]);
+  page.timers.advance(1500);
+  assert.deepEqual(mine(page), { code: '5KAS', name: 'Kitchen', frameColor: '#ff0000' });
+  const away = openPortal(homeWith(() => new Promise(() => {}), []), { storage: Object.fromEntries(page.store) });
+  await away.settle();
+  assert.equal(away.h1(), 'Opening Kitchen…');
+  assert.deepEqual(away.frames(away.hero), ['custom']);
+  assert.deepEqual(away.colors(away.hero), [red]);
+  const odd = openPortal(homeWith(() => new Promise(() => {}), []), {
+    storage: remembered({ code: '5KAS', name: 'Kitchen', frameColor: '#ff0000;background:red' }),
+  });
+  await odd.settle();
+  assert.deepEqual(odd.frames(odd.hero), ['black'], 'a memory that is no hex draws midnight');
+  assert.deepEqual(odd.colors(odd.hero), [{}]);
+});
+
 test('a board looked up by its code that answers late still opens as soon as it answers', async () => {
   let answer;
   const page = openPortal(homeWith(() => new Promise((r) => { answer = r; }), []), { storage: remembered({ code: '5KAS', name: 'Kitchen' }) });
