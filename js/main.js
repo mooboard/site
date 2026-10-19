@@ -394,8 +394,8 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     if (on === ringOn) return;
     ringOn = on; clearInterval(ringT); ringT = 0;
     if (!on) { ringDots.forEach(function (c) { c.style.fill = ''; }); return; }
-    // a square pupil looks straight ahead while the ring spins, so none of the ring hides behind it
-    if (EYES) EYES.forEach(function (e) { if (e.cells.length > 1) pupilTo(e, 0, 0); });
+    // the footer cow's pupils look straight ahead while the ring spins, so none of the ring hides behind them
+    if (EYES) EYES.forEach(function (e) { pupilTo(e, 0, 0); });
     ringAt(ringK = 0);
     if (!REDUCED && !paused) ringT = setInterval(function () { ringAt(++ringK); }, 100);
   }
@@ -438,13 +438,14 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       if (t < 3) requestAnimationFrame(frame); else cv.remove();
     })(t0);
   }
-  // pupils: each eye's pupil looks toward the pointer, in any of the eight directions around the eye's center (or
-  // straight ahead when the pointer is on the eye itself). It stays on the mark's 4-unit LED grid, one step out, so
-  // the white of the eye always shows around it. The header's pupil is the middle three by three dots of each eye and
-  // moves as one square (a dot that lands on the eye's missing corner hides), the footer's is one dot. Touch screens:
-  // it follows a finger, and glances around on its own now and then.
+  // pupils: the header logo's stay still (owner 2026-10-19: "the mooboard logo on my site top left should not have
+  // moving pupils"). The footer cow's look toward the pointer, in any of the eight directions around each eye's center
+  // (or straight ahead when the pointer is on the eye itself). Each pupil is the middle three by three dots of its eye
+  // and moves as one square, one step out on the mark's 4-unit LED grid, so white still shows around it (a dot that
+  // lands on the eye's missing corner hides). Touch screens: it follows a finger, and glances around on its own now and
+  // then.
   var EYES = [];
-  marks.forEach(function (svg) {
+  $$('#foot-mark .mark').forEach(function (svg) {
     var half = svg.viewBox.baseVal.width / 2, sides = {};
     $$('.pupil', svg).forEach(function (c) {
       var x = +c.getAttribute('cx'), y = +c.getAttribute('cy'), s = x < half ? 'l' : 'r';
@@ -475,7 +476,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       // the eye's center on screen, and how far away the pointer is in LED steps
       var ex = m.a * e.cx + m.c * e.cy + m.e, ey = m.b * e.cx + m.d * e.cy + m.f, step = 4 * Math.hypot(m.a, m.b);
       var dx = x - ex, dy = y - ey;
-      if (Math.hypot(dx, dy) < step * 2 || (ringOn && e.cells.length > 1)) return pupilTo(e, 0, 0);
+      if (Math.hypot(dx, dy) < step * 2 || ringOn) return pupilTo(e, 0, 0);
       var s = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * Math.PI / 4;
       pupilTo(e, Math.round(Math.cos(s)), Math.round(Math.sin(s)));
     });
@@ -495,10 +496,10 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       // idle: every few seconds both eyes glance somewhere (a side more often than up or down) or look back ahead
       var glance = function () {
         glanceT = setTimeout(glance, 1800 + Math.random() * 2600);
-        if (document.hidden || paused || performance.now() - touchedAt < 2500) return;
+        if (document.hidden || paused || ringOn || performance.now() - touchedAt < 2500) return;
         if (Math.random() < .4) { EYES.forEach(function (e) { pupilTo(e, 0, 0); }); return; }
         var dirs = [[1, 0], [-1, 0], [1, 0], [-1, 0], [1, -1], [-1, -1], [1, 1], [-1, 1], [0, -1], [0, 1]], d = dirs[Math.floor(Math.random() * dirs.length)];
-        EYES.forEach(function (e) { if (!(ringOn && e.cells.length > 1)) pupilTo(e, d[0], d[1]); });
+        EYES.forEach(function (e) { pupilTo(e, d[0], d[1]); });
       };
       glanceT = setTimeout(glance, 2500);
     }

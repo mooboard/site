@@ -54,8 +54,9 @@ the top of its file.
 - `renditions.py`: the 960 px phone frames and the posters of the scroll sequences (Pillow)
 - `viewer-poster.py`: the 3D viewer's poster stills (Pillow, websocket-client)
 - `fonts.py`: the self-hosted web fonts in `fonts/` (fontTools, brotli)
-- `sync-mark.py`: copies the mark from `brand/` into the header and footer of `index.html`, the header with the
-  mark's square eyes and the footer with the old dot eyes, and checks the cow the other pages draw for themselves
+- `sync-mark.py`: copies the mark from `brand/` into the header and footer of `index.html`, both with the mark's
+  square eyes (the header logo's pupils stay still, the footer cow's follow the mouse), and checks the cow the other
+  pages draw for themselves
 - `make-radio.py`: `music/radio.json`, from Apple's previews and the owner's own copies of the songs in
   `local-music/`, which never go in git (numpy, mlx_whisper, ffmpeg)
 - `make-placeholder-songs.py`: the original placeholder songs in `music/archive/`

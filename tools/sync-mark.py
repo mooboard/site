@@ -1,9 +1,9 @@
 """Copy the mooboard mark from brand/ into index.html (header + footer) as inline SVG,
 grouped so the site can animate it: ears wiggle, eyes blink, pupils look and the ring spins the rainbow.
-The header cow has the mark's square eyes: each pupil is the middle three by three dots of its eye, inside a ring of
-12 white dots. The footer cow, the one that follows the mouse, keeps the old dot eyes (owner 2026-10-19): one dark
-pupil in the middle of each eye and the 8 dots round it white. Both carry class="ring" and data-ring (0 to 11,
-clockwise from the top row's left dot) on the ring dots, so js/main.js can spin the rainbow round them.
+Both cows have the mark's square eyes: each pupil is the middle three by three dots of its eye, inside a ring of 12
+white dots. The ring dots carry class="ring" and data-ring (0 to 11, clockwise from the top row's left dot), so
+js/main.js can spin the rainbow round them. js/main.js also decides who looks: the header logo's pupils stay still and
+the footer cow's follow the mouse (owner 2026-10-19).
 The variant's frame shows in its own fill until the visitor picks a frame. 404.html, hi/index.html, portal/index.html
 and link/done/index.html draw their own copy of the cow (<symbol id="cow">), so this exits 1 if theirs no longer
 matches the mark, or if index.html lost its markers.
@@ -55,27 +55,21 @@ def ringed(el):
 def dot(el, fill):
     return '<circle cx="%g" cy="%g" r="1.75" fill="%s"/>' % (num(el, 'cx'), num(el, 'cy'), fill)
 
-def face(square):
-    """the eye dots and the pupils: square eyes, or the old dot eyes with one pupil in each eye's middle"""
-    whites, dark = [ringed(el) for el in eyes], []
-    for p in pupils:
-        if square or (num(p, 'cx'), num(p, 'cy')) == middle(p):
-            dark.append(p)
-        else:
-            whites.append(dot(p, '#FFFFFF'))
+def face():
+    """the eye dots and the pupils"""
     # On the site each eye is whole: a white dot sits under each pupil dot too, so a pupil that looks away leaves white
     # behind it instead of a dark hole. The pupil is drawn a hair bigger than the LED dots so no white fringe shows
     # around it wherever it sits.
-    whites += [dot(p, '#FFFFFF') for p in dark]
-    return whites, [re.sub(r'\br="[\d.]+"', 'r="2"', p) for p in dark]
+    whites = [ringed(el) for el in eyes] + [dot(p, '#FFFFFF') for p in pupils]
+    return whites, [re.sub(r'\br="[\d.]+"', 'r="2"', p) for p in pupils]
 
-def build(uid, square):
+def build(uid):
     # the frame-coloured parts follow the picked frame through --mark-frame, never the dots (a white frame matches them)
     frame = re.search(r'fill="(#[0-9A-Fa-f]{6})"', ''.join(ear_l)).group(1)
     def mf(els):
         return ''.join(el if el.startswith('<circle') else el.replace('fill="%s"' % frame, 'class="mf" fill="%s"' % frame)
                        for el in els)
-    whites, dark = face(square)
+    whites, dark = face()
     body = mf(rest).replace('id="f"', 'id="%s"' % uid).replace('url(#f)', 'url(#%s)' % uid)
     # the eye dots and pupils live inside the screen's clip group, so close it before adding them
     if body.endswith('</g>'):
@@ -103,14 +97,13 @@ path = os.path.join(root, 'index.html')
 html = open(path).read()
 n = [0]
 def rep(m):
-    # the first place is the header (square eyes), the second the footer (dot eyes)
     n[0] += 1
-    return m.group(1) + build('mclip%d' % n[0], n[0] == 1) + m.group(3)
+    return m.group(1) + build('mclip%d' % n[0]) + m.group(3)
 html = re.sub(r'(<!--mark-->)(.*?)(<!--/mark-->)', rep, html, flags=re.S)
 if n[0] != 2:
     sys.exit('index.html has %d <!--mark--> places, not 2 (header and footer): nothing written' % n[0])
 open(path, 'w').write(html)
-print('mark %s -> %d places (header square eyes, footer dot eyes)' % (variant, n[0]))
+print('mark %s -> %d places' % (variant, n[0]))
 stale = []
 for name in ('404.html', 'hi/index.html', 'portal/index.html', 'link/done/index.html'):
     m = re.search(r'<symbol id="cow"[^>]*>(.*?)</symbol>', open(os.path.join(root, name)).read(), flags=re.S)

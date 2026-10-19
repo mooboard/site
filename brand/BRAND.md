@@ -19,8 +19,9 @@ Pupil dots carry `class="pupil"` and ring dots `class="ring"`, so apps and the s
 
 When the cow is thinking (loading, busy, excited), the pupils stay black and the ring spins the rainbow: #ff4d6d,
 #ffb81c, #77edd7, #2bd47d, #5aa9ff and #c77dff in that order, two dots each, one dot on clockwise every 100 ms (once
-around in 1.2 s), both eyes together. With reduced motion the ring holds still in its rainbow. The cow at the foot of
-mooboard.co keeps the old dot eyes (one black pupil each, the size of a nostril) and follows the mouse.
+around in 1.2 s), both eyes together. With reduced motion the ring holds still in its rainbow. On mooboard.co the logo
+at the top keeps its pupils still, and the cow at the foot follows the mouse: its square pupils move one dot toward
+it.
 
 
 - `wordmark-*.svg`: "mooboard", Fredoka SemiBold (600), outlined to paths. Colors: deep (on light), white (on dark or
