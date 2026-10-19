@@ -77,13 +77,12 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 @keyframes earL { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(16deg); } 40% { transform: rotate(-10deg); } 60% { transform: rotate(10deg); } 80% { transform: rotate(-4deg); } }
 @keyframes earR { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-16deg); } 40% { transform: rotate(10deg); } 60% { transform: rotate(-10deg); } 80% { transform: rotate(4deg); } }
 @keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.15); } }
-/* pupils: loading cycles the brand colors, happy flashes and glows */
+/* thinking: while something loads the mark jitters, and loading or happy, the ring round each eye spins the rainbow
+   (js/main.js) while the pupils stay dark */
 .mark.loading { animation: jitter .24s steps(3) infinite; }
 .mark.loading .eyes { animation: none; }
 @keyframes jitter { 0% { transform: translate(0, 0); } 33% { transform: translate(1px, -1px); } 66% { transform: translate(-1px, 1px); } 100% { transform: translate(1px, 1px); } }
 .mark.happy .eyes { animation: none; }
-.mark.happy .pupil { animation: pupilHappy .9s steps(1) 3; filter: drop-shadow(0 0 3px #FFB81C); }
-@keyframes pupilHappy { 0% { fill: #FFB81C; } 17% { fill: #FF2E88; } 33% { fill: #77EDD7; } 50% { fill: #FF7A21; } 67% { fill: #FFB7C9; } 83% { fill: #77EDD7; } }
 .confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 80; }
 
 /* ---------- LED + bezel ---------- */
@@ -396,17 +395,13 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 @media (min-width: 760px) { .cards { grid-template-columns: 1.25fr 1fr; } .card { aspect-ratio: auto; min-height: 460px; } }
 .no-anim .stage3d .spin { transform: none; }
 @media (prefers-reduced-motion: reduce) {
+  /* (the ring holds still in its rainbow, js/main.js) */
   .mark.loading { animation: none; }
-  /* (important, or the reset above would cut it to one blip) */
-  .mark.loading .pupil { animation: pupilFade 2.4s ease-in-out infinite !important; }
-  .mark.happy .pupil { fill: #FF2E88; }
   /* the moo bubble fades in and out where it is */
   .moo-pop { transform: none; }
   .moo-pop.show { animation: popFade 1.3s ease forwards !important; }
   @keyframes popFade { 0%, 100% { opacity: 0; } 15%, 80% { opacity: 1; } }
 }
-/* (outside the media query, as a pause uses it too) */
-@keyframes pupilFade { 0%, 100% { fill: #0E1A22; } 50% { fill: #77EDD7; } }
 .on-light .cap { color: var(--ink); text-shadow: 0 4px 30px rgba(255, 255, 255, .6); }
 .on-light .progress { background: rgba(14, 26, 34, .12); }
 .on-light .pin::before, .on-light .pin::after { display: none; }
@@ -449,7 +444,9 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 .np-eq b:nth-child(2) { animation-delay: -.25s; } .np-eq b:nth-child(3) { animation-delay: -.4s; }
 .np.muted .np-eq b { animation-play-state: paused; transform: scaleY(.35); }
 @keyframes eq { from { transform: scaleY(.3); } to { transform: scaleY(1); } }
-.mark.music .pupil { fill: var(--accent-lite); }
+/* while music plays the white of each eye (the ring, and the dots a pupil uncovers when it looks away) takes the
+   track's color and the pupils stay dark */
+.mark.music .eyes > circle { fill: var(--accent-lite); }
 @media (max-width: 700px) {
   .player { right: max(12px, env(safe-area-inset-right)); }
   .pl { width: 40px; height: 40px; }

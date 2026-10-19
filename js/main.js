@@ -377,34 +377,41 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   });
 
   /* ---------- the cow's eyes ---------- */
-  var marks = $$('.mark'), loads = 0;
-  // pupils cycle the brand colors while something loads
-  // loading: the pupils blink random rainbow hues every ~100 ms while the mark jitters (CSS), then settle.
-  // the white eye dots always stay white
-  var rainbowT = 0;
-  function eyeDots() { return $$('.mark .pupil'); }
-  function rainbow(on) {
-    clearTimeout(rainbowT);
-    if (!on || REDUCED || paused) { eyeDots().forEach(function (c) { c.style.fill = ''; }); return; }
-    (function hop() {
-      eyeDots().forEach(function (c) {
-        c.style.fill = 'hsl(' + Math.floor(Math.random() * 360) + ', 95%, 55%)';
-      });
-      rainbowT = setTimeout(hop, 80 + Math.random() * 40);
-    })();
+  var marks = $$('.mark'), loads = 0, glad = false;
+  // thinking, while something loads and when the cow is happy: the pupils stay dark and the ring of white dots round
+  // each eye spins the rainbow (owner 2026-10-19: "the spinning rainbow ring"), two dots a color, one dot on clockwise
+  // every 100 ms and both eyes together (sync-mark.py numbers the ring dots clockwise in data-ring). While it loads the
+  // mark jitters too (CSS). Less motion holds the ring still in its rainbow.
+  var RING_COLORS = ['#ff4d6d', '#ffb81c', '#77edd7', '#2bd47d', '#5aa9ff', '#c77dff'];
+  var ringDots = $$('.mark .ring'), ringT = 0, ringK = 0, ringOn = false;
+  function ringAt(k) {
+    ringDots.forEach(function (c) {
+      c.style.fill = RING_COLORS[((Math.floor((+c.getAttribute('data-ring') - k) / 2) % 6) + 6) % 6];
+    });
   }
-  addEventListener('moomotion', function () { if (loads) rainbow(true); });
+  function spin() {
+    var on = loads > 0 || glad;
+    if (on === ringOn) return;
+    ringOn = on; clearInterval(ringT); ringT = 0;
+    if (!on) { ringDots.forEach(function (c) { c.style.fill = ''; }); return; }
+    // a square pupil looks straight ahead while the ring spins, so none of the ring hides behind it
+    if (EYES) EYES.forEach(function (e) { if (e.cells.length > 1) pupilTo(e, 0, 0); });
+    ringAt(ringK = 0);
+    if (!REDUCED && !paused) ringT = setInterval(function () { ringAt(++ringK); }, 100);
+  }
+  addEventListener('moomotion', function () { if (ringOn) { ringOn = false; spin(); } });
   function busy(p) {
-    if (++loads === 1) { marks.forEach(function (m) { m.classList.add('loading'); }); rainbow(true); }
-    var done = function () { if (--loads <= 0) { loads = 0; marks.forEach(function (m) { m.classList.remove('loading'); }); rainbow(false); } };
+    if (++loads === 1) { marks.forEach(function (m) { m.classList.add('loading'); }); spin(); }
+    var done = function () { if (--loads <= 0) { loads = 0; marks.forEach(function (m) { m.classList.remove('loading'); }); spin(); } };
     Promise.resolve(p).then(done, done);
     return p;
   }
-  // happy eyes: pupils flash and glow, ears wiggle, confetti in the brand colors
+  // happy eyes: the ring spins the rainbow, ears wiggle, confetti in the brand colors
   var happyT = 0;
   function happy(from) {
     marks.forEach(function (m) { m.classList.remove('happy'); void m.getBoundingClientRect(); m.classList.add('happy'); });
-    clearTimeout(happyT); happyT = setTimeout(function () { marks.forEach(function (m) { m.classList.remove('happy'); }); }, 2800);
+    glad = true; spin();
+    clearTimeout(happyT); happyT = setTimeout(function () { marks.forEach(function (m) { m.classList.remove('happy'); }); glad = false; spin(); }, 2800);
     if (!REDUCED) confetti(from);
   }
   function confetti(from) {
@@ -431,31 +438,49 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       if (t < 3) requestAnimationFrame(frame); else cv.remove();
     })(t0);
   }
-  // pupils: each eye has one dark LED that looks toward the pointer, in any of the eight directions around the
-  // eye's center (or straight ahead when the pointer is on the eye itself). It stays on the mark's 4-unit LED grid,
-  // one step out, so the white ring of the eye always shows around it. Touch screens: it follows a finger, and
-  // glances around on its own now and then.
-  var PUPILS = $$('.mark .pupil').map(function (c) { return { el: c, cx: +c.getAttribute('cx'), cy: +c.getAttribute('cy'), at: '0,0' }; });
-  function pupilTo(p, ox, oy) {
+  // pupils: each eye's pupil looks toward the pointer, in any of the eight directions around the eye's center (or
+  // straight ahead when the pointer is on the eye itself). It stays on the mark's 4-unit LED grid, one step out, so
+  // the white of the eye always shows around it. The header's pupil is the middle three by three dots of each eye and
+  // moves as one square (a dot that lands on the eye's missing corner hides), the footer's is one dot. Touch screens:
+  // it follows a finger, and glances around on its own now and then.
+  var EYES = [];
+  marks.forEach(function (svg) {
+    var half = svg.viewBox.baseVal.width / 2, sides = {};
+    $$('.pupil', svg).forEach(function (c) {
+      var x = +c.getAttribute('cx'), y = +c.getAttribute('cy'), s = x < half ? 'l' : 'r';
+      (sides[s] = sides[s] || { svg: svg, cells: [], at: '0,0' }).cells.push({ el: c, cx: x, cy: y });
+    });
+    Object.keys(sides).forEach(function (s) {
+      var e = sides[s], sum = function (k) { return e.cells.reduce(function (t, c) { return t + c[k]; }, 0); };
+      e.cx = sum('cx') / e.cells.length; e.cy = sum('cy') / e.cells.length;
+      EYES.push(e);
+    });
+  });
+  function pupilTo(e, ox, oy) {
     var k = ox + ',' + oy;
-    if (k === p.at) return;
-    p.at = k; p.el.setAttribute('cx', p.cx + ox * 4); p.el.setAttribute('cy', p.cy + oy * 4);
+    if (k === e.at) return;
+    e.at = k;
+    e.cells.forEach(function (c) {
+      var x = c.cx + ox * 4, y = c.cy + oy * 4;
+      c.el.setAttribute('cx', x); c.el.setAttribute('cy', y);
+      c.el.style.visibility = Math.abs(x - e.cx) > 6 && Math.abs(y - e.cy) > 6 ? 'hidden' : '';
+    });
   }
   function lookAt(x, y) {
-    PUPILS.forEach(function (p) {
-      var svg = p.el.ownerSVGElement, m = svg.getScreenCTM();
+    EYES.forEach(function (e) {
+      var svg = e.svg, m = svg.getScreenCTM();
       if (!m) return;
       var r = svg.getBoundingClientRect();
       if (r.bottom < 0 || r.top > innerHeight) return;
       // the eye's center on screen, and how far away the pointer is in LED steps
-      var ex = m.a * p.cx + m.c * p.cy + m.e, ey = m.b * p.cx + m.d * p.cy + m.f, step = 4 * Math.hypot(m.a, m.b);
+      var ex = m.a * e.cx + m.c * e.cy + m.e, ey = m.b * e.cx + m.d * e.cy + m.f, step = 4 * Math.hypot(m.a, m.b);
       var dx = x - ex, dy = y - ey;
-      if (Math.hypot(dx, dy) < step * 2) return pupilTo(p, 0, 0);
+      if (Math.hypot(dx, dy) < step * 2 || (ringOn && e.cells.length > 1)) return pupilTo(e, 0, 0);
       var s = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * Math.PI / 4;
-      pupilTo(p, Math.round(Math.cos(s)), Math.round(Math.sin(s)));
+      pupilTo(e, Math.round(Math.cos(s)), Math.round(Math.sin(s)));
     });
   }
-  if (!REDUCED && PUPILS.length) {
+  if (!REDUCED && EYES.length) {
     var eyeRaf = 0, eyeX = 0, eyeY = 0;
     var aim = function (x, y) {
       eyeX = x; eyeY = y;
@@ -471,9 +496,9 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       var glance = function () {
         glanceT = setTimeout(glance, 1800 + Math.random() * 2600);
         if (document.hidden || paused || performance.now() - touchedAt < 2500) return;
-        if (Math.random() < .4) { PUPILS.forEach(function (p) { pupilTo(p, 0, 0); }); return; }
+        if (Math.random() < .4) { EYES.forEach(function (e) { pupilTo(e, 0, 0); }); return; }
         var dirs = [[1, 0], [-1, 0], [1, 0], [-1, 0], [1, -1], [-1, -1], [1, 1], [-1, 1], [0, -1], [0, 1]], d = dirs[Math.floor(Math.random() * dirs.length)];
-        PUPILS.forEach(function (p) { pupilTo(p, d[0], d[1]); });
+        EYES.forEach(function (e) { if (!(ringOn && e.cells.length > 1)) pupilTo(e, d[0], d[1]); });
       };
       glanceT = setTimeout(glance, 2500);
     }

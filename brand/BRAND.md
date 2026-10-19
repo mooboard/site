@@ -12,10 +12,15 @@ with "moo". Always written in lowercase, even at the start of a sentence or a ti
 ## Logo
 
 The mark is a cow in a onesie: a smooth rounded body with sideways ears (pink insides) and cream horns, in the
-frame colour; the face is the product's black LED display, shown as a centred dot grid: the eyes are round clusters of
-lit white dots with one black pupil each (the size of a nostril), the muzzle a rounded cluster of lit pink dots with
-two black nostrils. Pupils carry `class="pupil"` so apps and the site can light them in other colours (loading,
-excitement). Everything sits on the centre line.
+frame color. The face is the product's black LED display, shown as a centered dot grid. The eyes are square: each is a
+ring of 12 lit white dots around a black pupil of three by three dots (an eye is five by five dots without its
+corners). The muzzle is a rounded cluster of lit pink dots with two black nostrils. Everything sits on the center line.
+Pupil dots carry `class="pupil"` and ring dots `class="ring"`, so apps and the site can color them.
+
+When the cow is thinking (loading, busy, excited), the pupils stay black and the ring spins the rainbow: #ff4d6d,
+#ffb81c, #77edd7, #2bd47d, #5aa9ff and #c77dff in that order, two dots each, one dot on clockwise every 100 ms (once
+around in 1.2 s), both eyes together. With reduced motion the ring holds still in its rainbow. The cow at the foot of
+mooboard.co keeps the old dot eyes (one black pupil each, the size of a nostril) and follows the mouse.
 
 
 - `wordmark-*.svg`: "mooboard", Fredoka SemiBold (600), outlined to paths. Colors: deep (on light), white (on dark or

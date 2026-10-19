@@ -160,11 +160,17 @@ class Tab {
   }
 }
 
-// each eye's middle three by three dots row by row, by their place round its centre + '' is the centre, the brand mark's pupil
+// each eye's middle three by three dots row by row, by their place round its centre + '' is the centre + all nine are
+// the brand mark's square pupil
 const EYE_PLACES = ['nw', 'n', 'ne', 'w', '', 'e', 'sw', 's', 'se'];
-// the dots a pupil lights as eyes() lists them + the board's plus and the x where something went wrong
-export const PLUS = ['n', 'w', 'c', 'e', 's'];
+// the dots a pupil lights as eyes() lists them + the square and the x where something went wrong
+export const SQUARE = ['nw', 'n', 'ne', 'w', 'c', 'e', 'sw', 's', 'se'];
 export const CROSS = ['nw', 'ne', 'c', 'sw', 'se'];
+// the 12 white dots round each pupil, clockwise from the top row's left one, and the rainbow they spin while it looks
+export const RING = 12;
+export const RAINBOW = ['#ff4d6d', '#ffb81c', '#77edd7', '#2bd47d', '#5aa9ff', '#c77dff'];
+// each ring dot's color k steps round + ((i - k) // 2) % 6
+export const ringAt = (k) => Array.from({ length: RING }, (_, i) => RAINBOW[((Math.floor((i - k) / 2) % 6) + 6) % 6]);
 
 export const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Mobile/15E148 Safari/604.1';
 export const ANDROID = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36';
@@ -190,17 +196,19 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
   hero.className = 'hero';
   install.className = 'install';
   lead.className = 'lead';
-  // both pages show the brand mark + the middle dots of each eye are the ones its pupils light + as in the markup the
-  // centre (pl, pr) has the pupil's ink and the dots round it no fill of their own, so their group's white
+  // both pages show the brand mark + the middle dots of each eye are the ones its pupils light + as in the markup all
+  // nine have the pupil's ink, and the ring round them (pl-r0 to pl-r11) no fill of its own, so its group's white
   const pupils = {};
+  const ringDots = {};
   for (const eye of ['pl', 'pr']) {
     for (const place of EYE_PLACES) {
       const dot = new El('circle');
-      if (!place) dot.setAttribute('fill', '#0E1A22');
+      dot.setAttribute('fill', '#0E1A22');
       pupils[place ? `${eye}-${place}` : eye] = dot;
     }
+    for (let i = 0; i < RING; i += 1) ringDots[`${eye}-r${i}`] = new El('circle');
   }
-  const ids = { view, top, hero, ...pupils };
+  const ids = { view, top, hero, ...pupils, ...ringDots };
   if (kind === 'portal') Object.assign(ids, { install, lead });
   const roots = [top, view, hero, install, lead];
   const byId = (id) => ids[id] ?? roots.flatMap((r) => r.all()).find((e) => e.attrs && e.attrs.id === id) ?? null;
@@ -331,12 +339,14 @@ export function load(pathname, answer = () => new Promise(() => {}), opts = {}) 
     frames: (root) => root.all().filter((e) => e.className === 'bezel').map((e) => e.getAttribute('data-frame')),
     // the colors set on each of those boards itself + none for a frame the css draws
     colors: (root) => root.all().filter((e) => e.className === 'bezel').map((e) => ({ ...e.style.props })),
-    // each eye's pupil: the dots it lights as PLUS and CROSS list them (c the centre) and their colours + the rest are white
+    // each eye's pupil: the dots it lights as SQUARE and CROSS list them (c the centre) and their colours + the rest are white
     eyes: () => ['pl', 'pr'].map((eye) => {
       const fill = (place) => pupils[place ? `${eye}-${place}` : eye].getAttribute('fill');
       const lit = EYE_PLACES.filter((place) => fill(place) !== null && fill(place) !== '#FFFFFF');
       return { lit: lit.map((place) => place || 'c'), colours: [...new Set(lit.map(fill))] };
     }),
+    // each eye's ring dots in order round it and their colours + no fill of their own is the group's white
+    rings: () => ['pl', 'pr'].map((eye) => Array.from({ length: RING }, (_, i) => ringDots[`${eye}-r${i}`].getAttribute('fill') ?? '#FFFFFF')),
     // the loading line's dots
     dots: () => view.all().find((e) => e.className === 'dots'),
     // js/board.js arrives + mark false is an older copy without the mark scene

@@ -54,14 +54,16 @@ the top of its file.
 - `renditions.py`: the 960 px phone frames and the posters of the scroll sequences (Pillow)
 - `viewer-poster.py`: the 3D viewer's poster stills (Pillow, websocket-client)
 - `fonts.py`: the self-hosted web fonts in `fonts/` (fontTools, brotli)
-- `sync-mark.py`: copies the mark from `brand/` into the header and footer of `index.html`
+- `sync-mark.py`: copies the mark from `brand/` into the header and footer of `index.html`, the header with the
+  mark's square eyes and the footer with the old dot eyes, and checks the cow the other pages draw for themselves
 - `make-radio.py`: `music/radio.json`, from Apple's previews and the owner's own copies of the songs in
   `local-music/`, which never go in git (numpy, mlx_whisper, ffmpeg)
 - `make-placeholder-songs.py`: the original placeholder songs in `music/archive/`
 - `make-prayer.py`: the Prayer face's lettering inside `js/board.js` (uharfbuzz, freetype-py)
 - `og.html`: the social card. Serve the repo, open `/tools/og.html` in Chrome at 1200x630, let the board settle and
   save a screenshot as `og.png`. `?say=Get started` puts other words on the board, one line per `|`: `og-start.png` is `/tools/og.html?say=Get started`
-- `icon.html`: the mark at the touch icon size, and at the favicon size with `#fav`
+- `icon.html`: the mark at the touch icon size, and the brand kit's small favicon at 32 px with `#fav` and at 16 px
+  with `#fav16` (`favicon.ico` holds both)
 - `portal-icons.py`: the portal's app icons, made from the brand kit's app icon (Pillow)
 - `tour-frames.py`: the panel's frames for the buttons tour in `assets/tour/`, from the firmware's own renders (Pillow)
 

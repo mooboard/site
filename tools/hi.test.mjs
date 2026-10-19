@@ -2,7 +2,7 @@
 // + run node --test tools/hi.test.mjs tools/portal.test.mjs
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { API, BEDROOM, CROSS, FOUND, KITCHEN, PLUS, SHARED, json, load, nearbyOf, read, script, sharedNet } from './finder-harness.mjs';
+import { API, BEDROOM, CROSS, FOUND, KITCHEN, SHARED, SQUARE, json, load, nearbyOf, read, ringAt, script, sharedNet } from './finder-harness.mjs';
 
 const hi = read('hi/index.html');
 const notFound = read('404.html');
@@ -323,26 +323,32 @@ test('a lookup that hangs gives up after 6 s even where a fetch cannot be aborte
   assertDown(page);
 });
 
-test('while it looks the cow\'s pupils are the board\'s plus, each a new full hue every 100 ms, with white round them', async () => {
+const BLACK_SQUARE = { lit: SQUARE, colours: ['#0E1A22'] };
+const BLACK_X = { lit: CROSS, colours: ['#0E1A22'] };
+const WHITE_RING = Array(12).fill('#FFFFFF');
+
+test('while it looks the cow\'s pupils stay a black square and the ring round each spins the rainbow, a dot on every 100 ms, both eyes together', async () => {
   const page = load('/hi');
-  const seen = new Set();
-  for (let i = 0; i < 10; i += 1) {
-    const eyes = page.eyes();
-    for (const eye of eyes) {
-      assert.deepEqual(eye.lit, PLUS, 'a plus, the corners white');
-      assert.equal(eye.colours.length, 1, 'one hue for the whole pupil');
-      assert.match(eye.colours[0], /^hsl\(\d{1,3},100%,50%\)$/);
-    }
-    seen.add(eyes.map((e) => e.colours[0]).join());
+  for (let k = 0; k < 14; k += 1) {
+    assert.deepEqual(page.eyes(), [BLACK_SQUARE, BLACK_SQUARE], 'the pupils stay dark');
+    assert.deepEqual(page.rings(), [ringAt(k), ringAt(k)], `step ${k}`);
     page.timers.advance(100);
   }
-  assert.ok(seen.size > 5, 'new colours as it goes');
+  // two dots a color, in the order of the six, and a step later each color is one dot on clockwise
+  assert.deepEqual(ringAt(0), ['#ff4d6d', '#ff4d6d', '#ffb81c', '#ffb81c', '#77edd7', '#77edd7', '#2bd47d', '#2bd47d', '#5aa9ff', '#5aa9ff', '#c77dff', '#c77dff']);
+  assert.deepEqual(ringAt(1), [ringAt(0)[11], ...ringAt(0).slice(0, 11)]);
+  assert.deepEqual(ringAt(12), ringAt(0), 'round in 1.2 s');
 });
 
-const BLACK_PLUS = { lit: PLUS, colours: ['#0E1A22'] };
-const BLACK_X = { lit: CROSS, colours: ['#0E1A22'] };
+test('with less motion asked for, the ring holds still in its rainbow while it looks', async () => {
+  const page = load('/hi', undefined, { reducedMotion: true });
+  for (let i = 0; i < 5; i += 1) {
+    assert.deepEqual(page.rings(), [ringAt(0), ringAt(0)]);
+    page.timers.advance(100);
+  }
+});
 
-test('the pupils settle as a black plus on the pages that wait for a tap, and turn to a black x where something went wrong', async () => {
+test('the pupils settle as a black square in a white ring on the pages that wait for a tap, and turn to a black x where something went wrong', async () => {
   const stay = load('/hi', nearbyOf([KITCHEN]));
   await stay.settle();
   stay.buttons().find((b) => b.textContent === 'Stay here').click();
@@ -354,21 +360,25 @@ test('the pupils settle as a black plus on the pages that wait for a tap, and tu
   const wrong = [load('/hi', () => json({}, 503)), load('/5KAS', () => Promise.reject(new TypeError('offline'))), missed, load('/nope')];
   for (const page of calm) {
     await page.settle();
-    assert.deepEqual(page.eyes(), [BLACK_PLUS, BLACK_PLUS], page.h1());
+    assert.deepEqual(page.eyes(), [BLACK_SQUARE, BLACK_SQUARE], page.h1());
+    assert.deepEqual(page.rings(), [WHITE_RING, WHITE_RING], page.h1());
   }
   for (const page of wrong) {
     await page.settle();
     assert.deepEqual(page.eyes(), [BLACK_X, BLACK_X], page.h1());
+    assert.deepEqual(page.rings(), [WHITE_RING, WHITE_RING], page.h1());
   }
-  // Try again from the api-down page looks with plus pupils again, the x gone
+  // Try again from the api-down page looks with square pupils and the spinning ring again, the x gone
   let asks = 0;
   const near = load('/hi', () => (asks++ ? json({ boards: [BEDROOM, KITCHEN] }) : json({}, 503)));
   await near.settle();
   assert.deepEqual(near.eyes(), [BLACK_X, BLACK_X]);
   near.buttons()[0].click();
-  assert.deepEqual(near.eyes().map((e) => e.lit), [PLUS, PLUS]);
+  assert.deepEqual(near.eyes().map((e) => e.lit), [SQUARE, SQUARE]);
+  assert.deepEqual(near.rings(), [ringAt(0), ringAt(0)]);
   await near.settle();
-  assert.deepEqual(near.eyes(), [BLACK_PLUS, BLACK_PLUS]);
+  assert.deepEqual(near.eyes(), [BLACK_SQUARE, BLACK_SQUARE]);
+  assert.deepEqual(near.rings(), [WHITE_RING, WHITE_RING]);
   assert.equal(near.timers.count(), 0, 'no rainbow or dots left running');
 });
 

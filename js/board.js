@@ -3552,28 +3552,34 @@
     '..........ccc........ccc..........', '..........ccc........ccc..........', '..........ccc........ccc..........',
     '..........ccsssssssssscc..........', '........ssssssssssssssssss........', '.......ssssssssssssssssssss.......',
     '......ssssssssssssssssssssss......', '...sssssss..............sssssss...', '.ssssssss................ssssssss.',
-    'sspppsss...www......www...ssspppss', '.sspssss..wwwww....wwwww..sssspss.', '..ssssss..wwoww....wwoww..ssssss..',
-    '....ssss..wwwww....wwwww..ssss....', '....ssss...www......www...ssss....', '....ssss..................ssss....',
+    'sspppsss...www......www...ssspppss', '.sspssss..wooow....wooow..sssspss.', '..ssssss..wooow....wooow..ssssss..',
+    '....ssss..wooow....wooow..ssss....', '....ssss...www......www...ssss....', '....ssss..................ssss....',
     '....ssss..................ssss....', '....ssss.....pppppppp.....ssss....', '.....sss....pp.pppp.pp....sss.....',
     '.....sss.....pppppppp.....sss.....', '.....ssss....pppppppp....ssss.....', '.....sssss..............sssss.....',
     '......ssssssssssssssssssssss......', '.......ssssssssssssssssssss.......', '........ssssssssssssssssss........',
     '............ssssssssss............'
   ];
   var MARKC = { c: [245, 233, 214], p: [255, 170, 195], w: WHITE };
-  function drawMark(f, x0, y0, t, frame, pupil) {
-    var blink = (t % 3.7) < .14;
+  // square eyes (owner 2026-10-19): each pupil is the middle three by three of its eye (o), unlit, in a ring of 12
+  // white dots (w). Thinking spins the rainbow round the ring: two dots a color, one dot on clockwise every 100 ms,
+  // both eyes together, ring dot i the color ((i - k) // 2) % 6 at step k
+  var RING = ['-1,-2', '0,-2', '1,-2', '2,-1', '2,0', '2,1', '1,2', '0,2', '-1,2', '-2,1', '-2,0', '-2,-1'];
+  var RING_COLORS = [[255, 77, 109], [255, 184, 28], [119, 237, 215], [43, 212, 125], [90, 169, 255], [199, 125, 255]];
+  function drawMark(f, x0, y0, t, frame, spin) {
+    var blink = (t % 3.7) < .14, k = Math.floor(t * 10);
     for (var r = 0; r < MARK.length; r++) for (var c = 0; c < MARK[r].length; c++) {
       var ch = MARK[r][c];
       if (ch === '.') continue;
       if (blink && (ch === 'w' || ch === 'o') && r !== 11) continue;
-      if (ch === 'o' && !pupil && !blink) continue;   // a black pupil is just an unlit LED
-      f.set(x0 + c, y0 + r, ch === 's' ? frame : ch === 'o' ? (blink ? WHITE : pupil) : MARKC[ch]);
+      if (ch === 'o' && !blink) continue;   // a black pupil is just an unlit LED
+      var col = ch === 's' ? frame : ch === 'o' ? WHITE : MARKC[ch];
+      if (ch === 'w' && spin && !blink) {
+        // the ring dot's place round its eye's middle (row 11, column 12 or 21)
+        var i = RING.indexOf((c - (c < 17 ? 12 : 21)) + ',' + (r - 11));
+        col = RING_COLORS[((Math.floor((i - k) / 2) % 6) + 6) % 6];
+      }
+      f.set(x0 + c, y0 + r, col);
     }
-  }
-  function hsl(h, s, l) {
-    h = ((h % 360) + 360) % 360 / 360;
-    function g(n) { var k = (n + h * 12) % 12, a = s * Math.min(l, 1 - l); return 255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))); }
-    return [g(0), g(8), g(4)];
   }
   S.moo = function () {
     return {
@@ -3582,7 +3588,7 @@
         // the cow and MOO as one centred group, clear of every edge
         f.fill(BLACK);
         var cw = MARK[0].length, word = 'MOO', Lw = line('moo', 17, word), x0 = Math.round((W - (cw + 5 + Lw.inkW)) / 2);
-        drawMark(f, x0, 4, t, [119, 237, 215], st < 2.6 && !REDUCED ? hsl(Math.floor(t * 10) * 47, 1, .55) : null);
+        drawMark(f, x0, 4, t, [119, 237, 215], st < 2.6 && !REDUCED);
         var x = x0 + cw + 5;
         for (var i = 0; i < 3; i++) {
           var tt = c01((st - .15 - i * .22) / .35), jump = REDUCED ? 0 : Math.round(Math.sin(tt * Math.PI) * -3), L = line('moo', 17, word[i]);
@@ -3598,7 +3604,7 @@
       label: 'Logo', dur: 8,
       draw: function (f, t) {
         f.fill(BLACK);
-        drawMark(f, Math.round((W - MARK[0].length) / 2), Math.round((H - MARK.length) / 2), t, [119, 237, 215], null);
+        drawMark(f, Math.round((W - MARK[0].length) / 2), Math.round((H - MARK.length) / 2), t, [119, 237, 215], false);
       }
     };
   };
@@ -3633,8 +3639,8 @@
       '          ccc        ccc          ', '          ccc        ccc          ', '          ccc        ccc          ',
       '          ccTTTTTTTTTTcc          ', '        TTTTTTTTTTTTTTTTTT        ', '       TTTTTTTTTTTTTTTTTTTT       ',
       '      TTTTTTTTTTTTTTTTTTTTTT      ', '   TTTTTTT..............TTTTTTT   ', ' TTTTTTTT................TTTTTTTT ',
-      'TTpppTTT...WWW......WWW...TTTpppTT', ' TTpTTTT..WWWWW....WWWWW..TTTTpTT ', '  TTTTTT..WWoWW....WWoWW..TTTTTT  ',
-      '    TTTT..WWWWW....WWWWW..TTTT    ', '    TTTT...WWW......WWW...TTTT    ', '    TTTT..................TTTT    ',
+      'TTpppTTT...WWW......WWW...TTTpppTT', ' TTpTTTT..WoooW....WoooW..TTTTpTT ', '  TTTTTT..WoooW....WoooW..TTTTTT  ',
+      '    TTTT..WoooW....WoooW..TTTT    ', '    TTTT...WWW......WWW...TTTT    ', '    TTTT..................TTTT    ',
       '    TTTT..................TTTT    ', '    TTTT.....pppppppp.....TTTT    ', '     TTT....ppnppppnpp....TTT     ',
       '     TTT.....pppppppp.....TTT     ', '     TTTT....pppppppp....TTTT     ', '     TTTTT..............TTTTT     ',
       '      TTTTTTTTTTTTTTTTTTTTTT      ', '       TTTTTTTTTTTTTTTTTTTT       ', '        TTTTTTTTTTTTTTTTTT        ',

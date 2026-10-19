@@ -1,8 +1,12 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>icon</title>
+<!-- the touch icon: the mark at 180 px on the screen's ink + #fav and #fav16: the brand kit's small favicon at 32 and
+     16 px, the mark drawn on whole pixels so its square eyes still read (the full mark's eye ring blurs away there) -->
 <style>html,body{margin:0;background:transparent}
 .t{width:180px;height:180px;background:#0E1A22;display:grid;place-items:center}.t img{width:140px}
-.f{width:32px;height:32px;display:grid;place-items:center}.f img{width:32px}
-body.fav .t{display:none} body:not(.fav) .f{display:none}</style></head>
-<body><div class="t"><img src="../brand/mark-teal.svg"></div><div class="f"><img src="../brand/mark-teal.svg"></div>
-<script>if(location.hash=='#fav')document.body.className='fav'</script></body></html>
+.f{width:32px;height:32px}.f img{width:32px;height:32px;display:block}
+.s{width:16px;height:16px}.s img{width:16px;height:16px;display:block}
+.t,.f,.s{display:none} body.touch .t{display:grid} body.fav .f,body.fav16 .s{display:block}</style></head>
+<body class="touch"><div class="t"><img src="../brand/mark-teal.svg"></div><div class="f"><img src="../brand/kit/favicon.svg"></div>
+<div class="s"><img src="../brand/kit/favicon-16.svg"></div>
+<script>if(location.hash=='#fav'||location.hash=='#fav16')document.body.className=location.hash.slice(1)</script></body></html>

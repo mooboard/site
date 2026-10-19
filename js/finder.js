@@ -7,7 +7,7 @@
   var WHITE = '#FFFFFF';   // the eye whites
   var TIMEOUT_MS = 6000;
   var AUTO_GO_MS = 3000;
-  var TICK_MS = 100;   // the panel's startup card gives the pupils a new colour every 100 ms
+  var TICK_MS = 100;   // the ring steps one dot round every 100 ms
   var DOT_MS = 400;    // the board's loading dots + none then . .. ... each for 400 ms as on its updating card
   var PORTAL_GO_MS = 1500;          // how long the portal says it is opening a board before it goes
   var MINE = 'mooboard.portal';     // where the portal keeps the board it opened last
@@ -18,10 +18,16 @@
   var onPortal = start.kind === 'portal';
   var keeps = onPortal || start.keep === true;   // the portal and a board link under it remember the board they open
   // each eye's middle three by three dots by their place round its centre + a pupil lights some and the rest stay
-  // eye white + the board's pupils are a plus and an x where something went wrong
-  var PLUS = ['', '-n', '-e', '-s', '-w'];
+  // eye white + the pupils are square, all nine (owner 2026-10-19: "use the square cow eyes wherever plus is used"),
+  // and an x where something went wrong
+  var SQUARE = ['', '-n', '-ne', '-e', '-se', '-s', '-sw', '-w', '-nw'];
   var CROSS = ['', '-ne', '-se', '-sw', '-nw'];
+  // the ring of 12 white dots round each pupil, clockwise from the top row's left one (pl-r0 to pl-r11) + while the
+  // page looks it spins the rainbow, two dots a color (owner 2026-10-19: "the spinning rainbow ring")
+  var RING = 12;
+  var RAINBOW = ['#ff4d6d', '#ffb81c', '#77edd7', '#2bd47d', '#5aa9ff', '#c77dff'];
   var eyes = [cells('pl'), cells('pr')];
+  var rings = [ringOf('pl'), ringOf('pr')];
   var rainbow = null;
   var dotTimer = null;
   var autoGo = null;
@@ -89,34 +95,48 @@
 
   // an eye's middle dots by their place round its centre
   function cells(id) {
-    var all = PLUS.concat(CROSS.slice(1)), out = {};
-    for (var i = 0; i < all.length; i++) out[all[i]] = document.getElementById(id + all[i]);
+    var out = {};
+    for (var i = 0; i < SQUARE.length; i++) out[SQUARE[i]] = document.getElementById(id + SQUARE[i]);
     return out;
   }
-  // both pupils drawn in a shape + colour gives each pupil its colour
-  function pupils(shape, colour) {
+  // an eye's ring dots in order round it
+  function ringOf(id) {
+    var out = [];
+    for (var i = 0; i < RING; i++) out.push(document.getElementById(id + '-r' + i));
+    return out;
+  }
+  // both pupils drawn black in a shape + the dots it leaves are eye white
+  function pupils(shape) {
     for (var e = 0; e < eyes.length; e++) {
-      var c = colour();
       for (var k in eyes[e]) {
-        if (eyes[e][k]) eyes[e][k].setAttribute('fill', shape.indexOf(k) >= 0 ? c : WHITE);
+        if (eyes[e][k]) eyes[e][k].setAttribute('fill', shape.indexOf(k) >= 0 ? INK : WHITE);
       }
     }
   }
-  // The loading cow: a random full hue in each plus pupil every tick, as on the panel.
-  function tick() {
-    pupils(PLUS, function () { return 'hsl(' + Math.floor(Math.random() * 360) + ',100%,50%)'; });
+  // both rings k steps round the rainbow, each dot i the color ((i - k) // 2) % 6, so the colors run clockwise one
+  // dot a step and both eyes match + k null is eye white
+  function ring(k) {
+    for (var e = 0; e < rings.length; e++) {
+      for (var i = 0; i < RING; i++) {
+        if (rings[e][i]) rings[e][i].setAttribute('fill', k === null ? WHITE : RAINBOW[((Math.floor((i - k) / 2) % 6) + 6) % 6]);
+      }
+    }
   }
-  // The cow's look: busy runs its plus pupils round the rainbow while the page looks, rest settles them black, and
-  // error crosses them out, black, where something went wrong (the owner: "show an x instead of a + (like dead x x)").
+  // The cow's look: busy spins the ring round each square pupil while the page looks (still where less motion is asked
+  // for), rest leaves the square pupils in a white ring, and error crosses the pupils out, black, where something went
+  // wrong (the owner: "show an x instead of a + (like dead x x)").
   function face(mood) {
     if (rainbow !== null) clearInterval(rainbow);
     rainbow = null;
-    if (mood === 'busy') {
-      tick();
-      rainbow = setInterval(tick, TICK_MS);
-      return;
-    }
-    pupils(mood === 'error' ? CROSS : PLUS, function () { return INK; });
+    pupils(mood === 'error' ? CROSS : SQUARE);
+    if (mood !== 'busy') return ring(null);
+    var k = 0;
+    ring(k);
+    if (still()) return;
+    rainbow = setInterval(function () {
+      k += 1;
+      ring(k);
+    }, TICK_MS);
   }
   // whether this phone asks for less motion
   function still() {

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { API, BEDROOM, CROSS, FOUND, IPAD, IPHONE, KITCHEN, PLUS, SHARED, json, load, nearbyOf, read, script, sharedNet } from './finder-harness.mjs';
+import { API, BEDROOM, CROSS, FOUND, IPAD, IPHONE, KITCHEN, SHARED, SQUARE, json, load, nearbyOf, read, ringAt, script, sharedNet } from './finder-harness.mjs';
 
 const portal = read('portal/index.html');
 const hi = read('hi/index.html');
@@ -91,15 +91,15 @@ test('the service worker keeps the portal shell and leaves the api and the board
   assert.match(sw, /req\.method !== 'GET'/);
 });
 
-test('the logo is the matrix cow, its plus pupils flickering while it looks and settling black after', async () => {
+test('the logo is the matrix cow, its square pupils dark and its ring spinning the rainbow while it looks, a white ring after', async () => {
   assert.doesNotMatch(script, /var MARK = |pixelCow/, 'no cow drawn all in dots by the script');
   const page = openPortal(nearbyOf([]));
   assert.equal(page.h1(), 'Looking for your mooboard');
-  assert.match(page.pupils.pl.getAttribute('fill'), /^hsl\(\d{1,3},100%,50%\)$/, 'looking');
-  assert.deepEqual(page.eyes().map((e) => e.lit), [PLUS, PLUS]);
+  assert.deepEqual(page.eyes(), [{ lit: SQUARE, colours: ['#0E1A22'] }, { lit: SQUARE, colours: ['#0E1A22'] }], 'looking');
+  assert.deepEqual(page.rings(), [ringAt(0), ringAt(0)], 'looking');
   await page.settle();
-  assert.equal(page.pupils.pl.getAttribute('fill'), '#0E1A22', 'settled');
-  assert.deepEqual(page.eyes(), [{ lit: PLUS, colours: ['#0E1A22'] }, { lit: PLUS, colours: ['#0E1A22'] }]);
+  assert.deepEqual(page.eyes(), [{ lit: SQUARE, colours: ['#0E1A22'] }, { lit: SQUARE, colours: ['#0E1A22'] }], 'settled');
+  assert.deepEqual(page.rings(), [Array(12).fill('#FFFFFF'), Array(12).fill('#FFFFFF')], 'settled');
   assert.equal(page.top.className, 'top', 'the cow on top');
 });
 
