@@ -74,7 +74,7 @@ test('the start page loads the site\'s own files only, and nothing from anywhere
   assert.deepEqual(html.match(/<link[^>]+stylesheet[^>]*>/g), ['<link rel="stylesheet" href="/css/start.css">']);
   assert.match(html, /<meta name="referrer" content="no-referrer">/);
   assert.deepEqual([...mount.matchAll(/from '([^']+)'/g)].map((m) => m[1]), ['three', 'three/addons/environments/RoomEnvironment.js', './viewer.mjs']);
-  assert.deepEqual([...mount.matchAll(/'(\/assets\/[^']+)'/g)].map((m) => m[1]), ['/assets/3d/board.glb', '/assets/3d/rail.glb']);
+  assert.deepEqual([...mount.matchAll(/'(\/assets\/[^']+)'/g)].map((m) => m[1]), ['/assets/3d/board-s3.glb', '/assets/3d/rail.glb']);
 });
 
 test('the one scene loads at the start once the first card is up, and the page itself names none of it', () => {

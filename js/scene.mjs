@@ -4,14 +4,14 @@
    up at the buttons a label on each takes over from the 1 + less motion cuts from pose to pose and plays nothing by
    itself
 
-   the board is the homepage model assets/3d/board.glb + its face is the page's live board from js/board.js + the rail
+   the board is the S3 tester model assets/3d/board-s3.glb (the homepage's before the P4 bay) + its face is the page's live board from js/board.js + the rail
    and its two hooks come from assets/3d/rail.glb with its at_* places as the board hangs + a new rail is a new
    rail.glb with the same names and nothing here changes */
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { readGLB, loadModel, FINISH, RAILS, lightEdges, softShadow } from './viewer.mjs';
 
-const BOARD = '/assets/3d/board.glb';
+const BOARD = '/assets/3d/board-s3.glb';   // the S3 tester board with its USB-C pod
 const RAIL = '/assets/3d/rail.glb';
 const RED = { color: '#BB3D43', rough: 0.6 };   // the red edition frame as the tour paints it
 const TEAL = '#2FD3B6';                          // the brand teal a shade deeper so it reads on a light wall

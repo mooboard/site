@@ -10,7 +10,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 // the four frames (sRGB), as the model's README gives them; the site's names for them on the left
 export const FINISH = {
-  teal: { color: '#77EDD7', rough: 0.28, opacity: 0.5, emissive: '#1FAE95', ei: 0.28 },   // Mint Glow, translucent
+  teal: { color: '#96DCB9', rough: 0.3, metal: 0.18 },                                   // Mint Glow, PLA Silk+ Mint
   orange: { color: '#F2762E', rough: 0.5 },                                                  // Sunset
   black: { color: '#262B30', rough: 0.6 },                                                   // Midnight
   white: { color: '#EEF1EE', rough: 0.55 },                                                  // Moonlight
@@ -174,22 +174,27 @@ export async function start(o) {
   if (dot) { dot.emissive = new THREE.Color('#3aa8ff'); dot.emissiveIntensity = 0.9; }
   const rail = mats.find((m) => m.name === 'rail');
   const felt = mats.find((m) => m.name === 'felt');
+  // the buttons wear the frame's finish + the feet follow the rail
+  const buttons = mats.find((m) => m.name === 'buttons');
+  const feet = mats.find((m) => m.name === 'feet');
   const feltDark = felt ? felt.color.clone() : null;
   function setRail(name) {
     const r = RAILS[name] || RAILS.black;
-    if (rail) { rail.color.set(r.color); rail.roughness = r.rough; rail.metalness = 0; }
+    for (const m of [rail, feet]) if (m) { m.color.set(r.color); m.roughness = r.rough; m.metalness = 0; }
     if (felt) { if (r.felt) felt.color.set(r.felt); else felt.color.copy(feltDark); }
     dirty = true;
   }
 
   function setFrame(name) {
-    const f = FINISH[name] || FINISH.teal, m = frameMat;
-    if (!m) return;
-    m.color.set(f.color); m.roughness = f.rough; m.metalness = 0;
-    const glass = f.opacity != null && f.opacity < 1;
-    m.transparent = glass; m.opacity = glass ? f.opacity : 1; m.depthWrite = !glass;
-    m.emissive.set(f.emissive || '#000000'); m.emissiveIntensity = f.ei || 0;
-    m.needsUpdate = true;
+    const f = FINISH[name] || FINISH.teal;
+    if (!frameMat) return;
+    for (const m of [frameMat, buttons]) if (m) {
+      m.color.set(f.color); m.roughness = f.rough; m.metalness = f.metal || 0;
+      const glass = f.opacity != null && f.opacity < 1;
+      m.transparent = glass; m.opacity = glass ? f.opacity : 1; m.depthWrite = !glass;
+      m.emissive.set(f.emissive || '#000000'); m.emissiveIntensity = f.ei || 0;
+      m.needsUpdate = true;
+    }
     dirty = true;
   }
 

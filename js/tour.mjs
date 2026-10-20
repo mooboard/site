@@ -125,7 +125,7 @@ async function board3d(canvas, dots, finish, onResize) {
   const f = { ...V.FINISH, red: RED }[finish], frameMat = mats.find((m) => m.name === 'frame');
   if (frameMat) {
     const glass = f.opacity != null && f.opacity < 1;
-    frameMat.color.set(f.color); frameMat.roughness = f.rough; frameMat.metalness = 0;
+    frameMat.color.set(f.color); frameMat.roughness = f.rough; frameMat.metalness = f.metal || 0;
     frameMat.transparent = glass; frameMat.opacity = glass ? f.opacity : 1; frameMat.depthWrite = !glass;
     frameMat.emissive.set(f.emissive || '#000000'); frameMat.emissiveIntensity = f.ei || 0;
   }
