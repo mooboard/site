@@ -614,7 +614,8 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   var storyST = null, seqsIn = false, lastScene = 'combo';
   function storyScene(p) {
     if (!seqsIn) return;
-    var sc = seqs.hero && seqs.hero.spec.screen ? 'combo' : p < .36 ? 'time' : p < .7 ? 'combo' : 'weather';
+    // over the sequence: the real time as the camera settles, then the lyrics
+    var sc = seqs.hero && seqs.hero.spec.screen ? (p < .7 ? 'time' : 'combo') : p < .36 ? 'time' : p < .7 ? 'combo' : 'weather';
     if (sc !== lastScene) { lastScene = sc; story.go(sc); }
   }
   function initMotion() {
