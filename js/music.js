@@ -334,6 +334,7 @@
   // a play before the radio is ready starts it there and then, inside the visitor's tap
   function go() { if (!ready && list.length) { ready = true; play(0, 0, 0); } }
   function next() { if (ready) play(idx + 1, 0, 0); }
+  function prev() { if (ready) play(idx - 1, 0, 0); }
   function pause() {
     if (!playing) return;
     pausedPos = pos(); playing = false; live = false; stopSynth();
@@ -452,7 +453,7 @@
     timing: function () { var t = track(); return t && timings[t.id]; },
     pos: pos, lyricPos: lyricPos, length: length,
     sync: function () { return { lead: LEAD, outputLatency: muted ? 0 : outLatency }; },
-    play: resume, pause: pause, next: next,
+    play: resume, pause: pause, next: next, prev: prev,
     mute: function () { setMuted(true); }, unmute: function () { setMuted(false); }
   };
 })();

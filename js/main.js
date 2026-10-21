@@ -242,6 +242,8 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   var MARK_FRAME = { teal: '#77EDD7', orange: '#FF7A21', black: '#17191C', white: '#FFFFFF' };
   function setHeroFrame(f) {
     $('#hero-bezel').dataset.frame = f;
+    if ($('#ctl-bezel')) $('#ctl-bezel').dataset.frame = f;
+    if (controls) controls.setFrame(f);
     $('.hero .stage').dataset.frame = f;
     $$('.mark').forEach(function (m) { m.style.setProperty('--mark-frame', MARK_FRAME[f]); m.dataset.frame = f; });
     $$('.swatches .sw').forEach(function (s) { s.classList.toggle('on', s.dataset.frame === f); s.setAttribute('aria-checked', s.dataset.frame === f); });
@@ -597,6 +599,26 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     function ok() { sec.classList.add('has-stills'); if (ST) ST.refresh(); }
     if (first.complete && first.naturalWidth) ok(); else first.addEventListener('load', ok);
   });
+
+  /* ---------- press it: the controls in 3d and a board doing what they do (js/controls.mjs), started near view ---------- */
+  var controls = null;
+  (function () {
+    var sec = $('#controls');
+    if (!sec) return;
+    var started = false;
+    function begin() {
+      if (started) return; started = true;
+      var board = new MB.Board($('#ctl-board'), { scenes: ['time', 'weather', 'song', 'art', 'calendar', 'score'], onGlow: tileGlow(sec) });
+      import(new URL('js/controls.mjs', document.baseURI).href).then(function (m) {
+        return m.start({
+          stage: $('.ctl-stage', sec), canvas: $('.ctl-canvas', sec), board: board, caption: $('.ctl-caption', sec),
+          viewBtns: $$('.ctl-view', sec), reduced: REDUCED, frame: $('#ctl-bezel').dataset.frame
+        });
+      }).then(function (c) { controls = c; }).catch(function (e) { if (window.console) console.warn('controls:', e && e.message); });
+    }
+    if (window.IntersectionObserver) new IntersectionObserver(function (e, o) { if (e.some(function (x) { return x.isIntersecting; })) { o.disconnect(); begin(); } }, { rootMargin: '400px' }).observe(sec);
+    else begin();
+  })();
 
   /* ---------- size in cm or inches: inches in the US, a click switches every size on the page ---------- */
   (function () {

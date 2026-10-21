@@ -3535,6 +3535,30 @@
       }
     };
   };
+  // the mic's music visualizer: bars that dance to the song that's on, low and calm without one; with the mics off
+  // (board.micOff) the bars lie flat under MIC OFF
+  S.vis = function (b) {
+    var lv = new Float32Array(32);
+    return {
+      label: 'Visualizer', dur: 10,
+      draw: function (f, t, s, dt) {
+        f.fill(BLACK);
+        var sg = playingSong(), on = !(b && b.micOff), loud = on ? (sg && sg.playing ? 1 : .22) : 0;
+        var acc = sg && sg.accent ? sg.accent : [119, 237, 215], beat = Math.pow(Math.max(0, Math.sin(t * Math.PI * 2 * 1.9)), 6);
+        for (var i = 0; i < 32; i++) {
+          var u = i / 31, n = .5 + .5 * Math.sin(t * (2.1 + u * 3.3) + i * 1.7) * Math.sin(t * (1.3 + (1 - u) * 2.2) + i * .9);
+          var goal = loud * (.18 + .62 * n * (1 - .45 * Math.abs(u - .4)) + .25 * beat * (1 - u));
+          lv[i] += (goal - lv[i]) * Math.min(1, (dt || .016) * (goal > lv[i] ? 18 : 6));
+          var h = Math.max(1, Math.round(lv[i] * 30));
+          for (var y = 0; y < h; y++) {
+            var k = y / 29, c = [119 + (acc[0] - 119) * k, 237 + (acc[1] - 237) * k, 215 + (acc[2] - 215) * k];
+            f.rect(i * 4, 31 - y, 3, 1, on ? c : [40, 52, 50]);
+          }
+        }
+        if (!on) { var L = line('label', 6, 'MIC OFF'); drawText(f, L, penCentre(L, 63.5), capBase(12, 6), [255, 238, 214]); }
+      }
+    };
+  };
   S.soon = function () {
     return {
       label: 'More', dur: 8,

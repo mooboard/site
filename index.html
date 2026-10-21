@@ -210,6 +210,23 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
   </div>
 </section>
 
+<section class="controls" id="controls" aria-labelledby="ctl-h">
+  <h2 class="big" id="ctl-h" data-reveal>Go on, <em>press it.</em></h2>
+  <div class="ctl-grid">
+    <div class="ctl-stage-wrap">
+      <div class="ctl-stage"><canvas class="ctl-canvas" aria-hidden="true"></canvas></div>
+      <div class="ctl-views" role="group" aria-label="Side">
+        <button type="button" class="ctl-view on" data-view="top" aria-pressed="true">Top</button>
+        <button type="button" class="ctl-view" data-view="bottom" aria-pressed="false">Bottom</button>
+      </div>
+    </div>
+    <div class="ctl-side">
+      <div class="bezel" id="ctl-bezel" data-frame="teal"><div class="led" id="ctl-board" role="img" aria-label="The board"></div></div>
+      <p class="ctl-caption" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+
 <section class="waitlist" id="waitlist">
   <h2 class="sr">Join the waitlist</h2>
   <div class="wl-board" data-reveal>
