@@ -35,7 +35,8 @@ const PARTS = {
   play: { node: 'cap_play', view: 'top', press: [0, -1, 0] },
   next: { node: 'cap_next', view: 'top', press: [0, -1, 0] },
   boot: { node: 'cap_boot', view: 'top', press: [0, -1, 0] },
-  wheel: { node: 'wheel', view: 'top', turn: [223.5, 58.8, -16.5] },
+  // the wheel's 40 ridges repeat every 9 degrees, and the model keeps only its outside
+  wheel: { node: 'wheel', view: 'top', turn: [223.5, 58.8, -16.5], pitch: Math.PI / 20 },
   reset: { node: 'cap_reset', view: 'bottom', press: [0, 1, 0] },
   micSwitch: { node: 'mic_switch', view: 'bottom', slide: 1.5 },
   // the holes on the bottom wall (y -67.3, facing down)
@@ -301,7 +302,13 @@ export async function start(o) {
         if (q.goal && Math.abs(q.goal - q.v) < 0.02 && p.press) q.goal = 0;
         if (p.press) q.node.position.copy(q.rest).add(new THREE.Vector3(...p.press).multiplyScalar(q.v));
         if (p.slide) q.node.position.set(q.rest.x + q.v * p.slide, q.rest.y, q.rest.z);
-        if (p.turn && q.pivot) q.pivot.rotation.z = q.v;
+        if (p.turn && q.pivot) {
+          // a turn past one ridge steps back by one: it looks the same, and the part of the wheel that isn't
+          // modelled never comes round
+          while (q.v > p.pitch) { q.v -= p.pitch; q.spin -= p.pitch; }
+          while (q.v < -p.pitch) { q.v += p.pitch; q.spin += p.pitch; }
+          q.pivot.rotation.z = q.v;
+        }
       }
       frameCam();
       if (k < 1) place();

@@ -787,7 +787,6 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
         } });
       } });
     });
-    gsap.fromTo('.marquee', { xPercent: 6 }, { xPercent: -6, ease: 'none', scrollTrigger: { trigger: '.tech', start: 'top bottom', end: 'bottom top', scrub: true } });
     if (unseen($('.tag'))) gsap.from('.tag', { scale: 0, duration: .8, ease: 'back.out(2.5)', scrollTrigger: { trigger: '.wl-price', start: 'top 85%' } });
     gsap.from('.foot-mark', { y: 40, rotate: -15, duration: 1, ease: 'elastic.out(1, .5)', scrollTrigger: { trigger: '.foot', start: 'top 95%' } });
   }

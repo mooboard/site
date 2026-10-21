@@ -295,7 +295,7 @@ h1, h2 { font-family: var(--display); font-weight: 600; letter-spacing: -.01em; 
 }
 
 /* ---------- tech ---------- */
-.tech { background: var(--teal); color: var(--ink); padding: clamp(70px, 10vw, 140px) 0 0; overflow: hidden; }
+.tech { background: var(--teal); color: var(--ink); padding: clamp(70px, 10vw, 140px) 0; overflow: hidden; }
 .stats { max-width: 1240px; margin: 0 auto; padding: 0 var(--gut); display: grid; grid-template-columns: 1fr 1fr; gap: 40px 20px; }
 .stat b { display: block; font-family: var(--display); font-weight: 600; font-size: clamp(50px, 12vw, 96px); line-height: .9; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .stat b small { font-size: .42em; margin: 0 .12em; }
@@ -306,9 +306,9 @@ button.stat:focus-visible { outline: 3px solid currentColor; outline-offset: 6px
 button.stat .u { text-decoration: underline dotted; text-decoration-thickness: .06em; text-underline-offset: .12em; }
 .stat-size b { font-size: clamp(40px, 9vw, 96px); }
 @media (min-width: 900px) { .stats { grid-template-columns: repeat(4, auto); justify-content: space-between; } .stat b { font-size: clamp(56px, 6.6vw, 112px); } .stat-size b { font-size: clamp(44px, 4.6vw, 84px); } }
-/* level band; 8% wider than the page on each side so the scroll drift (xPercent ±6 in main.js) never shows its ends */
-.marquee { margin: clamp(60px, 9vw, 120px) -8% 0; background: var(--ink); color: #fff; padding: 22px 0; }
-.track { display: flex; align-items: center; gap: 28px; width: max-content; animation: marq 36s linear infinite; }
+/* the band of what it does, always moving left */
+.marquee { margin: clamp(60px, 9vw, 120px) 0 0; background: var(--ink); color: #fff; padding: 22px 0; }
+.track { display: flex; align-items: center; gap: 28px; width: max-content; animation: marq 130s linear infinite; }
 .track span { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 4vw, 48px); white-space: nowrap; }
 .track i { width: 12px; height: 12px; border-radius: 50%; background: var(--accent-lite); box-shadow: 0 0 12px var(--accent-lite); flex: none; }
 .track span:nth-of-type(3n+2) { color: var(--marigold); }
@@ -589,7 +589,7 @@ button.stat .u { text-decoration: underline dotted; text-decoration-thickness: .
 .cp.on[data-frame="black"] i { box-shadow: 0 0 0 2px rgba(255, 255, 255, .55); }
 
 /* ---------- press it: the controls up close in 3d + a live board doing what they do (js/controls.mjs) ---------- */
-.press { background: var(--mint); color: var(--ink); padding: clamp(80px, 11vw, 150px) 0; }
+.press { background: var(--mint); color: var(--ink); padding: clamp(80px, 11vw, 150px) 0 0; overflow: hidden; }
 .press .big { text-align: center; margin-bottom: clamp(30px, 5vw, 60px); }
 .ctl-grid { box-sizing: border-box; width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 var(--gut); display: grid; gap: 28px; align-items: center; }
 .ctl-stage-wrap { display: grid; gap: 14px; justify-items: center; }
