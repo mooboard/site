@@ -589,19 +589,21 @@ button.stat .u { text-decoration: underline dotted; text-decoration-thickness: .
 .cp.on[data-frame="black"] i { box-shadow: 0 0 0 2px rgba(255, 255, 255, .55); }
 
 /* ---------- press it: the controls up close in 3d + a live board doing what they do (js/controls.mjs) ---------- */
-.controls { background: var(--mint); color: var(--ink); padding: clamp(80px, 11vw, 150px) 0; }
-.controls .big { text-align: center; margin-bottom: clamp(30px, 5vw, 60px); }
+.press { background: var(--mint); color: var(--ink); padding: clamp(80px, 11vw, 150px) 0; }
+.press .big { text-align: center; margin-bottom: clamp(30px, 5vw, 60px); }
 .ctl-grid { box-sizing: border-box; width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 var(--gut); display: grid; gap: 28px; align-items: center; }
 .ctl-stage-wrap { display: grid; gap: 14px; justify-items: center; }
 .ctl-stage { position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 28px; overflow: hidden; background: radial-gradient(120% 90% at 50% 40%, #E9FBF5, #BDEFE0); box-shadow: 0 40px 70px -40px rgba(14, 26, 34, .45); touch-action: pan-y; }
 .ctl-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .ctl-hot { position: absolute; left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; background: transparent; transition: opacity .3s; -webkit-tap-highlight-color: transparent; }
-.ctl-hot::before { content: ''; position: absolute; inset: 14px; border-radius: 50%; background: rgba(255, 255, 255, .55); box-shadow: 0 0 0 2px rgba(14, 26, 34, .35); animation: ctlPulse 2.4s ease-in-out infinite; }
-.ctl-hot:hover::before, .ctl-hot:focus-visible::before { background: #fff; box-shadow: 0 0 0 3px var(--ink); animation: none; }
-.ctl-hot:focus-visible { outline: none; }
+.ctl-hot:focus-visible { outline: 3px solid var(--ink); outline-offset: -6px; }
+/* the glyph beside a control, shown for its first 5 seconds on screen */
+.ctl-tag { position: absolute; left: 0; top: 0; display: grid; place-items: center; min-width: 30px; height: 30px; margin: -15px 0 0 -15px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: var(--ink); color: #fff; font: 700 15px/1 system-ui, sans-serif; pointer-events: none; opacity: 0; transition: opacity .5s; box-shadow: 0 6px 14px -6px rgba(14, 26, 34, .6); }
+.ctl-tag svg { width: 18px; height: 18px; }
+.tags-on .ctl-tag { opacity: 1; }
+.ctl-tag.away { opacity: 0 !important; }
 .ctl-hot[data-part="wheel"] { cursor: ew-resize; touch-action: none; }
 .ctl-hot.away { opacity: 0; pointer-events: none; }
-@keyframes ctlPulse { 0%, 100% { transform: scale(.8); opacity: .75; } 50% { transform: scale(1.15); opacity: 1; } }
 .ctl-views { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(14, 26, 34, .08); }
 .ctl-view { border: 0; background: transparent; font: inherit; font-weight: 800; font-size: 15px; padding: 9px 18px; border-radius: 999px; cursor: pointer; color: var(--ink); }
 .ctl-view.on { background: var(--ink); color: #fff; }
@@ -615,7 +617,6 @@ button.stat .u { text-decoration: underline dotted; text-decoration-thickness: .
 /* no webgl: the controls in a row with their names */
 .ctl-stage.flat { aspect-ratio: auto; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 24px; }
 .ctl-stage.flat .ctl-hot { position: static; width: auto; height: auto; margin: 0; padding: 10px 16px; border-radius: 999px; background: #fff; font: inherit; font-weight: 800; transform: none !important; }
-.ctl-stage.flat .ctl-hot::before { display: none; }
 .ctl-stage.flat .ctl-hot.away { opacity: 1; pointer-events: auto; }
 @media (min-width: 900px) { .ctl-grid { grid-template-columns: 1.1fr 1fr; gap: 48px; } }
-@media (prefers-reduced-motion: reduce) { .ctl-hot::before { animation: none; } .ctl-caption.pop { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .ctl-caption.pop { animation: none; } }

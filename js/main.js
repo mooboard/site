@@ -603,7 +603,7 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   /* ---------- press it: the controls in 3d and a board doing what they do (js/controls.mjs), started near view ---------- */
   var controls = null;
   (function () {
-    var sec = $('#controls');
+    var sec = $('#press');
     if (!sec) return;
     var started = false;
     function begin() {

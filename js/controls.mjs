@@ -18,6 +18,15 @@ export const TEXT = {
   },
 };
 
+// the glyph shown beside each control for its first 5 seconds on screen (text glyphs stay text, never emoji)
+const SVG = (d) => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+const GLYPH = {
+  prev: '\u25C0\uFE0E', play: '\u23EF\uFE0E', next: '\u25B6\uFE0E', boot: '\u25CF', reset: '\u21BB',
+  wheel: SVG('<path d="M7 8l-4 4 4 4M17 8l4 4-4 4M3 12h18"/>'),
+  mic: SVG('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),
+  speaker: SVG('<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>'),
+  micSwitch: SVG('<rect x="3" y="8" width="18" height="8" rx="4"/><circle cx="16" cy="12" r="2.2" fill="currentColor"/>'),
+};
 const FOV = 22;
 const SCREENS = ['time', 'weather', 'song', 'art', 'calendar', 'score'];
 // each control: its node in the model, the view it lives on, and how it moves (Hardware, 2026-10-20)
@@ -115,7 +124,9 @@ export async function start(o) {
       b.type = 'button'; b.className = 'ctl-hot'; b.dataset.part = name;
       b.setAttribute('aria-label', TEXT.label[name]);
       if (k) b.tabIndex = -1;
-      stage.appendChild(b); hots.push({ el: b, name, k });
+      const tag = document.createElement('span');
+      tag.className = 'ctl-tag'; tag.setAttribute('aria-hidden', 'true'); tag.innerHTML = GLYPH[name];
+      stage.appendChild(b); stage.appendChild(tag); hots.push({ el: b, tag, name, k });
     }
   }
   caption.textContent = TEXT.hint;
@@ -125,7 +136,7 @@ export async function start(o) {
   if (!gl) {
     // no WebGL: the targets in a plain row with their names
     stage.classList.add('flat'); canvas.remove();
-    hots.forEach((h) => { if (h.k) h.el.remove(); else h.el.textContent = TEXT.label[h.name]; });
+    hots.forEach((h) => { h.tag.remove(); if (h.k) h.el.remove(); else h.el.textContent = TEXT.label[h.name]; });
     viewBtns.forEach((v) => v.remove());
   }
 
@@ -139,10 +150,11 @@ export async function start(o) {
     if (h.name === 'wheel') {
       // a sideways drag or a scroll over the wheel turns it a screen at a time
       let x0 = null, acc = 0;
-      h.el.addEventListener('pointerdown', (e) => { x0 = e.clientX; acc = 0; });
+      h.el.addEventListener('pointerdown', (e) => { x0 = e.clientX; acc = 0; try { h.el.setPointerCapture(e.pointerId); } catch (er) { /* ignore */ } });
       h.el.addEventListener('pointermove', (e) => {
-        if (x0 == null) return; acc += e.clientX - x0; x0 = e.clientX;
-        if (Math.abs(acc) > 28) { fire('wheel', acc > 0 ? 1 : -1); acc = 0; h.drag = true; }
+        if (x0 == null) return; const dx = e.clientX - x0; acc += dx; x0 = e.clientX;
+        if (gl) gl.roll(dx);
+        if (Math.abs(acc) > 28) { SOUND.click(); ACT.wheel(acc > 0 ? 1 : -1); acc = 0; h.drag = true; }
       });
       const end = () => { x0 = null; };
       h.el.addEventListener('pointerup', end); h.el.addEventListener('pointercancel', end);
@@ -151,6 +163,17 @@ export async function start(o) {
     }
   });
   viewBtns.forEach((v) => v.addEventListener('click', () => gl && gl.view(v.dataset.view)));
+
+  // the glyphs: shown beside the controls of a side the first time it is on screen, gone 5 s later
+  const seen = {}; let onScreen = false, tagTimer = 0;
+  function tags(view) {
+    if (!onScreen || seen[view] || (gl && !gl.settled())) return;
+    seen[view] = true;
+    stage.classList.add('tags-on');
+    clearTimeout(tagTimer); tagTimer = setTimeout(() => stage.classList.remove('tags-on'), 5000);
+  }
+  if (window.IntersectionObserver) new IntersectionObserver((e) => { onScreen = e[e.length - 1].isIntersecting; if (gl) tags(gl.current()); }, { threshold: 0.5 }).observe(stage);
+  if (gl) gl.onSettle = tags;
 
   return { setFrame: (f) => gl && gl.setFrame(f) };
 
@@ -198,6 +221,13 @@ export async function start(o) {
     for (const name of Object.keys(PARTS)) {
       const p = PARTS[name], node = p.node && root.getObjectByName(p.node);
       parts[name] = { node, rest: node ? node.position.clone() : null, rot: node ? node.rotation.z : 0, v: 0, goal: 0, spin: 0 };
+    }
+    // the wheel turns on its own axle: a pivot at the axle carries it
+    const W = parts.wheel;
+    if (W.node) {
+      const pv = new THREE.Group(), at = new THREE.Vector3(...PARTS.wheel.turn);
+      pv.position.copy(at); W.node.parent.add(pv); W.node.position.sub(at); pv.add(W.node);
+      W.pivot = pv;
     }
     // where a part sits, for its tap target and the camera
     root.updateMatrixWorld(true);
@@ -249,7 +279,11 @@ export async function start(o) {
         hh.el.tabIndex = on && !hh.k ? 0 : -1;
         if (!p) continue;
         v.copy(p).project(cam);
-        hh.el.style.transform = 'translate(' + ((v.x + 1) / 2 * w).toFixed(1) + 'px,' + ((1 - v.y) / 2 * h).toFixed(1) + 'px)';
+        const x = (v.x + 1) / 2 * w, y = (1 - v.y) / 2 * h;
+        hh.el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
+        // the glyph sits off the control: above it on the top, below it on the bottom
+        hh.tag.style.transform = 'translate(' + x.toFixed(1) + 'px,' + (y + (view === 'top' ? -34 : 34)).toFixed(1) + 'px)';
+        hh.tag.classList.toggle('away', !on);
       }
     }
     let last = 0, raf = 0;
@@ -257,16 +291,17 @@ export async function start(o) {
       raf = 0;
       const dt = last ? Math.min(0.05, (now - last) / 1000) : 0.016; last = now;
       let moving = false;
-      if (k < 1) { k = reduced ? 1 : Math.min(1, k + dt / 0.9); moving = true; if (k >= 1) { from = to; place(); } }
+      if (k < 1) { k = reduced ? 1 : Math.min(1, k + dt / 0.9); moving = true; if (k >= 1) { from = to; place(); if (api.onSettle) api.onSettle(view); } }
       for (const name of Object.keys(parts)) {
         const q = parts[name], p = PARTS[name];
         if (!q.node) continue;
-        q.v += (q.goal - q.v) * Math.min(1, dt * 30);
+        if (p.turn) q.goal = q.spin;
+        q.v += (q.goal - q.v) * Math.min(1, dt * (p.turn ? 10 : 30));
         if (Math.abs(q.goal - q.v) > 0.002) moving = true;
-        if (q.goal && Math.abs(q.goal - q.v) < 0.02 && !p.slide) q.goal = 0;
+        if (q.goal && Math.abs(q.goal - q.v) < 0.02 && p.press) q.goal = 0;
         if (p.press) q.node.position.copy(q.rest).add(new THREE.Vector3(...p.press).multiplyScalar(q.v));
         if (p.slide) q.node.position.set(q.rest.x + q.v * p.slide, q.rest.y, q.rest.z);
-        if (p.turn) { q.node.rotation.z = q.rot + q.v; q.goal = q.spin; }
+        if (p.turn && q.pivot) q.pivot.rotation.z = q.v;
       }
       frameCam();
       if (k < 1) place();
@@ -277,13 +312,16 @@ export async function start(o) {
     if (window.ResizeObserver) new ResizeObserver(() => { resize(); frameCam(); place(); kick(); }).observe(canvas);
     resize(); setFrame(frame || 'teal'); frameCam(); place(); kick();
 
-    return {
+    const api = {
+      settled: () => k >= 1,
+      current: () => view,
+      roll(dx) { const q = parts.wheel; if (q.pivot) { q.spin -= dx * 0.035; kick(); } },
       setFrame(f) { setFrame(f); kick(); },
       view(v) {
         if (v === view || !VIEWS[v]) return;
         from = VIEWS[view]; to = VIEWS[v]; view = v; k = reduced ? 1 : 0;
         viewBtns.forEach((b) => { const on = b.dataset.view === v; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
-        hots.forEach((h) => h.el.classList.add('away'));
+        hots.forEach((h) => { h.el.classList.add('away'); h.tag.classList.add('away'); });
         if (reduced) { from = to; place(); }
         kick();
       },
@@ -292,9 +330,11 @@ export async function start(o) {
         if (!q || !q.node) return;
         if (p.press) q.goal = 1;
         if (p.slide) q.goal = q.goal ? 0 : 1;
-        if (p.turn) q.spin += (dir || 1) * 0.6;
+        // right turns the top of the wheel to the right (clockwise seen from the front)
+        if (p.turn) q.spin -= (dir || 1) * 0.9;
         kick();
       },
     };
+    return api;
   }
 }
