@@ -109,7 +109,14 @@ export function softShadow(w, h, opacity = 0.45) {
 }
 
 // the model travels gzipped as hosts send glb plain + used as is when the host unpacked it or the browser cannot
-export async function loadModel(url) {
+// one download per model for the whole page (the viewer and the controls section share the board)
+const MODELS = new Map();
+export function loadModel(url) {
+  const key = new URL(url, document.baseURI).href;
+  if (!MODELS.has(key)) MODELS.set(key, fetchModel(url).catch((e) => { MODELS.delete(key); throw e; }));
+  return MODELS.get(key);
+}
+async function fetchModel(url) {
   const get = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error('model ' + r.status); return r; };
   if ('DecompressionStream' in window) {
     try {

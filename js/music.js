@@ -385,9 +385,9 @@
   }).then(function (tracks) {
     list = tracks;
     if (!list.length) return;
-    list.forEach(function (t) { loadTiming(t); });
-    if (list[0].src) el(list[0]);
-    var first = list[0], audio = !first.src ? null : new Promise(function (res) {
+    // muted (as every visit starts) the radio runs on its own clock, so no song downloads until the sound goes on;
+    // lyrics load for the song that's on and the next one only
+    var first = list[0], audio = !first.src || muted ? null : new Promise(function (res) {
       var a = el(first);
       if (a.readyState >= 3) res(); else { a.addEventListener('canplaythrough', res); a.addEventListener('error', res); }
     });

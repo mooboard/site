@@ -82,7 +82,9 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
   // the glow goes on the board's own section (on :root it would restyle the whole page), and only when it changed
   function tileGlow(el) {
     var last = '';
-    return function (c) { var v = (c[0] | 0) + ', ' + (c[1] | 0) + ', ' + (c[2] | 0); if (v !== last) el.style.setProperty('--glow', last = v); };
+    // in steps of 12 per channel: the glow drifts slowly, and each change restyles the whole tile
+    var q = function (x) { return Math.min(255, Math.round(x / 12) * 12); };
+    return function (c) { var v = q(c[0]) + ', ' + q(c[1]) + ', ' + q(c[2]); if (v !== last) el.style.setProperty('--glow', last = v); };
   }
   var boards = { hero: hero };
   // the story's board: once the camera settles it is the board's Cover lyric view of the song that's on (the album art,
