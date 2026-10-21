@@ -598,6 +598,24 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     if (first.complete && first.naturalWidth) ok(); else first.addEventListener('load', ok);
   });
 
+  /* ---------- size in cm or inches: inches in the US, a click switches every size on the page ---------- */
+  (function () {
+    var sizes = $$('.stat-size, .stat-thin');
+    if (!sizes.length) return;
+    var lang = (navigator.language || '').toUpperCase(), inch = /-(US|LR|MM)$/.test(lang);
+    try { var kept = localStorage.getItem('moo-units'); if (kept) inch = kept === 'in'; } catch (e) {}
+    function show() {
+      sizes.forEach(function (el) {
+        var v = el.dataset[inch ? 'in' : 'cm'].split('|'), u = v.pop();
+        $('.v1', el).textContent = v[0]; if (v[1]) $('.v2', el).textContent = v[1];
+        $('.u', el).textContent = u;
+        el.setAttribute('aria-label', (el.classList.contains('stat-size') ? 'Size ' : 'Thickness ') + v.join(' by ') + ' ' + (u === 'in' ? 'inches' : u === 'cm' ? 'centimeters' : 'millimeters') + ', switch to ' + (inch ? 'metric' : 'inches'));
+      });
+    }
+    sizes.forEach(function (el) { el.addEventListener('click', function () { inch = !inch; try { localStorage.setItem('moo-units', inch ? 'in' : 'cm'); } catch (e) {} show(); }); });
+    show();
+  })();
+
   /* ---------- scroll-scrubbed render sequences: js/seq.js ---------- */
   var seqs = {};
   addEventListener('resize', function () { Object.keys(seqs).forEach(function (k) { seqs[k].redraw(); }); });
