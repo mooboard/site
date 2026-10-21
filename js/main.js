@@ -750,6 +750,16 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     gsap.from('.foot-mark', { y: 40, rotate: -15, duration: 1, ease: 'elastic.out(1, .5)', scrollTrigger: { trigger: '.foot', start: 'top 95%' } });
   }
 
+  // the CSS matrix3d that takes a w x h box onto four points (top-left, top-right, bottom-right, bottom-left), the
+  // square to quad projective map scaled to the box
+  function warp(p, w, h) {
+    var x0 = p[0][0], y0 = p[0][1], x1 = p[1][0], y1 = p[1][1], x2 = p[2][0], y2 = p[2][1], x3 = p[3][0], y3 = p[3][1];
+    var dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3, dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
+    var den = dx1 * dy2 - dx2 * dy1, g = (dx3 * dy2 - dx2 * dy3) / den, k = (dx1 * dy3 - dx3 * dy1) / den;
+    var a = x1 - x0 + g * x1, b = x3 - x0 + k * x3, d = y1 - y0 + g * y1, e = y3 - y0 + k * y3;
+    return 'matrix3d(' + [a / w, d / w, 0, g / w, b / h, e / h, 0, k / h, 0, 0, 1, 0, x0, y0, 0, 1].join(',') + ')';
+  }
+
   // the story's sequence joins once it has loaded
   function attachStory() {
     var storySeq = seqs.hero, scr = storySeq && storySeq.spec.screen;
@@ -760,17 +770,23 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
       live.appendChild($('#story-board'));
       // hidden, as .seq-live starts in css, until a frame shows it (a landing past the story starts it at the end)
       storyLive = 0;
-      var liveBox = '';
+      // with corners: the board at a fixed size, warped onto the face's four corners in each frame (a CSS
+      // perspective transform, so a scrub never relayouts it); without: placed on rect
+      var BW = 1280, BH = 320, liveKey = '';
+      if (scr.corners) { live.style.left = live.style.top = '0'; live.style.width = BW + 'px'; live.style.height = BH + 'px'; live.style.transformOrigin = '0 0'; }
       storySeq.onDraw = function (j) {
-        var r = storySeq.rect, q = scr.rect, box = r.x + '|' + r.y + '|' + r.w + '|' + r.h;
-        if (box !== liveBox) {
-          // the box only moves on resize; writing it every frame would relayout the live board mid-scrub
-          liveBox = box;
-          live.style.left = (r.x + q[0] * r.w) + 'px'; live.style.top = (r.y + q[1] * r.h) + 'px';
-          live.style.width = ((q[2] - q[0]) * r.w) + 'px'; live.style.height = ((q[3] - q[1]) * r.h) + 'px';
+        var r = storySeq.rect, c = scr.corners && scr.corners[j], key = j + '|' + r.x + '|' + r.y + '|' + r.w + '|' + r.h;
+        if (key !== liveKey) {
+          liveKey = key;
+          if (c) live.style.transform = warp(c.map(function (pt) { return [r.x + pt[0] * r.w, r.y + pt[1] * r.h]; }), BW, BH);
+          else if (!scr.corners) {
+            var q = scr.rect;
+            live.style.left = (r.x + q[0] * r.w) + 'px'; live.style.top = (r.y + q[1] * r.h) + 'px';
+            live.style.width = ((q[2] - q[0]) * r.w) + 'px'; live.style.height = ((q[3] - q[1]) * r.h) + 'px';
+          }
         }
-        // over the render's own LED text from the frame the camera settles (manifest screen.from), faded in over 4
-        // frames; written only when it changes, and the board stops drawing while it is hidden
+        // from the frame the face lights up (manifest screen.from), faded in over 4 frames; written only when it
+        // changes, and the board stops drawing while it is hidden
         var op = Math.max(0, Math.min(1, (j - scr.from + 2) / 4));
         if (op !== storyLive) { storyLive = op; live.style.opacity = op; }
       };
