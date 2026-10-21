@@ -165,15 +165,6 @@ function drive(A, t, t0, each, stroke) {
 }
 
 // ---- the models ----
-function ledDots() {
-  const c = document.createElement('canvas');
-  c.width = 1024; c.height = 256;
-  const x = c.getContext('2d');
-  x.fillStyle = '#050608'; x.fillRect(0, 0, 1024, 256);
-  x.fillStyle = '#18171C';
-  for (let j = 0; j < 32; j++) for (let i = 0; i < 128; i++) { x.beginPath(); x.arc(i * 8 + 4, j * 8 + 4, 2.7, 0, 6.3); x.fill(); }
-  return c;
-}
 function shadows(o, cast) { o.traverse((m) => { if (m.isMesh) m.castShadow = cast; }); }
 function std(color, rough, metal = 0) { return new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal }); }
 
