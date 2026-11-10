@@ -691,3 +691,29 @@ test('no em dashes or semicolons in any copy the portal shows', async () => {
     assert.doesNotMatch(page.text() + page.install.textContent, /—|;/, page.h1());
   }
 });
+
+test('a friend link /portal/?add=<username> opens the board on its Messages page with Add filled in, and only a username goes on', async () => {
+  const opens = async (search) => {
+    const page = openPortal(nearbyOf([KITCHEN]), { search });
+    await page.settle();
+    page.timers.advance(1500);
+    return page.replaced[0];
+  };
+  assert.equal(await opens('?add=big.blue'), 'http://192.168.0.110/#/messages?add=big.blue');
+  assert.equal(await opens('?add=Big.Blue'), 'http://192.168.0.110/#/messages?add=big.blue', 'lowercased');
+  assert.equal(await opens('?add=moo%7Ecow-1_'), 'http://192.168.0.110/#/messages?add=moo~cow-1_', 'decoded once');
+  for (const bad of ['', 'ab', 'abcdefghijklm', '1cow', 'cow.', 'co..w', '~cow', 'moo%257Ecow', '%3Cimg%20onerror%3D1%3E',
+    'c%C3%B6w', '%E0%A4%A', 'big%20blue']) {
+    assert.equal(await opens(`?add=${bad}`), 'http://192.168.0.110/', `${bad || 'empty'} is dropped`);
+  }
+  assert.equal(await opens('?m=MB1W'), 'http://192.168.0.110/', 'no add as before');
+  const none = openPortal(nearbyOf([]), { search: '?add=big.blue' });
+  await none.settle();
+  assert.equal(none.h1(), SAME_WIFI);
+  assert.deepEqual(none.links().filter(([text]) => text === 'Try mooboard.local').map(([, href]) => href),
+    ['http://mooboard.local/#/messages?add=big.blue'], 'the mooboard.local way carries it too');
+  const hi = load('/hi', nearbyOf([KITCHEN]), { search: '?add=big.blue' });
+  await hi.settle();
+  hi.timers.advance(10000);
+  assert.ok(hi.replaced.every((url) => !url.includes('#/messages')), '/hi never adds anyone');
+});

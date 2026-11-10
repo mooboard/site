@@ -17,6 +17,8 @@
   var model = start.kind === 'code' ? modelOf(location.search) : null;   // a board link with ?m= is the sticker on a board
   var onPortal = start.kind === 'portal';
   var keeps = onPortal || start.keep === true;   // the portal and a board link under it remember the board they open
+  // a friend link from mail or /u/<name> (u851) + /portal/?add=<username> goes on to the board it opens, its Add filled in
+  var ADD = onPortal ? addOf(location.search) : '';
   // each eye's middle three by three dots by their place round its centre + a pupil lights some and the rest stay
   // eye white + the pupils are square, all nine (owner 2026-10-19: "use the square cow eyes wherever plus is used"),
   // and an x where something went wrong
@@ -91,6 +93,21 @@
     if (!m) return null;
     var v = m[1].toUpperCase();
     return MODELS.indexOf(v) >= 0 ? v : 'MB1W';
+  }
+
+  // ?add= as a username by the accounts rule (u851) + decoded once, lowercased, a letter first, 3 to 12 of a-z 0-9 .
+  // _ ~ -, no . last and no .. + anything else is dropped, so the link opens the board as it always has
+  function addOf(search) {
+    var m = /(?:^\?|&)add=([^&#]*)/.exec(search || '');
+    if (!m) return '';
+    var name;
+    try { name = decodeURIComponent(m[1]).toLowerCase(); } catch (e) { return ''; }
+    return /^[a-z][a-z0-9._~-]{1,10}[a-z0-9_~-]$/.test(name) && name.indexOf('..') < 0 ? name : '';
+  }
+
+  // a board's address + the friend to add on its Messages page when the portal was opened with one
+  function boardUrl(base) {
+    return ADD ? base.replace(/\/?$/, '/') + '#/messages?add=' + encodeURIComponent(ADD) : base;
   }
 
   // an eye's middle dots by their place round its centre
@@ -397,7 +414,7 @@
     remember(code, name, color);
     show([el('h1', '', 'Opening ' + (name || 'your mooboard') + '…'), sameNetwork('Didn\u2019t open?')], { name: name, frameColor: color });
     face('rest');
-    location.replace('http://' + ip + '/');
+    location.replace(boardUrl('http://' + ip + '/'));
   }
 
   // a page that waits on the api + One moment and its running dots + the dots are left out of what is read aloud
@@ -433,7 +450,7 @@
     show([
       el('h1', '', 'Open this on the same Wi-Fi as your mooboard'),
       el('p', '', 'Connect this phone to your home Wi-Fi, then open the link again.'),
-      link('btn', 'Try mooboard.local', 'http://mooboard.local'),
+      link('btn', 'Try mooboard.local', boardUrl('http://mooboard.local')),
       el('p', 'quiet', 'A VPN or iCloud Private Relay can hide that you are home. Turn it off for your home Wi-Fi, or tap the button above.'),
       button('link', 'Try again', again),
       setupSteps(),
@@ -449,7 +466,7 @@
       el('h1', '', 'Could not reach mooboard.co'),
       el('p', '', 'This phone may be offline, or mooboard.co is busy. Try again in a moment.'),
       button('btn', 'Try again', again),
-      link('link', 'Try mooboard.local', 'http://mooboard.local'),
+      link('link', 'Try mooboard.local', boardUrl('http://mooboard.local')),
       guide()
     ]);
   }
