@@ -54,8 +54,8 @@
 .band .offer .lede { margin-top: 12px; max-width: 30ch; }
 .offer .btn { margin-top: 26px; height: 62px; padding: 0 38px; font-size: 22px; }
 .offer .btn.ghost { background: rgba(255, 255, 255, .1); color: #fff; box-shadow: 0 0 0 1px rgba(255, 255, 255, .25) inset; }
-.clock { display: inline-flex; gap: 8px; align-items: center; margin: 18px 0 0; padding: 6px 14px; border-radius: 999px; background: rgba(255, 183, 201, .14); color: var(--pink); font: 800 14px/1.4 var(--body); letter-spacing: .02em; }
-.clock::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 10px var(--pink); animation: blink 1.6s infinite; }
+.clock { display: inline-flex; gap: 6px; align-items: center; margin: 14px 0 0; padding: 3px 10px; border-radius: 999px; background: rgba(255, 183, 201, .12); color: var(--pink); font: 800 11.5px/1.4 var(--body); letter-spacing: .03em; }
+.clock::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 10px var(--pink); animation: blink 1.6s infinite; }
 @keyframes blink { 50% { opacity: .3; } }
 .band .offer .small { margin-top: 16px; max-width: 46ch; font: 600 14px/1.5 var(--body); color: rgba(255, 255, 255, .6); }
 .band .offer .small a { color: var(--teal); }

@@ -238,6 +238,7 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
     <p class="wl-reserve"><a href="shop/">Get a VIP pass for $1 by November 30</a></p>
   </div>
   <form class="wl-form" id="wl-form" data-reveal novalidate>
+    <input class="sr" type="text" name="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
     <label class="sr" for="wl-email">Email</label>
     <input id="wl-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="cows@mooboard.co" required>
     <button class="btn" type="submit">Join the waitlist</button>

@@ -1,5 +1,4 @@
 /* MooBoard site */
-var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitlist
 
 (function () {
   'use strict';
@@ -582,10 +581,10 @@ var FORMSPREE_ID = "xjyklakl"; // set to the Formspree form id to open the waitl
     var email = $('#wl-email').value.trim(), btn = $('button', form);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg.textContent = 'That email looks off.'; $('#wl-email').focus(); return; }
     btn.disabled = true; msg.textContent = '';
-    var send = FORMSPREE_ID
-      ? fetch('https://formspree.io/f/' + encodeURIComponent(FORMSPREE_ID), { method: 'POST', headers: { Accept: 'application/json' }, body: new FormData(form) })
-          .then(function (r) { if (!r.ok) throw new Error('bad'); return 'sent'; })
-      : new Promise(function (res) { setTimeout(function () { res('soon'); }, 700); });
+    // signups go to our own server (api.mooboard.co), which keeps every one and adds it to the mailing list
+    var hp = form.querySelector('[name="hp"]');
+    var send = fetch('https://api.mooboard.co/waitlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, hp: hp ? hp.value : '' }) })
+      .then(function (r) { if (!r.ok) throw new Error(r.status === 429 ? 'rate' : 'bad'); return 'sent'; });
     busy(send).then(function (how) {
       if (how === 'sent') { form.classList.add('done'); form.reset(); msg.textContent = "You're on the list. moo."; }
       else { form.classList.add('soon'); msg.textContent = 'Coming soon. The list opens any day now.'; }
