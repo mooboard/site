@@ -32,7 +32,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -.01
 .btn-sm { height: 42px; padding: 0 18px; font-size: 16px; }
 
 /* ---------- header ---------- */
-.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px var(--gut); background: var(--ink); }
+.top { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px var(--gut); background: var(--ink); }   /* above the band, so the button glow isn't cut off */
 .logo { display: flex; align-items: center; gap: 10px; border-radius: 10px; }
 .logo .mark { width: 44px; height: auto; }
 .logo .wordmark { width: auto; height: 20px; }
