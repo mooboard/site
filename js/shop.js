@@ -35,6 +35,34 @@
     new MB.Board(led, { scenes: scenes, say: say ? say.split('|') : null, onGlow: glow });
   }
 
+  // the photos: a copy on each side makes the row endless, and it opens on the middle photo
+  var strip = $('#gallery'), reel = strip && $('.reel', strip);
+  if (reel) {
+    var pics = $$('img', reel), n = pics.length, left = document.createDocumentFragment(), right = document.createDocumentFragment();
+    pics.forEach(function (img) {
+      [left, right].forEach(function (side) { var c = img.cloneNode(true); c.alt = ''; c.setAttribute('aria-hidden', 'true'); side.appendChild(c); });
+    });
+    reel.insertBefore(left, reel.firstChild); reel.appendChild(right);
+    var all = $$('img', reel), drag = null;
+    var setWidth = function () { return all[n].offsetLeft - all[0].offsetLeft; };
+    var mid = all[n + Math.floor(n / 2)];
+    strip.scrollLeft = mid.offsetLeft + mid.offsetWidth / 2 - strip.clientWidth / 2;
+    strip.addEventListener('scroll', function () {
+      var w = setWidth(), x = strip.scrollLeft, jump = x < w * 0.5 ? w : x > w * 1.5 ? -w : 0;
+      if (!jump) return;
+      strip.scrollLeft = x + jump;
+      if (drag) drag.from += jump;
+    }, { passive: true });
+    // a mouse can drag it too
+    strip.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse') return;
+      drag = { x: e.clientX, from: strip.scrollLeft };
+      strip.classList.add('drag'); strip.setPointerCapture(e.pointerId);
+    });
+    strip.addEventListener('pointermove', function (e) { if (drag) strip.scrollLeft = drag.from - (e.clientX - drag.x); });
+    ['pointerup', 'pointercancel'].forEach(function (ev) { strip.addEventListener(ev, function () { drag = null; strip.classList.remove('drag'); }); });
+  }
+
   // the frame swatches
   var bezel = $('#shop-bezel'), name = $('#frame-name');
   $$('.sw').forEach(function (b) {
