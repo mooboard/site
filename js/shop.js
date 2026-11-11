@@ -3,7 +3,7 @@
   'use strict';
 
   // the Stripe Payment Link for the $1 reservation. Empty until it exists: the buttons then point at the waitlist
-  var RESERVE_URL = '';
+  var RESERVE_URL = 'https://buy.stripe.com/6oUfZhapo0010kzd3B0ZW00';
   // reservations close at 11:59 pm ET on November 30, 2026 (EST is UTC-5)
   var CLOSE = Date.parse('2026-12-01T04:59:59Z');
 
