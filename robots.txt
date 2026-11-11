@@ -1,12 +1,9 @@
-# the site's own pages and the files they load, nothing else in the repo
+# search shows the home page and the privacy pages (Google's sign-in review reads them), plus the files they load
 User-agent: *
 Allow: /$
 Allow: /index.html
-Allow: /hi
-Allow: /portal
 Allow: /privacy
-Allow: /support
-Allow: /discord
+Allow: /sitemap.xml
 Allow: /css/
 Allow: /js/
 Allow: /fonts/
@@ -19,3 +16,5 @@ Allow: /apple-touch-icon.png
 Allow: /brand/mark-teal.svg
 Allow: /brand/wordmark-white.svg
 Disallow: /
+
+Sitemap: https://mooboard.co/sitemap.xml

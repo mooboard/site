@@ -319,6 +319,8 @@ button.stat .u { text-decoration: underline dotted; text-decoration-thickness: .
 .waitlist { --wl-end: clamp(24px, 3.5vw, 40px); position: relative; padding: clamp(110px, 14vw, 180px) var(--gut) var(--wl-end); text-align: center; background: radial-gradient(80% 60% at 50% 30%, #123c37, var(--ink) 70%); overflow: hidden; }
 .wl-board { width: min(640px, 100%); margin: 0 auto; }
 .wl-price { margin-top: 56px; }
+.wl-reserve { margin: 14px 0 0; font-weight: 800; }
+.wl-reserve a { color: var(--teal); }
 .tag { display: inline-block; padding: 6px 14px; border-radius: 999px; background: var(--pink); color: var(--ink); font-weight: 900; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
 .price.xl { justify-content: center; margin-top: 10px; }
 .price.xl .now { font-size: clamp(88px, 16vw, 180px); line-height: .9; }
