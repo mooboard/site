@@ -2510,6 +2510,30 @@
       }
     };
   };
+  // the VIP page's cheer, after the celebrate emoji: the cow hops with its eyes spinning rainbow while confetti falls
+  // round it (each bit tumbles between a tall and a wide pair of dots)
+  S.party = function () {
+    var r = rng(7), bits = [], cw = MARK[0].length, ch = MARK.length, x0 = Math.round((W - cw) / 2);
+    for (var i = 0; i < 52; i++) {
+      bits.push({ x: r() * W, y: r() * (H + 6), v: r.range(6, 12), sw: r.range(1.5, 3.5), ph: r() * 6.28, flip: r.range(.14, .28),
+        c: i % 7 < 6 ? RING_COLORS[i % 6] : [245, 233, 214] });
+    }
+    return {
+      label: 'Party', dur: 5,
+      draw: function (f, t, st) {
+        f.fill(BLACK);
+        var hop = REDUCED ? 0 : Math.round(Math.abs(Math.sin(st * Math.PI * 1.6)) * 3), y0 = 5 - hop;
+        bits.forEach(function (b) {
+          var y = Math.round(((b.y + (REDUCED ? 0 : b.v * st)) % (H + 6)) - 3), x = Math.round(b.x + (REDUCED ? 0 : Math.sin(st * b.sw + b.ph) * 2));
+          var tall = REDUCED || Math.floor(st / b.flip + b.ph) % 2 === 0, x2 = tall ? x : x + 1, y2 = tall ? y + 1 : y;
+          // the cow's face is unlit dots, so the confetti keeps out of its box
+          if (x2 >= x0 - 1 && x <= x0 + cw && y2 >= y0 - 1 && y <= y0 + ch) return;
+          f.set(x, y, b.c); f.set(x2, y2, b.c);
+        });
+        drawMark(f, x0, y0, t, [119, 237, 215], !REDUCED);
+      }
+    };
+  };
   // the startup card cow on its own and centred as the hi page boards show it + it blinks as on the panel
   S.mark = function () {
     return {
