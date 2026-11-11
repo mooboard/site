@@ -2401,9 +2401,12 @@
   // + the biggest lyric size at which both lines fit with a dark LED at every edge
   S.say = function (b) {
     var lines = (b && b.opts && b.opts.say) || ['Put your wall in', 'a good mood'], gap = 3;
+    // opts.glint: a slanted shine sweeps across the words every couple of seconds (the VIP page's Welcome!)
+    var glint = b && b.opts && b.opts.glint, GL_EVERY = 2.4, GL_SWEEP = 1.1, GL_HALF = 7;
     return {
       label: 'Say', dur: 8,
-      draw: function (f) {
+      draw: function (f, t, st) {
+        var p = glint && !REDUCED ? (st % GL_EVERY) / GL_SWEEP : 9, sweep = -24 + p * (W + 48);
         f.fill(BLACK);
         var Ls = null, hs, total;
         for (var cap = 13; cap >= 5 && !Ls; cap--) {
@@ -2415,8 +2418,11 @@
         if (!Ls) return;
         var y = Math.round((H - total) / 2);
         Ls.forEach(function (L, k) {
-          drawText(f, L, penCentre(L, (W - 1) / 2), y - L.t, WHITE, 1, function (X) {
-            var u = X / (W - 1); return [255, Math.round(184 - 104 * u), Math.round(28 + 132 * u)];
+          drawText(f, L, penCentre(L, (W - 1) / 2), y - L.t, WHITE, 1, function (X, Y) {
+            var u = X / (W - 1), c = [255, Math.round(184 - 104 * u), Math.round(28 + 132 * u)];
+            if (p > 1) return c;
+            var d = Math.abs(X + Y * .6 - sweep), k = d < GL_HALF ? 1 - d / GL_HALF : 0;
+            return k ? mix(c, WHITE, .9 * k) : c;
           });
           y += hs[k] + gap;
         });

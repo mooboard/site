@@ -32,7 +32,7 @@
     var glow = function (c) { if (hero) hero.style.setProperty('--glow', Math.round(c[0]) + ', ' + Math.round(c[1]) + ', ' + Math.round(c[2])); };
     var scenes = (led.getAttribute('data-scenes') || 'say,time,moo').split(',');
     var say = led.getAttribute('data-say');
-    new MB.Board(led, { scenes: scenes, say: say ? say.split('|') : null, onGlow: glow });
+    new MB.Board(led, { scenes: scenes, say: say ? say.split('|') : null, glint: led.hasAttribute('data-glint'), onGlow: glow });
   }
 
   // the photos: a copy on each side makes the row endless, and it opens on the middle photo
