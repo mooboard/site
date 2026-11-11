@@ -6,7 +6,6 @@
   var RESERVE_URL = '';
   // reservations close at 11:59 pm ET on November 30, 2026 (EST is UTC-5)
   var CLOSE = Date.parse('2026-12-01T04:59:59Z');
-  var DAY = 864e5;
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -23,16 +22,9 @@
   $$('[data-open]').forEach(function (el) { el.hidden = closed; });
   $$('[data-shut]').forEach(function (el) { el.hidden = !closed; });
 
-  // the countdown pill
+  // the closing pill says the date, and goes away once passes close
   var clock = $('#clock');
-  function tick() {
-    if (!clock) return;
-    var left = CLOSE - Date.now();
-    if (left <= 0) { clock.hidden = true; return; }
-    var days = Math.floor(left / DAY), hours = Math.floor((left % DAY) / 36e5);
-    clock.textContent = days >= 2 ? 'Closes in ' + days + ' days' : days === 1 ? 'Closes in 1 day, ' + hours + ' hours' : hours >= 1 ? 'Closes in ' + hours + ' hours' : 'Closes within the hour';
-  }
-  tick(); setInterval(tick, 60e3);
+  if (clock && closed) clock.hidden = true;
 
   // the live board, drawn the way the real one draws it
   var MB = window.MooBoard, led = $('#shop-board'), hero = $('.shop-hero');
