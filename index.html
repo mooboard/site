@@ -36,7 +36,7 @@
 if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('error', function (e) { __err.push((e.message || 'load fail') + ' ' + (e.filename || (e.target && (e.target.src || e.target.href)) || '')); }, true); addEventListener('unhandledrejection', function (e) { __err.push('rejection ' + e.reason); }); setTimeout(function () { var o = {}; document.querySelectorAll('main > section, footer').forEach(function (s) { o[s.id || s.className] = Math.round(s.getBoundingClientRect().top + scrollY); }); document.body.setAttribute('data-debug', JSON.stringify({ err: __err, top: o, h: document.documentElement.scrollHeight, w: document.documentElement.scrollWidth })); }, 4000); }</script>
 </head>
 <body class="has-bar">
-<a class="vip-bar" id="vip-bar" href="shop/"><span class="vb-long">🎟️ VIP passes are here. $1 now, $30 off at launch, and your order ships first.</span><span class="vb-short">🎟️ VIP passes are here.</span> <b>Become a VIP</b></a>
+<a class="vip-bar" id="vip-bar" href="shop/"><span class="vb-long">🎟️ VIP Passes are here. Get $30 off at launch, and your order ships first.</span><span class="vb-short">🎟️ VIP Passes are here.</span> <b>Become a VIP</b></a>
 
 <header class="nav" id="nav">
   <button class="logo" id="logo" aria-label="mooboard. Click to moo.">
