@@ -2465,6 +2465,176 @@
     };
   };
 
+  // the Home screen as the remote moves through it (the shows grid's Apps tile): the main apps' 8 x 8 LED icons at two
+  // dots a pixel in a row, the selected one centred, lit and named under it, the others dimmed + every 1.2 s the
+  // selection steps right and the row slides along (0.35 s, eased) + the site's own, until a recording of the board's
+  var HOME_APPS = [
+    ['Clock', '#77EDD7', ['..####..', '.#....#.', '#..#...#', '#..#...#', '#..###.#', '#......#', '.#....#.', '..####..']],
+    ['Weather', '#FFD23F', ['........', '..###...', '.#####..', '########', '########', '.#.#.#..', '#.#.#...', '........']],
+    ['Music', '#FF2E88', ['....##..', '....###.', '....#.##', '....#...', '....#...', '.####...', '#####...', '.###....']],
+    ['Calendar', '#FF5A5A', ['.#....#.', '########', '########', '#......#', '#.#.#.##', '#......#', '#.#.#..#', '########']],
+    ['Lights', '#FFB81C', ['..####..', '.######.', '########', '########', '.######.', '..####..', '..#..#..', '..####..']],
+    ['TV', '#4F8BFF', ['.#....#.', '..#..#..', '########', '#......#', '#......#', '#......#', '########', '.##..##.']],
+    ['Games', '#2BD47D', ['........', '..#..#..', '.######.', '##.##.##', '########', '#.#..#.#', '#......#', '.##..##.']],
+    ['Timers', '#9AA4FF', ['.######.', '..####..', '...##...', '...##...', '..#..#..', '.#....#.', '.######.', '........']],
+    ['Disco', '#C77DFF', ['...##...', '..####..', '.#.##.#.', '########', '########', '.#.##.#.', '..####..', '...##...']],
+    ['Store', '#FFFFFF', ['........', '.######.', '#......#', '########', '#.#..#.#', '#......#', '#......#', '########']]
+  ];
+  var HOME_COLS = HOME_APPS.map(function (a) { return hexc(a[1]); }), HOME_GAP = 26, HOME_Y = 3;
+  // the row with app `pos` (fractional while it slides) in the middle + ring: the centred app's ring and name, 0..1
+  function drawHome(f, pos, ring) {
+    f.fill(BLACK);
+    var n = HOME_APPS.length, sel = ((Math.round(pos) % n) + n) % n;
+    for (var k = -3; k <= 3; k++) {
+      var idx = Math.round(pos) + k, i = ((idx % n) + n) % n, cx = 63.5 + (idx - pos) * HOME_GAP;
+      var x0 = Math.round(cx - 8), dist = Math.abs(idx - pos), on = i === sel && ring > 0;
+      if (x0 < -18 || x0 > W + 2) continue;
+      var col = mul(HOME_COLS[i], on ? .62 + .38 * ring : Math.max(.22, .62 - dist * .14));
+      HOME_APPS[i][2].forEach(function (row, y) {
+        for (var x = 0; x < 8; x++) if (row[x] === '#') f.rect(x0 + x * 2, HOME_Y + y * 2, 2, 2, col, 1);
+      });
+      if (on) {
+        var rc = mul(WHITE, ring);
+        for (var q = -2; q <= 17; q++) { f.set(x0 + q, HOME_Y - 2, rc); f.set(x0 + q, HOME_Y + 17, rc); f.set(x0 - 2, HOME_Y + q, rc); f.set(x0 + 17, HOME_Y + q, rc); }
+      }
+    }
+    var L = line('label', 6, HOME_APPS[sel][0].toUpperCase());
+    drawText(f, L, penCentre(L, 63.5), capBase(24, 6), [255, 238, 214], Math.max(.35, ring));
+  }
+  function ease(p) { return p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; }
+  S.home = function () {
+    var EVERY = 1.2, MOVE = .35;
+    return {
+      label: 'Apps', dur: 12,
+      draw: function (f, t, st) {
+        var step = Math.floor(st / EVERY), into = st - step * EVERY, p = REDUCED ? 1 : c01(into / MOVE);
+        drawHome(f, step - 1 + ease(p), p >= 1 ? 1 : 0);
+      }
+    };
+  };
+
+  // All in One (the shows grid's wide tile): the board on lyrics, the remote's home press brings up Home on Clock, three
+  // presses right walk it to Calendar, a press opens it + recorded lyrics and calendar from the firmware's simulator
+  S.tour = function () {
+    var lyr = clipFrames('rlyrics', CLIPS.rlyrics), cal = clipFrames('rcalendar', CLIPS.rcalendar), fa = new FB(), fb = new FB();
+    var LYR = 3.2, FADE = .4, HOLD = .9, STEP = .75, MOVE = .3, PRESS = .5, CAL = 3.4;
+    var homeT = HOLD + 3 * STEP + PRESS, TOTAL = LYR + FADE + homeT + FADE + CAL;
+    function clipAt(f, box, st) {
+      if (!box.px) { f.fill(BLACK); return; }
+      var n = (box.px.length / (N * 4)) | 0, k = REDUCED ? 0 : Math.floor(st * 10) % n, D = box.px, P = f.p, base = k * N * 4;
+      for (var q = 0, i = base, j = 0; q < N; q++, i += 4, j += 3) { P[j] = D[i]; P[j + 1] = D[i + 1]; P[j + 2] = D[i + 2]; }
+    }
+    function homeAt(f, u) {
+      // u: seconds into Home + the ring lights once it's up, each press slides one app right, the last press flashes
+      var pos = 0, ring = 1;
+      if (u > HOLD) {
+        var s2 = Math.min(3, Math.floor((u - HOLD) / STEP)), into = u - HOLD - s2 * STEP;
+        pos = s2 < 3 ? s2 + ease(c01(into / MOVE)) : 3;
+        if (s2 < 3 && into < MOVE) ring = 0;
+      }
+      drawHome(f, pos, ring);
+      if (u > HOLD + 3 * STEP + PRESS * .4) {
+        var x0 = 56, flash = c01((u - HOLD - 3 * STEP - PRESS * .4) / (PRESS * .6));
+        for (var y = 1; y < 22; y++) for (var x = x0 - 4; x <= x0 + 19; x++) f.blend(x, y, WHITE, .35 * (1 - flash));
+      }
+    }
+    function blendInto(f, a, b, p) {
+      var A = a.p, B = b.p, O = f.p;
+      for (var i = 0; i < N * 3; i++) O[i] = A[i] + (B[i] - A[i]) * p;
+    }
+    return {
+      label: 'All in One', dur: TOTAL,
+      draw: function (f, t, st) {
+        var u = REDUCED ? LYR + FADE + homeT * .5 : st % TOTAL;
+        if (u < LYR) { clipAt(f, lyr, u); return; }
+        u -= LYR;
+        if (u < FADE) { fa.noclip(); fb.noclip(); clipAt(fa, lyr, LYR + u); homeAt(fb, 0); blendInto(f, fa, fb, ease(u / FADE)); return; }
+        u -= FADE;
+        if (u < homeT) { homeAt(f, u); return; }
+        u -= homeT;
+        if (u < FADE) { fa.noclip(); fb.noclip(); homeAt(fa, homeT); clipAt(fb, cal, u); blendInto(f, fa, fb, ease(u / FADE)); return; }
+        clipAt(f, cal, u);
+      }
+    };
+  };
+
+  // the store's tile: 50+ more apps, with the same three dots as more soon
+  S.store = function () {
+    return {
+      label: 'Store', dur: 8,
+      draw: function (f, t) {
+        f.fill(BLACK);
+        for (var i = 0; i < 3; i++) { var on = Math.floor(t * 3) % 3 === i; disc(f, 52 + i * 12, 11, 3, on ? [119, 237, 215] : [30, 60, 55]); }
+        var L = line('label', 6, '50+ MORE');
+        drawText(f, L, penCentre(L, 63.5), capBase(21, 6), [255, 238, 214]);
+      }
+    };
+  };
+
+  // recorded scenes: store apps as the firmware's own simulator draws them, 128 x 32 a frame at 10 fps, the frames
+  // stacked top to bottom in one png under assets/clips (made from handoff/marketing/screens-2026-11-10) + an unlit
+  // panel until the png is in + reduced motion holds frame `still`
+  var CLIPS = {
+    invaders: { label: 'Games', n: 30 }, aquarium: { label: 'Aquarium', n: 30 }, blocks: { label: 'Falling Blocks', n: 25 },
+    aurora: { label: 'Aurora', n: 30 }, snake: { label: 'Snake', n: 25 }, sunmoon: { label: 'Sun and Moon', n: 25 },
+    printer: { label: '3D Printers', n: 30 }, lava: { label: 'Lava Lamp', n: 30 }, pong: { label: 'Pong Clock', n: 25 },
+    countdown: { label: 'Countdowns', n: 25 }, message: { label: 'Messages', n: 25, tail: 'birthday', tailDur: 3 },
+    blossom: { label: 'Blossom', n: 30 }, fireflies: { label: 'Fireflies', n: 30 }, tide: { label: 'Moonlit Tide', n: 30 },
+    lanterns: { label: 'Lanterns', n: 30 }, rfaces: { label: 'Clock faces', n: 25, file: 'faces' },
+    rlyrics: { label: 'Lyrics', n: 30, file: 'lyrics' }, rcover: { label: 'Album art', n: 30, file: 'nowplaying' },
+    rweather: { label: 'Weather', n: 30, file: 'weather' }, rcalendar: { label: 'Calendar', n: 30, file: 'calendar' },
+    rprayer: { label: 'Prayer', n: 30, file: 'prayer' }, tasks: { label: 'Tasks', n: 20 }
+  };
+  var CLIP_BASE = (function () {
+    var me = document.currentScript && document.currentScript.src;
+    return me ? me.replace(/js\/board\.js(\?.*)?$/, 'assets/clips/') : 'assets/clips/';
+  })(), clipData = {};
+  function clipFrames(name, c) {
+    if (clipData[name]) return clipData[name];
+    var box = clipData[name] = { px: null }, img = new Image();
+    img.onload = function () {
+      try {
+        var cv = mk(W, H * c.n), x = cv.getContext('2d');
+        x.drawImage(img, 0, 0); box.px = x.getImageData(0, 0, W, H * c.n).data; restill();
+      } catch (e) { box.failed = true; }
+    };
+    img.src = CLIP_BASE + (c.file || name) + '.png';
+    return box;
+  }
+  // a clip's own ending, drawn after its last frame (tt seconds into it): the message's letter opens to its words
+  var CLIP_TAILS = {
+    birthday: function (f, tt) {
+      f.fill(BLACK);
+      var a = c01(tt / .45), words = 'Happy Birthday!', L = null;
+      for (var cap = 13; cap >= 6 && !L; cap--) { var c2 = line('lyric', cap, words); if (c2.r - c2.l + 1 <= W - 6) L = c2; }
+      if (!L) return;
+      var y = Math.round((H - (L.b - L.t + 1)) / 2) - L.t - Math.round((1 - a) * 3);
+      drawText(f, L, penCentre(L, (W - 1) / 2), y, WHITE, a, function (X) {
+        var u = X / (W - 1); return [255, Math.round(184 - 104 * u), Math.round(28 + 132 * u)];
+      });
+    }
+  };
+  Object.keys(CLIPS).forEach(function (name) {
+    var c = CLIPS[name];
+    S[name] = function () {
+      var box = clipFrames(name, c), fps = c.fps || 10, tail = c.tail && CLIP_TAILS[c.tail], run = c.n / fps;
+      return {
+        label: c.label, dur: c.dur || 8,
+        still: function () { return box.px ? 'in' : ''; },
+        draw: function (f, t, st) {
+          var P = f.p, D = box.px;
+          if (!D) { f.fill(BLACK); return; }
+          if (tail && !REDUCED) {
+            var u = st % (run + c.tailDur);
+            if (u >= run) { tail(f, u - run); return; }
+          }
+          var k = REDUCED ? (c.still || 0) : Math.floor(st * fps) % c.n, base = k * N * 4;
+          for (var q = 0, i = base, j = 0; q < N; q++, i += 4, j += 3) { P[j] = D[i]; P[j + 1] = D[i + 1]; P[j + 2] = D[i + 2]; }
+        }
+      };
+    };
+  });
+
   // the mooboard mark is itself a grid of LED dots, so it maps straight onto the panel (the startup card's cow)
   var MARK = [
     '..........ccc........ccc..........', '..........ccc........ccc..........', '..........ccc........ccc..........',
@@ -2516,6 +2686,113 @@
       }
     };
   };
+  // a playable invaders on the hero (main.js starts it from the arrow keys, an easter egg with no hint on the page):
+  // the cannon moves with PLAY.left / PLAY.right and fires on PLAY.fire, three rows of invaders march and drop, three
+  // shields wear away, three lives, a faster wave each time one is cleared + PLAY.over goes true a moment after the last
+  // life, so main.js can hand the board back
+  var PLAY = { left: false, right: false, fire: false, over: false };
+  var INV = [['..#..#..', '.######.', '##.##.##', '.#....#.'], ['..#..#..', '.######.', '##.##.##', '#......#']];
+  var GUN = ['...#...', '.#####.', '#######'], SHIELD = ['.#######.', '#########', '###...###'];
+  var WHITE_I = [235, 240, 255], GREEN = [43, 212, 125], TEAL = [119, 237, 215], RED = [255, 77, 109];
+  S.play = function () {
+    var g;
+    function wave(n) {
+      g.inv = [];
+      for (var r = 0; r < 3; r++) for (var c = 0; c < 7; c++) g.inv.push({ x: 14 + c * 13, y: 8 + r * 5, alive: true });
+      g.dx = 1; g.stepT = Math.max(.08, .42 - n * .06); g.acc = 0; g.frame = 0; g.waveN = n;
+      g.drops = []; g.fireT = 1.2;
+    }
+    function reset() {
+      g = { x: 60, lives: 3, score: 0, bullet: null, cool: 0, flash: 0, deadT: 0, overT: 0, rng: rng(42) };
+      g.shields = [];
+      [20, 59, 98].forEach(function (sx) {
+        SHIELD.forEach(function (row, y) { for (var x = 0; x < row.length; x++) if (row[x] === '#') g.shields.push({ x: sx + x, y: 23 + y, hp: 2 }); });
+      });
+      wave(0); PLAY.over = false;
+    }
+    function sprite(f, rows, x0, y0, col) {
+      for (var y = 0; y < rows.length; y++) for (var x = 0; x < rows[y].length; x++) if (rows[y][x] === '#') f.set(x0 + x, y0 + y, col);
+    }
+    function hitShield(x, y) {
+      for (var i = 0; i < g.shields.length; i++) {
+        var s2 = g.shields[i];
+        if (s2.hp > 0 && s2.x === Math.round(x) && (s2.y === Math.round(y) || s2.y === Math.round(y) + 1)) { s2.hp--; return true; }
+      }
+      return false;
+    }
+    function step(dt) {
+      if (g.lives <= 0) { g.overT += dt; if (g.overT > 2.2) PLAY.over = true; return; }
+      if (g.deadT > 0) { g.deadT -= dt; return; }
+      // the cannon
+      var v = (PLAY.right ? 1 : 0) - (PLAY.left ? 1 : 0);
+      g.x = Math.max(2, Math.min(W - 9, g.x + v * 46 * dt));
+      g.cool -= dt;
+      if (PLAY.fire && !g.bullet && g.cool <= 0) { g.bullet = { x: Math.round(g.x) + 3, y: 25 }; g.cool = .3; }
+      if (g.bullet) {
+        g.bullet.y -= 60 * dt;
+        var b = g.bullet;
+        if (b.y < 1 || hitShield(b.x, b.y)) g.bullet = null;
+        else for (var i = 0; i < g.inv.length; i++) {
+          var e = g.inv[i];
+          if (e.alive && b.x >= e.x && b.x < e.x + 8 && b.y >= e.y - 1 && b.y < e.y + 4) { e.alive = false; g.bullet = null; g.score += 10; break; }
+        }
+      }
+      // the invaders march together, quicker as fewer are left
+      var alive = g.inv.filter(function (e) { return e.alive; });
+      if (!alive.length) { wave(g.waveN + 1); return; }
+      g.acc += dt;
+      var each = g.stepT * (.35 + .65 * alive.length / g.inv.length);
+      while (g.acc >= each) {
+        g.acc -= each; g.frame ^= 1;
+        var minX = 99, maxX = 0, maxY = 0;
+        alive.forEach(function (e) { minX = Math.min(minX, e.x); maxX = Math.max(maxX, e.x + 7); maxY = Math.max(maxY, e.y + 3); });
+        if ((g.dx > 0 && maxX + 1 > W - 2) || (g.dx < 0 && minX - 1 < 1)) { g.dx = -g.dx; alive.forEach(function (e) { e.y += 1; }); }
+        else alive.forEach(function (e) { e.x += g.dx; });
+        if (maxY >= 25) { g.lives = 0; return; }
+      }
+      // the lowest invader in a random column drops a shot
+      g.fireT -= dt;
+      if (g.fireT <= 0) {
+        g.fireT = Math.max(.35, 1.1 - g.waveN * .12) * (.6 + g.rng() * .8);
+        var shooter = alive[Math.floor(g.rng() * alive.length)], low = shooter;
+        alive.forEach(function (e) { if (e.x === shooter.x && e.y > low.y) low = e; });
+        g.drops.push({ x: low.x + 3 + (g.rng() < .5 ? 0 : 1), y: low.y + 4 });
+      }
+      for (var k = g.drops.length - 1; k >= 0; k--) {
+        var d = g.drops[k];
+        d.y += 24 * dt;
+        if (d.y > 29 || hitShield(d.x, d.y)) { g.drops.splice(k, 1); continue; }
+        if (d.y >= 26 && d.x >= g.x && d.x < g.x + 7) {
+          g.drops.splice(k, 1); g.lives--; g.flash = .5; g.deadT = g.lives > 0 ? .9 : 0; g.drops = [];
+        }
+      }
+      g.flash = Math.max(0, g.flash - dt);
+    }
+    return {
+      label: 'Games', dur: 9999,
+      enter: function () { reset(); },
+      draw: function (f, t, st, dt) {
+        if (!g) reset();
+        step(Math.min(dt || 0, .05));
+        f.fill(BLACK);
+        // the score, top left, and a dot a life, top right
+        var L = line('label', 6, String(g.score));
+        drawText(f, L, penLeft(L, 2), capBase(1, 6), WHITE_I, .85);
+        for (var i = 0; i < g.lives; i++) f.set(W - 4 - i * 3, 2, TEAL);
+        g.inv.forEach(function (e) { if (e.alive) sprite(f, INV[g.frame], e.x, e.y, WHITE_I); });
+        g.shields.forEach(function (s2) { if (s2.hp > 0) f.set(s2.x, s2.y, s2.hp > 1 ? GREEN : [20, 110, 64]); });
+        if (g.lives > 0 && (g.deadT <= 0 || Math.floor(t * 10) % 2)) sprite(f, GUN, Math.round(g.x), 27, TEAL);
+        if (g.bullet) { f.set(g.bullet.x, Math.round(g.bullet.y), WHITE); f.set(g.bullet.x, Math.round(g.bullet.y) + 1, WHITE); }
+        g.drops.forEach(function (d) { f.set(d.x, Math.round(d.y), RED); f.set(d.x, Math.round(d.y) + 1, RED); });
+        for (var x = 2; x < W - 2; x += 2) f.set(x, 30, [20, 90, 70]);
+        if (g.flash > 0 || g.lives <= 0) {
+          var a = g.lives <= 0 ? .35 + .25 * Math.sin(t * 6) : g.flash;
+          for (var y = 1; y < H - 1; y++) for (var x2 = 1; x2 < W - 1; x2++) f.blend(x2, y, RED, a * .35);
+        }
+      }
+    };
+  };
+
   // the VIP page's cheer, after the celebrate emoji: the cow hops with its eyes spinning rainbow while confetti falls
   // round it (each bit tumbles between a tall and a wide pair of dots)
   S.party = function () {
@@ -2895,12 +3172,13 @@
     if (this.next) { this.cur = this.next; this.start = this.tStart; this.next = null; }
     this.go(name);
   };
-  Board.prototype.release = function () {
+  Board.prototype.release = function (to) {
     var h = this.held; this.held = null;
     if (!h) return;
-    // the held scene goes wherever it is: on, coming on, asked for next or waiting behind a moo
-    if (this.back === h) this.back = this.names[0];
-    if ((this.pending || this.next || this.cur) === h) this.go(this.names[0]);
+    // the held scene goes wherever it is: on, coming on, asked for next or waiting behind a moo + to picks the next scene
+    var back = to || this.names[0];
+    if (this.back === h) this.back = back;
+    if ((this.pending || this.next || this.cur) === h) this.go(back);
   };
   Board.prototype.tick = function (nowMs) {
     var t = ((nowMs == null ? performance.now() : nowMs) - t0) / 1000;
@@ -3037,7 +3315,7 @@
   }
 
   window.MooBoard = {
-    Board: Board, scenes: S, boards: boards, inkFaults: inkFaults,
+    Board: Board, scenes: S, boards: boards, inkFaults: inkFaults, play: PLAY,
     syllables: function (w) { return syllables(w); },
     now: function () { return (performance.now() - t0) / 1000; },
     labels: function (names) { return names.map(function (n) { return S[n] ? S[n]().label : n; }); },

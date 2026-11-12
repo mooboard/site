@@ -325,6 +325,10 @@ button.stat .u { text-decoration: underline dotted; text-decoration-thickness: .
 .wl-board { width: min(640px, 100%); margin: 0 auto; }
 .wl-price { margin-top: 56px; }
 .wl-reserve { margin: 14px 0 0; font-weight: 800; }
+/* the VIP price is a link to the shop */
+.wl-vip { display: inline-block; color: inherit; text-decoration: none; border-radius: 24px; transition: transform .3s var(--ease); }
+.wl-vip:hover { color: inherit; transform: translateY(-3px); }
+.wl-vip .price { justify-content: center; }
 .wl-reserve a { color: var(--teal); }
 .tag { display: inline-block; padding: 6px 14px; border-radius: 999px; background: var(--pink); color: var(--ink); font-weight: 900; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
 .price.xl { justify-content: center; margin-top: 10px; }

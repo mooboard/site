@@ -49,19 +49,21 @@
   }
 
   /* ---------- boards ---------- */
-  var HERO_SCENES = ['time', 'song', 'art', 'calendar', 'score', 'weather'];
-  var first = HERO_SCENES.indexOf(params.get('scene'));
-  if (first > 0) HERO_SCENES = HERO_SCENES.slice(first).concat(HERO_SCENES.slice(0, first));
+  // the buttons keep this order (games last), and ?scene= only picks the one the board starts on
+  var CHIP_SCENES = ['time', 'song', 'art', 'calendar', 'score', 'weather', 'invaders'], HERO_SCENES = CHIP_SCENES;
+  var first = CHIP_SCENES.indexOf(params.get('scene'));
+  if (first > 0) HERO_SCENES = CHIP_SCENES.slice(first).concat(CHIP_SCENES.slice(0, first));
   var heroEl = $('#hero-board');
   var hero = new MB.Board(heroEl, { scenes: HERO_SCENES, onGlow: tileGlow($('#top')) });
 
   var chips = $('#chips'), LABEL = {};
-  MB.labels(HERO_SCENES).forEach(function (label, i) {
-    LABEL[HERO_SCENES[i]] = label;
+  MB.labels(CHIP_SCENES).forEach(function (label, i) {
+    var sc = CHIP_SCENES[i], on = sc === HERO_SCENES[0];
+    LABEL[sc] = label;
     var b = document.createElement('button');
-    b.className = 'chip' + (i ? '' : ' on'); b.textContent = label; b.setAttribute('aria-pressed', i ? 'false' : 'true');
-    b.dataset.scene = HERO_SCENES[i];
-    b.addEventListener('click', function () { hero.go(HERO_SCENES[i]); });
+    b.className = 'chip' + (on ? ' on' : ''); b.textContent = label; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.dataset.scene = sc;
+    b.addEventListener('click', function () { hero.go(sc); });
     chips.appendChild(b);
   });
   // the board's accessible name says what it shows, the clock with its time
@@ -72,10 +74,41 @@
     if (heroEl.getAttribute('aria-label') !== name) heroEl.setAttribute('aria-label', name);
   }
   heroName(); setInterval(heroName, 10000);
+  LABEL.play = LABEL.invaders;
   heroEl.addEventListener('scene', function (e) {
     heroScene = e.detail; heroName();
-    $$('.chip', chips).forEach(function (c) { var on = c.dataset.scene === e.detail; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
+    var lit = e.detail === 'play' ? 'invaders' : e.detail;
+    $$('.chip', chips).forEach(function (c) { var on = c.dataset.scene === lit; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
   });
+
+  // the easter egg: on the games view, the arrow keys (and space) play invaders on the hero, held there while it's played
+  // + idle for 12 s, a lost game, another button, or the board scrolled away hands it back to the recorded games view
+  (function () {
+    var P = MB.play, playing = false, lastKey = 0, KEYS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'fire', ' ': 'fire' };
+    if (!P || REDUCED) return;
+    function onScreen() { var r = heroEl.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; }
+    function stop() {
+      if (!playing) return;
+      playing = false; P.left = P.right = P.fire = false;
+      hero.release('invaders');
+    }
+    window.addEventListener('keydown', function (e) {
+      var k = KEYS[e.key];
+      if (!k || e.metaKey || e.ctrlKey || e.altKey || !onScreen()) return;
+      if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]')) return;
+      if (!playing) {
+        if (heroScene !== 'invaders' || heldByMusic || (MB.paused && MB.paused())) return;
+        playing = true; hero.hold('play');
+      }
+      e.preventDefault(); lastKey = Date.now(); P[k] = true;
+    });
+    window.addEventListener('keyup', function (e) { var k = KEYS[e.key]; if (k && playing) P[k] = false; });
+    window.addEventListener('blur', function () { P.left = P.right = P.fire = false; });
+    chips.addEventListener('click', stop, true);
+    setInterval(function () {
+      if (playing && (P.over || Date.now() - lastKey > 12000 || !onScreen())) stop();
+    }, 500);
+  })();
   $('#hero-tilt').addEventListener('click', function () { hero.step(); });
 
   // the glow goes on the board's own section (on :root it would restyle the whole page), and only when it changed
@@ -115,7 +148,7 @@
     var bz = document.createElement('div'); bz.className = 'bezel'; bz.dataset.frame = t.dataset.frame;
     var led = document.createElement('div'); led.className = 'led'; bz.appendChild(led);
     t.insertBefore(bz, t.firstChild);
-    var b = lazyBoard(led, { scenes: [t.dataset.scene], auto: false, weather: 'snow', fps: 30, onGlow: tileGlow(t) }, t);
+    var b = lazyBoard(led, { scenes: [t.dataset.scene], auto: false, weather: 'snow', fps: 30, slide: t.hasAttribute('data-slide'), onGlow: tileGlow(t) }, t);
     t.addEventListener('click', function () { b.moo(); });
   });
 
@@ -130,7 +163,22 @@
     sports:   ['..####..', '.#.##.#.', '#..##..#', '########', '########', '#..##..#', '.#.##.#.', '..####..'],
     tv:       ['.#....#.', '..#..#..', '########', '#......#', '#......#', '#......#', '########', '.##..##.'],
     seasons:  ['......##', '....####', '..######', '.######.', '.#####..', '.####...', '.#......', '#.......'],
-    more:     ['........', '........', '........', '##.##.##', '##.##.##', '........', '........', '........']
+    more:     ['........', '........', '........', '##.##.##', '##.##.##', '........', '........', '........'],
+    aquarium: ['........', '..##....', '.####..#', '########', '########', '.####..#', '..##....', '........'],
+    blocks:   ['........', '.##.....', '.##.....', '.####...', '.####.##', '####..##', '########', '########'],
+    aurora:   ['#..#..#.', '#..#..#.', '##.##.##', '.##.##.#', '..#..#..', '........', '.#.#.#.#', '########'],
+    snake:    ['........', '.####...', '.#..#...', '.#..####', '.#.....#', '.####..#', '....#..#', '....####'],
+    sunmoon:  ['..##....', '.####..#', '.####.##', '..##..##', '......##', '.......#', '........', '########'],
+    printer:  ['########', '#......#', '#.####.#', '#..##..#', '#......#', '#.####.#', '#......#', '########'],
+    lava:     ['..####..', '.#....#.', '.#.##.#.', '.#....#.', '.##..##.', '.#.##.#.', '..####..', '.######.'],
+    pong:     ['........', '#......#', '#..#...#', '#......#', '#......#', '#......#', '#......#', '........'],
+    countdown:['########', '.######.', '..####..', '...##...', '...##...', '..#..#..', '.#....#.', '########'],
+    message:  ['########', '#......#', '#.####.#', '#......#', '#.###..#', '########', '..#.....', '.#......'],
+    blossom:  ['.#....#.', '###..###', '.#....#.', '...##...', '..####..', '...##...', '...#....', '########'],
+    fireflies:['#.....#.', '........', '...#....', '.......#', '.#......', '....#...', '#.#.#.#.', '########'],
+    tide:     ['......#.', '.....###', '......#.', '........', '.##..##.', '#..##..#', '........', '########'],
+    lanterns: ['.##.....', '####..##', '####.###', '.##..###', '......#.', '..##....', '.####...', '########'],
+    tasks:    ['#.......', '.#.####.', '........', '#.......', '.#.####.', '........', '#.......', '.#.####.']
   };
   var APP_BG = { orange: ['#FF7A21', '#ff9f5c'], white: ['#F5F3EF', '#ffffff'], black: ['#17191C', '#33373d'], teal: ['#77EDD7', '#b9fae9'], ghost: ['rgba(255,255,255,.06)', 'rgba(255,255,255,.12)'] };
   function appIcon(li, n) {
@@ -559,7 +607,7 @@
     if (!swapT) np.classList.toggle('show', playing && !!tr);
     // hidden, the card leaves the tab order and what a screen reader can reach
     np.inert = !np.classList.contains('show');
-    if (audible && !heldByMusic) { heldByMusic = true; hero.hold('song'); $$('.chip', chips).forEach(function (c) { var on = c.dataset.scene === 'song'; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); }); }
+    if (audible && !heldByMusic && heroScene !== 'play') { heldByMusic = true; hero.hold('song'); $$('.chip', chips).forEach(function (c) { var on = c.dataset.scene === 'song'; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); }); }
     else if (!audible && heldByMusic) { heldByMusic = false; hero.release(); }
   }
   addEventListener('moomusic', function (e) { musicUI(e.detail.type); });

@@ -103,16 +103,16 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
 <section class="shows" id="shows">
   <h2 class="big" data-reveal>Shows what <br class="m"><em>matters.</em></h2>
   <div class="grid" id="grid">
-    <figure class="tile t-wide" data-scene="faces" data-frame="black"><figcaption>17 clock faces</figcaption></figure>
-    <figure class="tile" data-scene="lyrics" data-frame="orange"><figcaption>Lyrics</figcaption></figure>
-    <figure class="tile" data-scene="weather" data-frame="white"><figcaption>Weather</figcaption></figure>
+    <figure class="tile t-wide" data-scene="faces" data-slide data-frame="black"><figcaption>Clock Faces</figcaption></figure>
+    <figure class="tile" data-scene="rlyrics" data-frame="orange"><figcaption>Stylized Lyrics</figcaption></figure>
     <figure class="tile" data-scene="tv" data-frame="teal"><figcaption>TV</figcaption></figure>
-    <figure class="tile" data-scene="calendar" data-frame="black"><figcaption>Calendar</figcaption></figure>
-    <figure class="tile" data-scene="lights" data-frame="white"><figcaption>Lights sync</figcaption></figure>
-    <figure class="tile" data-scene="art" data-frame="teal"><figcaption>Album art</figcaption></figure>
-    <figure class="tile" data-scene="prayer" data-frame="orange"><figcaption>Prayer</figcaption></figure>
-    <figure class="tile" data-scene="score" data-frame="black"><figcaption>Scores</figcaption></figure>
-    <figure class="tile t-wide" data-scene="combo" data-frame="teal"><figcaption>All in One</figcaption></figure>
+    <figure class="tile" data-scene="rcalendar" data-frame="black"><figcaption>Calendar</figcaption></figure>
+    <figure class="tile" data-scene="tasks" data-frame="teal"><figcaption>Tasks</figcaption></figure>
+    <figure class="tile" data-scene="home" data-frame="white"><figcaption>Apps</figcaption></figure>
+    <figure class="tile" data-scene="lights" data-frame="white"><figcaption>Lights</figcaption></figure>
+    <figure class="tile" data-scene="vis" data-frame="black"><figcaption>Music Visualizer</figcaption></figure>
+    <figure class="tile" data-scene="message" data-frame="orange"><figcaption>Messages</figcaption></figure>
+    <figure class="tile t-wide" data-scene="tour" data-frame="teal"><figcaption>All in One</figcaption></figure>
   </div>
 </section>
 
@@ -120,16 +120,20 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
   <h2 class="apps-h" data-reveal>Apps for your <em>wall.</em></h2>
   <div class="app-wrap">
     <ul class="app-row" id="app-row" tabindex="0" aria-label="Apps">
-      <li data-app="clock" data-scene="time" data-c="#77EDD7" data-bg="teal">Clock</li>
-      <li data-app="weather" data-scene="wx" data-c="#6FB8FF" data-bg="white">Weather</li>
-      <li data-app="seasons" data-scene="seasons" data-c="#FF9A3C" data-bg="orange">Seasons</li>
-      <li data-app="music" data-scene="song" data-c="#FF2E88" data-bg="black">Music</li>
-      <li data-app="calendar" data-scene="calendar" data-c="#FF5A5A" data-bg="white">Calendar</li>
-      <li data-app="lights" data-scene="lights" data-c="#FFD23F" data-bg="black">Lights</li>
-      <li data-app="prayer" data-scene="prayer" data-c="#FFB81C" data-bg="orange">Prayer</li>
-      <li data-app="sports" data-scene="score" data-c="#77EDD7" data-bg="teal">Sports</li>
-      <li data-app="tv" data-scene="tv" data-c="#2F6BFF" data-bg="black">TV</li>
-      <li data-app="more" data-scene="soon" data-c="#FFFFFF" data-bg="ghost" class="more">More coming</li>
+      <li data-app="aquarium" data-scene="aquarium" data-c="#4FC3F7" data-bg="teal">Aquarium</li>
+      <li data-app="blocks" data-scene="blocks" data-c="#FF5A5A" data-bg="black">Falling Blocks</li>
+      <li data-app="blossom" data-scene="blossom" data-c="#FFB7C9" data-bg="white">Blossom</li>
+      <li data-app="printer" data-scene="printer" data-c="#FF9A3C" data-bg="orange">3D Printers</li>
+      <li data-app="snake" data-scene="snake" data-c="#2BD47D" data-bg="black">Snake</li>
+      <li data-app="aurora" data-scene="aurora" data-c="#7CFFB2" data-bg="teal">Aurora</li>
+      <li data-app="sunmoon" data-scene="sunmoon" data-c="#FFD23F" data-bg="white">Sun and Moon</li>
+      <li data-app="fireflies" data-scene="fireflies" data-c="#D7FF6B" data-bg="black">Fireflies</li>
+      <li data-app="lava" data-scene="lava" data-c="#FF4FA3" data-bg="orange">Lava Lamp</li>
+      <li data-app="tide" data-scene="tide" data-c="#9AA4FF" data-bg="teal">Moonlit Tide</li>
+      <li data-app="pong" data-scene="pong" data-c="#FFFFFF" data-bg="orange">Pong Clock</li>
+      <li data-app="countdown" data-scene="countdown" data-c="#FFB7C9" data-bg="white">Countdowns</li>
+      <li data-app="lanterns" data-scene="lanterns" data-c="#FFB81C" data-bg="black">Lanterns</li>
+      <li data-app="more" data-scene="store" data-c="#FFFFFF" data-bg="ghost" class="more">50+ more in the store</li>
     </ul>
     <div class="app-nav"><button class="an" data-dir="-1" type="button" aria-label="Scroll apps left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5L8 12l6.5 6.5"/></svg></button><button class="an" data-dir="1" type="button" aria-label="Scroll apps right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5.5L16 12l-6.5 6.5"/></svg></button></div>
   </div>
@@ -230,8 +234,10 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
     <div class="bezel" data-frame="teal"><div class="led" id="wl-board"></div></div>
   </div>
   <div class="wl-price" data-reveal>
-    <span class="tag">VIP price</span>
-    <div class="price xl"><span class="now"><span class="sr">VIP price </span>$129</span><s><span class="sr">retail </span>$159</s></div>
+    <a class="wl-vip" href="shop/" aria-label="VIP price, $129 instead of $159. Become a VIP">
+      <span class="tag">VIP price</span>
+      <div class="price xl"><span class="now">$129</span><s>$159</s></div>
+    </a>
     <p class="wl-reserve"><a href="shop/">Get a VIP pass for $1 by November 30</a></p>
   </div>
   <form class="wl-form" id="wl-form" data-reveal novalidate>

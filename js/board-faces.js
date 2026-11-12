@@ -133,8 +133,11 @@
   FACES_SCENE = function (b) {
     var only = b && b.opts && b.opts.face, states = {}, order = [], pos = -1, cur = null, prev = null, since = 0, fa = new FB(), fb = new FB(), t8 = null, r = rng(b && b.opts && b.opts.seed || (Math.random() * 1e9) | 0);
     function list() { var L = FACE_PORTS.concat ? FACES.concat(FACE_PORTS) : FACES; return only ? L.filter(function (x) { return x.id === only; }) : L; }
+    // opts.slide (the shows tile): every face in order, each sliding in from the left as a swipe on the board does
+    var slide = b && b.opts && b.opts.slide;
     function deal() {
       var L = list().slice();
+      if (slide) { order = L; pos = 0; return; }
       for (var i = L.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)), tmp = L[i]; L[i] = L[j]; L[j] = tmp; }
       if (cur && L.length > 1 && L[0].id === cur.id) { var tmp2 = L[0]; L[0] = L[1]; L[1] = tmp2; }
       order = L; pos = 0;
@@ -154,6 +157,15 @@
         if (p >= 1 || !prev) { prev = null; draw(cur, f, d, t, into, dt); return; }
         // the board's Sparkle (TRANS): the new face lands LED by LED in a noise order, a warm white spark at its front
         draw(prev, fa, d, t, FACE_SECONDS + into, dt); draw(cur, fb, d, t, into, dt);
+        if (slide) {
+          // left to right: the old face slides out to the right as the new one comes in behind it, eased
+          var e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2, off = Math.round(e * W), A = fa.p, Bp = fb.p, O = f.p;
+          for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) {
+            var o = (y * W + x) * 3, i = x < off ? (y * W + x + W - off) * 3 : (y * W + x - off) * 3, src = x < off ? Bp : A;
+            O[o] = src[i]; O[o + 1] = src[i + 1]; O[o + 2] = src[i + 2];
+          }
+          return;
+        }
         composeFB('sparkle', p, fa, fb, f, t8 || (t8 = bytes3()));
       }
     };
