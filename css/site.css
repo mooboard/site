@@ -656,7 +656,7 @@ body:has(.nav.hide) .vip-bar { transform: translateY(-100%); }
 .vip-pop .perks b { display: block; margin-bottom: 4px; color: #fff; font: 600 19px/1.2 var(--display); }
 .vip-pop .perks i { display: block; margin-bottom: 8px; font-style: normal; font-size: 22px; }
 .vip-pop .price { justify-content: center; margin-top: 32px; }
-.vip-pop .btn { margin-top: 20px; height: 60px; padding: 0 36px; font-size: 21px; }
+.vip-pop .btn { margin-top: 32px; height: 60px; padding: 0 36px; font-size: 21px; }
 .vp-clock { display: inline-flex; gap: 6px; align-items: center; margin: 16px 0 0; padding: 3px 11px; border-radius: 999px; background: rgba(255, 183, 201, .12); color: var(--pink); font: 800 12.5px/1.4 var(--body); }
 .vp-x { position: absolute; top: 14px; right: 14px; width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .08); color: #fff; cursor: pointer; }
 .vp-x svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
