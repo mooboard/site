@@ -209,7 +209,11 @@
     bz.addEventListener('click', function () { b.moo(); });
   });
   $$('.an').forEach(function (btn) {
-    btn.addEventListener('click', function () { var r = $('#app-row'); r.scrollBy({ left: +btn.dataset.dir * r.clientWidth * .8, behavior: REDUCED ? 'auto' : 'smooth' }); });
+    // one app a press, so the next one lands in the middle
+    btn.addEventListener('click', function () {
+      var r = $('#app-row'), li = $('li', r), step = li ? li.offsetWidth + parseFloat(getComputedStyle(r).columnGap || 0) : r.clientWidth * .8;
+      r.scrollBy({ left: +btn.dataset.dir * step, behavior: REDUCED ? 'auto' : 'smooth' });
+    });
   });
 
   /* ---------- the 4,096 LEDs card: a close-up of the dot matrix with a full-spectrum wave running across it ---------- */

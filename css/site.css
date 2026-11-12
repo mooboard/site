@@ -492,11 +492,14 @@ button.stat .u { text-decoration: underline dotted; text-decoration-thickness: .
 .apps-h { font-size: clamp(40px, 7vw, 96px); text-align: center; padding: 0 var(--gut); margin-bottom: clamp(36px, 5vw, 60px); }
 .apps-h em { font-style: normal; color: var(--accent-lite); }
 .app-row {
+  /* every app lands in the middle, under the heading: the row's sides are half the leftover width, so the first and
+     the last can centre too */
+  --app-w: clamp(270px, 34vw, 440px);
   list-style: none; margin: 0; display: flex; gap: clamp(14px, 2vw, 24px); overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
-  padding: 10px max(var(--gut), calc((100vw - 1240px) / 2)) 26px; scrollbar-width: none; overscroll-behavior-x: contain;
+  padding: 10px calc((100% - var(--app-w)) / 2) 26px; scrollbar-width: none; overscroll-behavior-x: contain;
 }
 .app-row::-webkit-scrollbar { display: none; }
-.app-row li { flex: none; width: clamp(270px, 34vw, 440px); scroll-snap-align: center; display: flex; flex-direction: column; gap: 14px; }
+.app-row li { flex: none; width: var(--app-w); scroll-snap-align: center; display: flex; flex-direction: column; gap: 14px; }
 .app-row .bezel { transition: transform .45s var(--ease); }
 /* the row scrolls sideways, so it clips at its padding box: the bezels' outer glow and drop shadow showed there as a
    lighter band behind the cards. The cards keep only their inner edges and sit on the section's own background */
@@ -513,7 +516,7 @@ button.stat .u { text-decoration: underline dotted; text-decoration-thickness: .
 /* the row takes keyboard focus (arrow keys scroll it), and the arrows stay wherever there is a mouse */
 .app-row:focus-visible { outline-offset: -3px; }
 @media (prefers-reduced-motion: reduce) { .app-row { scroll-behavior: auto; } }
-@media (max-width: 700px) { .app-row li { width: 78vw; } }
+@media (max-width: 700px) { .app-row { --app-w: 78vw; } }
 @media (max-width: 700px) and (hover: none) and (pointer: coarse) { .app-nav { display: none; } }
 
 
@@ -534,8 +537,7 @@ button.stat .u { text-decoration: underline dotted; text-decoration-thickness: .
   .cp { height: 44px; padding: 0 10px 0 5px; gap: 6px; font-size: 12px; }
   .cp i { width: 32px; height: 32px; }
   .progress { bottom: calc(var(--bar) + 16px); }
-  .app-row { scroll-padding: 0 var(--gut); }
-  .app-row li { width: 80vw; scroll-snap-align: start; }
+  .app-row { --app-w: 80vw; }
 }
 /* the taller tap area of a chip stays inside half the gap so neighbours never overlap */
 @media (max-width: 600px) { .chip::before { inset: -7px -1.5px; } }
