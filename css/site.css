@@ -314,6 +314,11 @@ button.stat .u { text-decoration: underline dotted; text-decoration-thickness: .
 .track span:nth-of-type(3n+2) { color: var(--marigold); }
 .track span:nth-of-type(3n) { color: var(--pink); }
 @keyframes marq { to { transform: translateX(-50%); } }
+/* the four frame colors, in their own colors (Midnight is the black frame, so it gets a white outline) */
+.track span.mq-mint { color: #77EDD7; }
+.track span.mq-sunset { color: #FF7A21; }
+.track span.mq-midnight { color: #17191C; -webkit-text-stroke: 2px #fff; paint-order: stroke fill; }
+.track span.mq-moon { color: #F5F3EF; }
 
 /* ---------- waitlist ---------- */
 .waitlist { --wl-end: clamp(24px, 3.5vw, 40px); position: relative; padding: clamp(110px, 14vw, 180px) var(--gut) var(--wl-end); text-align: center; background: radial-gradient(80% 60% at 50% 30%, #123c37, var(--ink) 70%); overflow: hidden; }
