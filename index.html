@@ -35,7 +35,8 @@
 })(document.documentElement);
 if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('error', function (e) { __err.push((e.message || 'load fail') + ' ' + (e.filename || (e.target && (e.target.src || e.target.href)) || '')); }, true); addEventListener('unhandledrejection', function (e) { __err.push('rejection ' + e.reason); }); setTimeout(function () { var o = {}; document.querySelectorAll('main > section, footer').forEach(function (s) { o[s.id || s.className] = Math.round(s.getBoundingClientRect().top + scrollY); }); document.body.setAttribute('data-debug', JSON.stringify({ err: __err, top: o, h: document.documentElement.scrollHeight, w: document.documentElement.scrollWidth })); }, 4000); }</script>
 </head>
-<body>
+<body class="has-bar">
+<a class="vip-bar" id="vip-bar" href="shop/"><span class="vb-long">🎟️ VIP passes are here. $1 now, $30 off at launch, and your order ships first.</span><span class="vb-short">🎟️ VIP passes are here.</span> <b>Become a VIP</b></a>
 
 <header class="nav" id="nav">
   <button class="logo" id="logo" aria-label="mooboard. Click to moo.">
@@ -245,6 +246,22 @@ if (/[?&]debug/.test(location.search)) { window.__err = []; addEventListener('er
 </section>
 
 </main>
+
+<dialog class="vip-pop" id="vip-pop" aria-labelledby="vp-h">
+  <button class="vp-x" type="button" aria-label="Close" data-close><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <span class="vp-tag">VIP Pass 🎟️</span>
+  <h2 id="vp-h">Want to be first in line?</h2>
+  <p class="vp-sub">Get a VIP pass for $1.<br>You get perks no one else does.</p>
+  <ul class="perks">
+    <li><i aria-hidden="true">📣</i><b>Hear first</b>We email you about the launch before anyone else.</li>
+    <li><i aria-hidden="true">🏷️</i><b>$30 off</b>Get mooboard one for $129 instead of $159.</li>
+    <li><i aria-hidden="true">📦</i><b>Ships first</b>VIP orders go out before everyone else's.</li>
+    <li><i aria-hidden="true">👑</i><b>VIP Discord</b>A VIP role and a private channel.</li>
+  </ul>
+  <div class="price"><span class="now"><span class="sr">VIP price </span>$129</span><s><span class="sr">retail </span>$159</s></div>
+  <a class="btn btn-gold" href="shop/">Become a VIP</a>
+  <div><p class="vp-clock">Passes close November 30, 11:59 pm ET</p></div>
+</dialog>
 
 <footer class="foot">
   <button class="foot-mark" id="foot-mark" aria-label="Moo">

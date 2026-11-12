@@ -574,6 +574,24 @@
   $('#pl-next').addEventListener('click', function () { if (window.MooMusic) window.MooMusic.next(); });
   plMute.addEventListener('click', function () { var M = window.MooMusic; if (!M) return; if (M.muted()) { M.unmute(); if (!M.playing()) M.play(); } else M.mute(); });
 
+  /* ---------- the VIP pass: the bar up top, and its panel after a waitlist signup, both gone once passes close ---------- */
+  // 11:59 pm ET on November 30, 2026 (EST is UTC-5), the same close as js/shop.js
+  var VIP_CLOSE = Date.parse('2026-12-01T04:59:59Z'), vipOpen = Date.now() <= VIP_CLOSE, pop = $('#vip-pop');
+  if (!vipOpen) { var bar = $('#vip-bar'); if (bar) bar.remove(); document.body.classList.remove('has-bar'); }
+  if (pop) {
+    // the close button, or a click on the dimmed page around the panel, closes it
+    pop.addEventListener('click', function (e) {
+      if (e.target.closest('[data-close]')) { pop.close(); return; }
+      var r = pop.getBoundingClientRect();
+      if (e.target === pop && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom)) pop.close();
+    });
+  }
+  function vipPop() {
+    if (!vipOpen || !pop || typeof pop.showModal !== 'function' || pop.open) return;
+    // a beat after the board's moo, so the signup lands first
+    setTimeout(function () { pop.showModal(); }, 900);
+  }
+
   /* ---------- waitlist ---------- */
   var form = $('#wl-form'), msg = $('#wl-msg');
   form.addEventListener('submit', function (e) {
@@ -586,7 +604,7 @@
     var send = fetch('https://api.mooboard.co/waitlist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, hp: hp ? hp.value : '' }) })
       .then(function (r) { if (!r.ok) throw new Error(r.status === 429 ? 'rate' : 'bad'); return 'sent'; });
     busy(send).then(function (how) {
-      if (how === 'sent') { form.classList.add('done'); form.reset(); msg.textContent = "You're on the list. moo."; }
+      if (how === 'sent') { form.classList.add('done'); form.reset(); msg.textContent = "You're on the list. moo."; vipPop(); }
       else { form.classList.add('soon'); msg.textContent = 'Coming soon. The list opens any day now.'; }
       boards.wl.moo(); happy(btn);
     }, function () { msg.textContent = 'Could not send. Try again in a moment.'; })
