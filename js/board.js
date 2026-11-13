@@ -2465,95 +2465,32 @@
     };
   };
 
-  // the Home screen as the remote moves through it (the shows grid's Apps tile): the main apps' 8 x 8 LED icons at two
-  // dots a pixel in a row, the selected one centred, lit and named under it, the others dimmed + every 1.2 s the
-  // selection steps right and the row slides along (0.35 s, eased) + the site's own, until a recording of the board's
-  var HOME_APPS = [
-    ['Clock', '#77EDD7', ['..####..', '.#....#.', '#..#...#', '#..#...#', '#..###.#', '#......#', '.#....#.', '..####..']],
-    ['Weather', '#FFD23F', ['........', '..###...', '.#####..', '########', '########', '.#.#.#..', '#.#.#...', '........']],
-    ['Music', '#FF2E88', ['....##..', '....###.', '....#.##', '....#...', '....#...', '.####...', '#####...', '.###....']],
-    ['Calendar', '#FF5A5A', ['.#....#.', '########', '########', '#......#', '#.#.#.##', '#......#', '#.#.#..#', '########']],
-    ['Lights', '#FFB81C', ['..####..', '.######.', '########', '########', '.######.', '..####..', '..#..#..', '..####..']],
-    ['TV', '#4F8BFF', ['.#....#.', '..#..#..', '########', '#......#', '#......#', '#......#', '########', '.##..##.']],
-    ['Games', '#2BD47D', ['........', '..#..#..', '.######.', '##.##.##', '########', '#.#..#.#', '#......#', '.##..##.']],
-    ['Timers', '#9AA4FF', ['.######.', '..####..', '...##...', '...##...', '..#..#..', '.#....#.', '.######.', '........']],
-    ['Disco', '#C77DFF', ['...##...', '..####..', '.#.##.#.', '########', '########', '.#.##.#.', '..####..', '...##...']],
-    ['Store', '#FFFFFF', ['........', '.######.', '#......#', '########', '#.#..#.#', '#......#', '#......#', '########']]
-  ];
-  var HOME_COLS = HOME_APPS.map(function (a) { return hexc(a[1]); }), HOME_GAP = 26, HOME_Y = 3;
-  // the row with app `pos` (fractional while it slides) in the middle + ring: the centred app's ring and name, 0..1
-  function drawHome(f, pos, ring) {
-    f.fill(BLACK);
-    var n = HOME_APPS.length, sel = ((Math.round(pos) % n) + n) % n;
-    for (var k = -3; k <= 3; k++) {
-      var idx = Math.round(pos) + k, i = ((idx % n) + n) % n, cx = 63.5 + (idx - pos) * HOME_GAP;
-      var x0 = Math.round(cx - 8), dist = Math.abs(idx - pos), on = i === sel && ring > 0;
-      if (x0 < -18 || x0 > W + 2) continue;
-      var col = mul(HOME_COLS[i], on ? .62 + .38 * ring : Math.max(.22, .62 - dist * .14));
-      HOME_APPS[i][2].forEach(function (row, y) {
-        for (var x = 0; x < 8; x++) if (row[x] === '#') f.rect(x0 + x * 2, HOME_Y + y * 2, 2, 2, col, 1);
-      });
-      if (on) {
-        var rc = mul(WHITE, ring);
-        for (var q = -2; q <= 17; q++) { f.set(x0 + q, HOME_Y - 2, rc); f.set(x0 + q, HOME_Y + 17, rc); f.set(x0 - 2, HOME_Y + q, rc); f.set(x0 + 17, HOME_Y + q, rc); }
-      }
-    }
-    var L = line('label', 6, HOME_APPS[sel][0].toUpperCase());
-    drawText(f, L, penCentre(L, 63.5), capBase(24, 6), [255, 238, 214], Math.max(.35, ring));
-  }
-  function ease(p) { return p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; }
-  S.home = function () {
-    var EVERY = 1.2, MOVE = .35;
-    return {
-      label: 'Apps', dur: 12,
-      draw: function (f, t, st) {
-        var step = Math.floor(st / EVERY), into = st - step * EVERY, p = REDUCED ? 1 : c01(into / MOVE);
-        drawHome(f, step - 1 + ease(p), p >= 1 ? 1 : 0);
-      }
-    };
-  };
-
-  // All in One (the shows grid's wide tile): the board on lyrics, the remote's home press brings up Home on Clock, three
-  // presses right walk it to Calendar, a press opens it + recorded lyrics and calendar from the firmware's simulator
+  // All in One (the shows grid's wide tile): the board on lyrics, the remote's home press brings up Home on Music, three
+  // presses right walk it to Calendar, a press opens the next event + all recorded on the firmware's simulator
+  // (lyrics from the Nov 10 set, Home from home-remote-open, frames 3 on, at 5 fps so each step reads)
   S.tour = function () {
-    var lyr = clipFrames('rlyrics', CLIPS.rlyrics), cal = clipFrames('rcalendar', CLIPS.rcalendar), fa = new FB(), fb = new FB();
-    var LYR = 3.2, FADE = .4, HOLD = .9, STEP = .75, MOVE = .3, PRESS = .5, CAL = 3.4;
-    var homeT = HOLD + 3 * STEP + PRESS, TOTAL = LYR + FADE + homeT + FADE + CAL;
-    function clipAt(f, box, st) {
+    var lyr = clipFrames('rlyrics', CLIPS.rlyrics), home = clipFrames('homeopen', { n: 26 }), fa = new FB(), fb = new FB();
+    var LYR = 3.2, FADE = .4, FIRST = 3, HFPS = 5, HN = 26 - FIRST, HOMET = HN / HFPS, HOLD = 1.6, TOTAL = LYR + FADE + HOMET + HOLD;
+    function frame(f, box, k) {
       if (!box.px) { f.fill(BLACK); return; }
-      var n = (box.px.length / (N * 4)) | 0, k = REDUCED ? 0 : Math.floor(st * 10) % n, D = box.px, P = f.p, base = k * N * 4;
+      var D = box.px, P = f.p, base = k * N * 4;
       for (var q = 0, i = base, j = 0; q < N; q++, i += 4, j += 3) { P[j] = D[i]; P[j + 1] = D[i + 1]; P[j + 2] = D[i + 2]; }
-    }
-    function homeAt(f, u) {
-      // u: seconds into Home + the ring lights once it's up, each press slides one app right, the last press flashes
-      var pos = 0, ring = 1;
-      if (u > HOLD) {
-        var s2 = Math.min(3, Math.floor((u - HOLD) / STEP)), into = u - HOLD - s2 * STEP;
-        pos = s2 < 3 ? s2 + ease(c01(into / MOVE)) : 3;
-        if (s2 < 3 && into < MOVE) ring = 0;
-      }
-      drawHome(f, pos, ring);
-      if (u > HOLD + 3 * STEP + PRESS * .4) {
-        var x0 = 56, flash = c01((u - HOLD - 3 * STEP - PRESS * .4) / (PRESS * .6));
-        for (var y = 1; y < 22; y++) for (var x = x0 - 4; x <= x0 + 19; x++) f.blend(x, y, WHITE, .35 * (1 - flash));
-      }
-    }
-    function blendInto(f, a, b, p) {
-      var A = a.p, B = b.p, O = f.p;
-      for (var i = 0; i < N * 3; i++) O[i] = A[i] + (B[i] - A[i]) * p;
     }
     return {
       label: 'All in One', dur: TOTAL,
       draw: function (f, t, st) {
-        var u = REDUCED ? LYR + FADE + homeT * .5 : st % TOTAL;
-        if (u < LYR) { clipAt(f, lyr, u); return; }
+        if (REDUCED) { frame(f, home, 12); return; }
+        var u = st % TOTAL;
+        if (u < LYR) { frame(f, lyr, Math.floor(u * 10) % 30); return; }
         u -= LYR;
-        if (u < FADE) { fa.noclip(); fb.noclip(); clipAt(fa, lyr, LYR + u); homeAt(fb, 0); blendInto(f, fa, fb, ease(u / FADE)); return; }
+        if (u < FADE) {
+          fa.noclip(); fb.noclip(); frame(fa, lyr, Math.floor((LYR + u) * 10) % 30); frame(fb, home, FIRST);
+          var p = u / FADE, e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2, A = fa.p, B = fb.p, O = f.p;
+          for (var i = 0; i < N * 3; i++) O[i] = A[i] + (B[i] - A[i]) * e;
+          return;
+        }
         u -= FADE;
-        if (u < homeT) { homeAt(f, u); return; }
-        u -= homeT;
-        if (u < FADE) { fa.noclip(); fb.noclip(); homeAt(fa, homeT); clipAt(fb, cal, u); blendInto(f, fa, fb, ease(u / FADE)); return; }
-        clipAt(f, cal, u);
+        frame(f, home, Math.min(25, FIRST + Math.floor(u * HFPS)));
       }
     };
   };
@@ -2565,7 +2502,7 @@
       draw: function (f, t) {
         f.fill(BLACK);
         for (var i = 0; i < 3; i++) { var on = Math.floor(t * 3) % 3 === i; disc(f, 52 + i * 12, 11, 3, on ? [119, 237, 215] : [30, 60, 55]); }
-        var L = line('label', 6, '50+ MORE');
+        var L = line('label', 6, '50+ APPS');
         drawText(f, L, penCentre(L, 63.5), capBase(21, 6), [255, 238, 214]);
       }
     };
@@ -2581,9 +2518,14 @@
     countdown: { label: 'Countdowns', n: 25 }, message: { label: 'Messages', n: 25, tail: 'birthday', tailDur: 3 },
     blossom: { label: 'Blossom', n: 30 }, fireflies: { label: 'Fireflies', n: 30 }, tide: { label: 'Moonlit Tide', n: 30 },
     lanterns: { label: 'Lanterns', n: 30 }, rfaces: { label: 'Clock faces', n: 25, file: 'faces' },
-    rlyrics: { label: 'Lyrics', n: 30, file: 'lyrics' }, rcover: { label: 'Album art', n: 30, file: 'nowplaying' },
-    rweather: { label: 'Weather', n: 30, file: 'weather' }, rcalendar: { label: 'Calendar', n: 30, file: 'calendar' },
-    rprayer: { label: 'Prayer', n: 30, file: 'prayer' }, tasks: { label: 'Tasks', n: 20 }
+    rlyrics: { label: 'Lyrics', n: 30, file: 'lyrics' }, rcalendar: { label: 'Calendar', n: 30, file: 'calendar' },
+    tasks: { label: 'Tasks', n: 20 },
+    digitalrain: { label: 'Digital Rain', n: 30 }, fireworks: { label: 'Fireworks', n: 30 }, fireplace: { label: 'Fireplace', n: 30 },
+    starfield: { label: 'Starfield', n: 30 }, synthwave: { label: 'Synthwave Horizon', n: 30 }, life: { label: 'Game of Life', n: 30 },
+    snowglobe: { label: 'Snow Globe', n: 30 }, cycles: { label: 'Light Cycles', n: 30 }, flappy: { label: 'Flappy', n: 30 },
+    lander: { label: 'Asteroid Lander', n: 30 }, pinball: { label: 'Pixel Pinball', n: 30 },
+    // Home with the remote, recorded from the board (handoff/marketing/screens-2026-11-12): the pages one is the Apps tile
+    rhome: { label: 'Apps', n: 21, file: 'homepages', fps: 6 }
   };
   var CLIP_BASE = (function () {
     var me = document.currentScript && document.currentScript.src;
