@@ -2525,7 +2525,10 @@
     snowglobe: { label: 'Snow Globe', n: 30 }, cycles: { label: 'Light Cycles', n: 30 }, flappy: { label: 'Flappy', n: 30 },
     lander: { label: 'Asteroid Lander', n: 30 }, pinball: { label: 'Pixel Pinball', n: 30 },
     // Home with the remote, recorded from the board (handoff/marketing/screens-2026-11-12): the pages one is the Apps tile
-    rhome: { label: 'Apps', n: 21, file: 'homepages', fps: 6 }
+    rhome: { label: 'Apps', n: 21, file: 'homepages', fps: 6 },
+    // Stylized Lyrics: Uptown Funk from its first word (0:17.0 to 0:32.0) as tools/disco/kinetic_board.py draws it,
+    // the board's own renderer, at 30 fps. One lossless webp (450 frames), reduced motion holds "This hit, that ice-cold"
+    rstyled: { label: 'Stylized Lyrics', n: 450, file: 'styled', ext: 'webp', fps: 30, dur: 15, still: 43 }
   };
   var CLIP_BASE = (function () {
     var me = document.currentScript && document.currentScript.src;
@@ -2540,7 +2543,7 @@
         x.drawImage(img, 0, 0); box.px = x.getImageData(0, 0, W, H * c.n).data; restill();
       } catch (e) { box.failed = true; }
     };
-    img.src = CLIP_BASE + (c.file || name) + '.png';
+    img.src = CLIP_BASE + (c.file || name) + '.' + (c.ext || 'png');
     return box;
   }
   // a clip's own ending, drawn after its last frame (tt seconds into it): the message's letter opens to its words
