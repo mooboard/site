@@ -2131,17 +2131,21 @@
     };
   };
 
-  // now watching without a picture as NowWatchingScene.cpp and WatchFit.cpp draw it + the site shows six real titles in turn with no art
+  // now watching as NowWatchingScene.cpp and WatchFit.cpp draw it + the site shows six real titles in turn, each with
+  // its 16:9 cover in the 57 x 32 box as the board composes an Apple TV's 600 px artwork (WatchArt.cpp, pw_art
+  // boxDownsample) + the S/E row in the cover's accentColor + the TV set and its wash until the covers are in.
+  // assets/clips/tv.png holds the six boxes top to bottom and tools/tv-art.py makes it (with the accents)
   var NW = { face: 'lyric', x: 61, right: 126, top: 2, rows: 29, box: 57, accent: [232, 116, 59], amber: hexc('#FFB347') };   // the title face is the lyric centre line as on the board
   var NW_HOLD = 1.6, NW_SPEED = 18, NW_EACH = 5;   // the marquee pace and holds + seconds a title that fits stays up
   var WATCHING = [
-    { show: 'Bluey', se: 'S3 E12' },
-    { show: 'Stranger Things', se: 'S4 E1' },
-    { show: 'The Office', se: 'S4 E9' },
-    { show: 'Dune: Part Two' },
-    { show: 'Only Murders in the Building', se: 'S3 E8' },
-    { show: 'Ted Lasso', se: 'S2 E8', paused: true }
+    { show: 'Bluey', se: 'S3 E12', art: 0, accent: [62, 164, 249] },
+    { show: 'Stranger Things', se: 'S4 E1', art: 1, accent: [206, 27, 23] },
+    { show: 'The Office', se: 'S4 E9', art: 2, accent: [45, 136, 185] },
+    { show: 'Dune: Part Two', art: 3, accent: [228, 52, 2] },
+    { show: 'Only Murders in the Building', se: 'S3 E8', art: 4, accent: [51, 178, 159] },
+    { show: 'Ted Lasso', se: 'S2 E8', paused: true, art: 5, accent: [141, 93, 89] }
   ];
+  var NW_ART = { n: 6, w: 57, file: 'tv' };
   // whether a row fits the column from a pen at left + the pen moves right only for ink left of it
   function nwFits(L, left) { return L.empty || left - Math.min(0, L.l) + L.r <= NW.right; }
   function nwPen(L, left) { return left - Math.min(0, L.l); }
@@ -2252,7 +2256,7 @@
     }
   }
   S.tv = function () {
-    var lay = [];
+    var lay = [], art = clipFrames('tvart', NW_ART);
     function layout(i) { if (!lay[i] || lay[i].gen !== textGen) lay[i] = nwLayout(WATCHING[i]); return lay[i]; }
     function stay(i) { var L = layout(i); return L.travel ? Math.max(NW_EACH, nwRound(L.travel) + .4) : NW_EACH; }
     return {
@@ -2262,13 +2266,22 @@
         for (i = 0; i < WATCHING.length; i++) total += stay(i);
         var u = (st || 0) % total;
         for (i = 0; i < WATCHING.length - 1 && u >= stay(i); i++) u -= stay(i);
-        var L = layout(i);
+        var L = layout(i), item = WATCHING[i], D = item.art != null && art.px, P = f.p;
         f.fill(BLACK);
-        for (y = 0; y < H; y++) for (x = 0; x < NW.box; x++) f.set(x, y, mul(NW.accent, .12 + .26 * (x + y) / (NW.box - 1 + H - 1)));
-        f.clip(0, 0, NW.box, H);
-        nwTvSet(f, mix(NW.accent, WHITE, .55));
-        f.noclip();
-        if (L.paused) {
+        if (D) {
+          // the cover, and paused each pixel to its Rec.709 grey at 0.80 (watchPausedPixel)
+          for (y = 0; y < H; y++) for (x = 0; x < NW.box; x++) {
+            var s = ((item.art * H + y) * NW.box + x) * 4, o = (y * W + x) * 3, r = D[s], g = D[s + 1], b = D[s + 2];
+            if (L.paused) { r = g = b = Math.round(.2126 * r + .7152 * g + .0722 * b) * .8; }
+            P[o] = r; P[o + 1] = g; P[o + 2] = b;
+          }
+        } else {
+          for (y = 0; y < H; y++) for (x = 0; x < NW.box; x++) f.set(x, y, mul(NW.accent, .12 + .26 * (x + y) / (NW.box - 1 + H - 1)));
+          f.clip(0, 0, NW.box, H);
+          nwTvSet(f, mix(NW.accent, WHITE, .55));
+          f.noclip();
+        }
+        if (L.paused && !D) {
           for (y = 0; y < H; y++) for (x = 0; x < NW.box; x++) {
             var q = (y * W + x) * 3, grey = Math.round(.2126 * f.p[q] + .7152 * f.p[q + 1] + .0722 * f.p[q + 2]) * .8;
             f.set(x, y, [grey, grey, grey]);
@@ -2279,7 +2292,7 @@
           if (r.travel) nwClipped(f, r.L, r.pen - Math.floor(go * r.travel + .5), r.base, WHITE);
           else drawText(f, r.L, r.pen, r.base, WHITE);
         });
-        drawText(f, L.small.L, L.smallPen, L.smallBase, L.small.col);
+        drawText(f, L.small.L, L.smallPen, L.smallBase, D && L.small.col === NW.accent ? item.accent : L.small.col);
         if (L.small.pause) { f.rect(NW.x, L.smallBase - 6, 2, 6, WHITE, 1); f.rect(NW.x + 4, L.smallBase - 6, 2, 6, WHITE, 1); }
         void t;
       }
@@ -2541,8 +2554,8 @@
     var box = clipData[name] = { px: null }, img = new Image();
     img.onload = function () {
       try {
-        var cv = mk(W, H * c.n), x = cv.getContext('2d');
-        x.drawImage(img, 0, 0); box.px = x.getImageData(0, 0, W, H * c.n).data; restill();
+        var cw = c.w || W, cv = mk(cw, H * c.n), x = cv.getContext('2d');
+        x.drawImage(img, 0, 0); box.px = x.getImageData(0, 0, cw, H * c.n).data; restill();
       } catch (e) { box.failed = true; }
     };
     img.src = CLIP_BASE + (c.file || name) + '.' + (c.ext || 'png');
