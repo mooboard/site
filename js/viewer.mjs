@@ -286,7 +286,8 @@ export async function start(o) {
   function frame(now) {
     raf = 0;
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
-    if (spinning) { az += SPIN * dt; dirty = true; }
+    // the camera goes round clockwise seen from above, so the board itself turns counterclockwise
+    if (spinning) { az -= SPIN * dt; dirty = true; }
     else if (Math.abs(vAz) > 0.01 && !pointers.size) { az += vAz * dt; vAz *= Math.exp(-dt / 0.28); dirty = true; }
     if (goal) {
       const k = 1 - Math.exp(-dt / 0.32), da = wrap(goal.az - az);
