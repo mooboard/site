@@ -2525,7 +2525,9 @@
     snowglobe: { label: 'Snow Globe', n: 30 }, cycles: { label: 'Light Cycles', n: 30 }, flappy: { label: 'Flappy', n: 30 },
     lander: { label: 'Asteroid Lander', n: 30 }, pinball: { label: 'Pixel Pinball', n: 30 },
     // Home with the remote, recorded from the board (handoff/marketing/screens-2026-11-12): the pages one is the Apps tile
-    rhome: { label: 'Apps', n: 21, file: 'homepages', fps: 6 },
+    // the Apps tile: the open recording's Home part only (frames 2 to 14, Sports to Calendar), right across the apps and
+    // back, as a remote does
+    rhome: { label: 'Apps', n: 26, file: 'homeopen', fps: 5, from: 2, to: 14, pingpong: true },
     // Stylized Lyrics: Uptown Funk from its first word (0:17.0 to 0:32.0) as tools/disco/kinetic_board.py draws it,
     // the board's own renderer, at 30 fps. One lossless webp (450 frames), reduced motion holds "This hit, that ice-cold"
     rstyled: { label: 'Stylized Lyrics', n: 450, file: 'styled', ext: 'webp', fps: 30, dur: 15, still: 43 }
@@ -2573,7 +2575,14 @@
             var u = st % (run + c.tailDur);
             if (u >= run) { tail(f, u - run); return; }
           }
-          var k = REDUCED ? (c.still || 0) : Math.floor(st * fps) % c.n, base = k * N * 4;
+          var k;
+          if (REDUCED) k = c.still || c.from || 0;
+          else if (c.to != null) {
+            // a stretch of the recording (from..to), and back again with pingpong
+            var len = c.to - (c.from || 0) + 1, step = Math.floor(st * fps), span = c.pingpong ? 2 * len - 2 : len, m = step % span;
+            k = (c.from || 0) + (m < len ? m : span - m);
+          } else k = Math.floor(st * fps) % c.n;
+          var base = k * N * 4;
           for (var q = 0, i = base, j = 0; q < N; q++, i += 4, j += 3) { P[j] = D[i]; P[j + 1] = D[i + 1]; P[j + 2] = D[i + 2]; }
         }
       };
