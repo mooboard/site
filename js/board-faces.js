@@ -133,7 +133,7 @@
   FACES_SCENE = function (b) {
     var only = b && b.opts && b.opts.face, states = {}, order = [], pos = -1, cur = null, prev = null, since = 0, fa = new FB(), fb = new FB(), t8 = null, r = rng(b && b.opts && b.opts.seed || (Math.random() * 1e9) | 0);
     function list() { var L = FACE_PORTS.concat ? FACES.concat(FACE_PORTS) : FACES; return only ? L.filter(function (x) { return x.id === only; }) : L; }
-    // opts.slide (the shows tile): every face in order, each sliding in from the left as a swipe on the board does
+    // opts.slide (the shows tile): every face in order, each sliding in from the right as a swipe on the board does
     var slide = b && b.opts && b.opts.slide;
     function deal() {
       var L = list().slice();
@@ -158,10 +158,10 @@
         // the board's Sparkle (TRANS): the new face lands LED by LED in a noise order, a warm white spark at its front
         draw(prev, fa, d, t, FACE_SECONDS + into, dt); draw(cur, fb, d, t, into, dt);
         if (slide) {
-          // left to right: the old face slides out to the right as the new one comes in behind it, eased
-          var e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2, off = Math.round(e * W), A = fa.p, Bp = fb.p, O = f.p;
+          // right to left, as a swipe: the old face slides out to the left as the new one comes in from the right, eased
+          var e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2, off = Math.round(e * W), A = fa.p, Bp = fb.p, O = f.p, edge = W - off;
           for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) {
-            var o = (y * W + x) * 3, i = x < off ? (y * W + x + W - off) * 3 : (y * W + x - off) * 3, src = x < off ? Bp : A;
+            var o = (y * W + x) * 3, i = x < edge ? (y * W + x + off) * 3 : (y * W + x - edge) * 3, src = x < edge ? A : Bp;
             O[o] = src[i]; O[o + 1] = src[i + 1]; O[o + 2] = src[i + 2];
           }
           return;
