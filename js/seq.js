@@ -1,7 +1,7 @@
 /* MooBoard scroll sequences: rendered frames scrubbed by scroll position.
    renders/manifest.json lists each sequence; frames come in two sizes (960 px for phones, full for everything else)
    plus a tiny poster. A section fetches nothing until it is near the viewport; the hero sequence (right under the fold)
-   fetches every 8th frame once the page has loaded and fills the gaps when the visitor scrolls or has stayed 5 s.
+   fetches every 8th frame once the page has loaded and fills the gaps once the visitor scrolls, taps or types.
    Frames stay as <img> elements (the browser keeps the decoded bitmaps it needs); the frames about to be shown are
    decoded ahead with img.decode() so a scrub never waits on a decode. */
 (function () {
@@ -14,12 +14,12 @@
   var PAR = 6;
 
   var loaded = new Promise(function (res) { if (document.readyState === 'complete') res(); else addEventListener('load', res); });
-  // the visitor has settled in: first scroll, wheel, touch, key or pointer, or 5 s after load
+  // the visitor has settled in: first scroll, wheel, touch, key or pointer + no timer, so a visit that never moves
+  // never pays for the rest of the frames (about 1.1 MB)
   var settled = new Promise(function (res) {
     var evs = ['scroll', 'wheel', 'touchstart', 'keydown', 'pointerdown'];
     var done = function () { res(); evs.forEach(function (e) { removeEventListener(e, done); }); };
     evs.forEach(function (e) { addEventListener(e, done, { passive: true }); });
-    loaded.then(function () { setTimeout(done, 5000); });
   });
 
   function Seq(section, spec) {

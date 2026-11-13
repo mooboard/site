@@ -148,7 +148,7 @@
     var bz = document.createElement('div'); bz.className = 'bezel'; bz.dataset.frame = t.dataset.frame;
     var led = document.createElement('div'); led.className = 'led'; bz.appendChild(led);
     t.insertBefore(bz, t.firstChild);
-    var b = lazyBoard(led, { scenes: [t.dataset.scene], auto: false, weather: 'snow', fps: 30, slide: t.hasAttribute('data-slide'), onGlow: tileGlow(t) }, t);
+    var b = lazyBoard(led, { scenes: [t.dataset.scene], auto: false, weather: 'snow', fps: MB.sceneFps(t.dataset.scene), slide: t.hasAttribute('data-slide'), onGlow: tileGlow(t) }, t);
     t.addEventListener('click', function () { b.moo(); });
   });
 
@@ -216,7 +216,7 @@
     var label = document.createElement('span'); label.textContent = name;
     li.insertAdjacentHTML('beforeend', '<div class="app-name">' + appIcon(li, n) + '</div>');
     li.lastChild.appendChild(label);
-    var b = lazyBoard(led, { scenes: [li.dataset.scene], auto: false, fps: 30 }, $('#app-row'));
+    var b = lazyBoard(led, { scenes: [li.dataset.scene], auto: false, fps: MB.sceneFps(li.dataset.scene) }, $('#app-row'));
     bz.addEventListener('click', function () { b.moo(); });
   });
   $$('.an').forEach(function (btn) {

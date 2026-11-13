@@ -3258,6 +3258,9 @@
 
   window.MooBoard = {
     Board: Board, scenes: S, boards: boards, inkFaults: inkFaults, play: PLAY,
+    // how often a scene needs a new frame: a recording only changes at its own rate (10 a second, Home 6), the tour
+    // 15 for its fades, everything drawn here 30 + so a board of one recording never redraws a frame it already has
+    sceneFps: function (name) { var c = CLIPS[name]; return name === 'tour' ? 15 : c ? (c.fps || 10) : 30; },
     syllables: function (w) { return syllables(w); },
     now: function () { return (performance.now() - t0) / 1000; },
     labels: function (names) { return names.map(function (n) { return S[n] ? S[n]().label : n; }); },
