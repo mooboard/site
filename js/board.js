@@ -2515,7 +2515,7 @@
     invaders: { label: 'Games', n: 30 }, aquarium: { label: 'Aquarium', n: 30 }, blocks: { label: 'Falling Blocks', n: 25 },
     aurora: { label: 'Aurora', n: 30 }, snake: { label: 'Snake', n: 25 }, sunmoon: { label: 'Sun and Moon', n: 25 },
     printer: { label: '3D Printers', n: 30 }, lava: { label: 'Lava Lamp', n: 30 }, pong: { label: 'Pong Clock', n: 25 },
-    countdown: { label: 'Countdowns', n: 25 }, message: { label: 'Messages', n: 25, tail: 'birthday', tailDur: 3 },
+    countdown: { label: 'Countdowns', n: 25 }, message: { label: 'Messages', n: 25, tail: 'birthday', tailDur: 3.6 },
     blossom: { label: 'Blossom', n: 30 }, fireflies: { label: 'Fireflies', n: 30 }, tide: { label: 'Moonlit Tide', n: 30 },
     lanterns: { label: 'Lanterns', n: 30 }, rfaces: { label: 'Clock faces', n: 25, file: 'faces' },
     rlyrics: { label: 'Lyrics', n: 30, file: 'lyrics' }, rcalendar: { label: 'Calendar', n: 30, file: 'calendar' },
@@ -2550,15 +2550,17 @@
   }
   // a clip's own ending, drawn after its last frame (tt seconds into it): the message's letter opens to its words
   var CLIP_TAILS = {
-    birthday: function (f, tt) {
+    // the words fade in, hold, fade back to black, a beat of black, and the clip starts over on the letter: one seamless
+    // loop + each letter its own pastel party colour, round the rainbow
+    birthday: function (f, tt, dur) {
       f.fill(BLACK);
-      var a = c01(tt / .45), words = 'Happy Birthday!', L = null;
+      var OUT = .6, DARK = .25, a = Math.min(c01(tt / .45), c01((dur - DARK - tt) / OUT)), words = 'Happy Birthday!', L = null;
+      if (a <= 0) return;
       for (var cap = 13; cap >= 6 && !L; cap--) { var c2 = line('lyric', cap, words); if (c2.r - c2.l + 1 <= W - 6) L = c2; }
       if (!L) return;
-      var y = Math.round((H - (L.b - L.t + 1)) / 2) - L.t - Math.round((1 - a) * 3);
-      drawText(f, L, penCentre(L, (W - 1) / 2), y, WHITE, a, function (X) {
-        var u = X / (W - 1); return [255, Math.round(184 - 104 * u), Math.round(28 + 132 * u)];
-      });
+      var PASTEL = [[255, 150, 170], [255, 196, 140], [255, 236, 140], [150, 240, 180], [140, 210, 255], [200, 165, 255]];
+      var y = Math.round((H - (L.b - L.t + 1)) / 2) - L.t - Math.round((1 - c01(tt / .45)) * 3);
+      drawText(f, L, penCentre(L, (W - 1) / 2), y, WHITE, a, function (X, Y, k) { return PASTEL[(k || 0) % PASTEL.length]; });
     }
   };
   Object.keys(CLIPS).forEach(function (name) {
@@ -2571,9 +2573,12 @@
         draw: function (f, t, st) {
           var P = f.p, D = box.px;
           if (!D) { f.fill(BLACK); return; }
+          var clipT = st;
           if (tail && !REDUCED) {
+            // a clip with an ending loops as one: its frames count from the start of each pass, so it always opens on frame 0
             var u = st % (run + c.tailDur);
-            if (u >= run) { tail(f, u - run); return; }
+            if (u >= run) { tail(f, u - run, c.tailDur); return; }
+            clipT = u;
           }
           var k;
           if (REDUCED) k = c.still || c.from || 0;
@@ -2581,7 +2586,7 @@
             // a stretch of the recording (from..to), and back again with pingpong
             var len = c.to - (c.from || 0) + 1, step = Math.floor(st * fps), span = c.pingpong ? 2 * len - 2 : len, m = step % span;
             k = (c.from || 0) + (m < len ? m : span - m);
-          } else k = Math.floor(st * fps) % c.n;
+          } else k = Math.floor(clipT * fps) % c.n;
           var base = k * N * 4;
           for (var q = 0, i = base, j = 0; q < N; q++, i += 4, j += 3) { P[j] = D[i]; P[j + 1] = D[i + 1]; P[j + 2] = D[i + 2]; }
         }
