@@ -1,9 +1,10 @@
-# search shows the home page, the shop, and the privacy pages (Google's sign-in review reads them), plus the files they load
+# search shows the home page, the shop, support, and the privacy pages (Google's sign-in review reads them), plus the files they load
 User-agent: *
 Allow: /$
 Allow: /index.html
 Allow: /privacy
 Allow: /shop/
+Allow: /support/
 Allow: /sitemap.xml
 Allow: /css/
 Allow: /js/
