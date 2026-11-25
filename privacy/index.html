@@ -111,6 +111,12 @@
 <p>Each board’s counts are stored under a scrambled version of its unit code, not the code itself, and deleted after 30 days. Totals across all boards, with no single board in them, are kept for about 400 days.</p>
 <p>Usage counts are on by default. You can turn them off anytime in the web app under System, then Logs, with the “Share usage counts” switch. When it’s off, the board counts and sends nothing, and clears what it had counted.</p>
 
+<h3>Shared logs</h3>
+<p>Boards on the beta and prototype channels share their logs with mooboard by default, so we can find and fix problems faster. Other boards share only if their owner turns it on. You can turn it off anytime in the web app under System, then Logs. Once it’s off, it stays off.</p>
+<p>A board sends a health report and its new log lines about every 15 minutes, and right away after a crash. Each report includes the board’s unit code, frame color, and the last 4 characters of its hardware address. It also includes the firmware version, update channel, crash details, and health numbers like memory and Wi-Fi signal strength. Log lines come with the time zone.</p>
+<p>Some things are hidden before anything leaves the board. That covers the board’s name, email addresses, city and location, and the last part of local network addresses. Wi-Fi network names are replaced by a scrambled code, and song names are scrambled too.</p>
+<p>At the “Fails only” level, a board sends only warnings and errors, and hides more text. Our server keeps shared logs for 7 days.</p>
+
 <h3>Apps</h3>
 <p>To show and install apps, your board downloads the app list and the apps you choose from GitHub, where mooboard publishes them. GitHub sees your board’s address when it does.</p>
 <p>If you use the Seasonal face, your board asks our server for the current season’s art once a day. It sends only the date.</p>
@@ -145,6 +151,7 @@
   <li><b>Sign-ins</b>: 10 minutes at most on our sign-in helper. On your board until you disconnect or reset it.</li>
   <li><b>Board check-ins</b>: until 30 days after your board’s last check-in.</li>
   <li><b>Usage counts</b>: 30 days for each board’s counts, and about 400 days for totals across all boards.</li>
+  <li><b>Shared logs</b>: 7 days on our server.</li>
   <li><b>Song lookups</b>: lyrics for up to 7 days and drawn letters for up to 30 days on our server. Cloudflare’s request log for up to 7 days.</li>
   <li><b>Messages</b>: on our server until your friend’s board picks them up, and never more than 7 days.</li>
   <li><b>Remote support</b>: until you turn it off or the hour ends.</li>
