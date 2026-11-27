@@ -638,8 +638,8 @@
   plMute.addEventListener('click', function () { var M = window.MooMusic; if (!M) return; if (M.muted()) { M.unmute(); if (!M.playing()) M.play(); } else M.mute(); });
 
   /* ---------- the VIP pass: the bar up top, and its panel after a waitlist signup, both gone once passes close ---------- */
-  // 11:59 pm ET on November 30, 2026 (EST is UTC-5), the same close as js/shop.js
-  var VIP_CLOSE = Date.parse('2026-12-01T04:59:59Z'), vipOpen = Date.now() <= VIP_CLOSE, pop = $('#vip-pop');
+  // 11:59 pm ET on December 15, 2026 (EST is UTC-5), the same close as js/shop.js
+  var VIP_CLOSE = Date.parse('2026-12-16T04:59:59Z'), vipOpen = Date.now() <= VIP_CLOSE, pop = $('#vip-pop');
   if (!vipOpen) { var bar = $('#vip-bar'); if (bar) bar.remove(); document.body.classList.remove('has-bar'); }
   if (pop) {
     // the close button, or a click on the dimmed page around the panel, closes it
