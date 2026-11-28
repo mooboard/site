@@ -34,12 +34,12 @@
 
 <section class="band" aria-labelledby="privacy-h">
   <h1 id="privacy-h">Privacy policy</h1>
-  <p class="when">Effective <time datetime="2026-11-24">November 24, 2026</time></p>
+  <p class="when">Effective <time datetime="2026-11-27">November 27, 2026</time></p>
 </section>
 
 <article class="doc">
 
-<p class="lead">This policy covers the website at mooboard.co, including the board finder at mooboard.co/hi. It also covers your mooboard, its web app and our sign-in helper at api.mooboard.co. It says what each one collects, who else sees it and what you can do about it.</p>
+<p class="lead">This policy covers the website at mooboard.co, including the board finder at mooboard.co/hi. It also covers your mooboard, its web app, the mooboard app on your phone, your mooboard account, and our server at api.mooboard.co. It says what each one collects, who else sees it and what you can do about it.</p>
 
 <h2>Who we are</h2>
 <p>mooboard.co is run by mooboard co. When this policy says “we” or “us”, it means mooboard co. You can reach us at <span class="addr">support@mooboard.co</span>.</p>
@@ -52,6 +52,7 @@
   <li>We don’t sell your data.</li>
   <li>Your board shows your music, calendars, and tasks on its display. Your calendars and tasks never come to us. For lyrics, a song’s tempo, and the cover of a show you’re watching, your board asks our server about what’s playing.</li>
   <li>Our sign-in helper keeps your Spotify or Google sign-in for 10 minutes at most, until your board picks it up.</li>
+  <li>An account is optional. It holds your email, username, friends, and messages, and you can delete it anytime in the app, in the web app, or by emailing support@mooboard.co.</li>
 </ul>
 
 <h2>What you send us</h2>
@@ -130,6 +131,42 @@
 <h3>Disconnecting</h3>
 <p>To disconnect Spotify or Google, use your board’s web app. You can also remove mooboard in <a href="https://www.spotify.com/account/apps/">your Spotify account’s apps</a> or in <a href="https://myaccount.google.com/connections">your Google Account’s third-party connections</a>. A factory reset erases the sign-ins saved on your board.</p>
 
+<h2>The mooboard app and your account</h2>
+<p>You don’t need an account to use your board or the app on your home Wi-Fi. An account adds Messages, control from away, settings backups, and the web app at web.mooboard.co.</p>
+<h3>What an account holds</h3>
+<ul>
+  <li><b>Sign-in details.</b> Your email address, your username, and a scrambled version of your password. We never keep the password itself. We also keep which phones and browsers are signed in. A phone’s sign-in ends after 90 days without use. A new browser or phone asks for a 6 digit code we email you.</li>
+  <li><b>Your profile.</b> The name, status line, color, and photo you choose. A photo is saved as a small square picture under a random name, and anyone who has its address can open it. Names are checked against a blocked list.</li>
+  <li><b>Friends.</b> Your friend list and requests, your nicknames for friends, and who you blocked.</li>
+  <li><b>Messages.</b> The texts, sketches, reactions, and game moves you send to friends. Our server keeps up to the last 500 items of each chat. A finished game goes 30 days after it ends. This differs from the 7 day rule above, which covers only board to board messages without an account.</li>
+  <li><b>Reports.</b> When you report someone, we keep the last 20 messages of that chat, their profile photo, and who reported. We use them to act on the report.</li>
+  <li><b>Backups.</b> If you turn on backup, your board’s settings, drawings, and app saves are stored in your account. Wi-Fi and passwords stay on the board.</li>
+  <li><b>Phone notifications.</b> If you allow them, your phone’s push address, and for a Live Activity or a running timer its token.</li>
+</ul>
+<h3>Why we use it</h3>
+<p>To run your account, to deliver messages and notifications, to keep the service safe, and to answer you. We use nothing for ads. We don’t sell your data, and we don’t share it for ads. The app has no ads and no advertising or analytics tools.</p>
+<h3>Control from away</h3>
+<p>When you control your board from outside your home Wi-Fi, your phone sends the command to our server, which passes it to your board and passes the answer back. We never log what a phone or a board sends. To handle retries, the server keeps a scrambled fingerprint of each command and your board’s answer for 10 minutes, then deletes them.</p>
+<h3>Safety</h3>
+<p>People at mooboard read reports. We may warn, turn off chat for, suspend, or delete an account that breaks our rules. We may look at the reported chat’s last 20 messages. Otherwise, we don’t read your messages.</p>
+<p>We filter offensive words from messages, status lines, and nicknames.</p>
+<h3>Deleting your account</h3>
+<p>You can delete your account in the app, in the web app, or by emailing support@mooboard.co. Your account, friends, chats, photos, and backups go. We hold your username for 90 days.</p>
+
+<h2>Who else handles your data</h2>
+<p>These companies and services handle data for the app and accounts. We don’t sell data to any of them.</p>
+<ul>
+  <li><b>Cloudflare</b>, which hosts our server and stores accounts, messages, and photos.</li>
+  <li><b>Brevo</b>, which sends the emails for your account, like the confirm link, the sign-in code, and password resets. It sees your address and the email.</li>
+  <li><b>Apple</b> (APNs) and <b>Google</b> (Firebase Cloud Messaging), which deliver phone notifications. They see each notification’s sender name and text, and the push address it goes to. Message text appears in notifications.</li>
+  <li><b>Open-Meteo</b> (geocoding-api.open-meteo.com), which gets the city name you type when you pick a city for the clock or weather in the app.</li>
+  <li><b>OpenStreetMap</b> (tile.openstreetmap.org), which sends the map tiles for the flight map. It sees your phone’s address and the area on screen.</li>
+  <li><b>ESPN</b> (site.api.espn.com), which sends the soccer team lists to the app.</li>
+  <li><b>GitHub</b> (raw.githubusercontent.com), which sends the app’s store listings and service logos.</li>
+  <li><b>Spotify</b> and <b>Google</b>, for the sign-ins described above. <b>Bambu Lab</b>, if you sign in on your board to see your printers.</li>
+</ul>
+<p>Your phone talks to these services itself, so they see your phone’s IP address.</p>
+
 <h2>The sign-in helper</h2>
 <p>When you sign in to Spotify or Google from your board’s setup, our sign-in helper at api.mooboard.co does the sign-in for your board. If you sign in to Spotify through your own Spotify app, the helper uses your app’s Client ID.</p>
 <p>It reads the name of the account you signed in with, so the web app can show which account is connected. For Spotify that’s your display name. For Google it’s your email address.</p>
@@ -153,17 +190,20 @@
   <li><b>Usage counts</b>: 30 days for each board’s counts, and about 400 days for totals across all boards.</li>
   <li><b>Shared logs</b>: 7 days on our server.</li>
   <li><b>Song lookups</b>: lyrics for up to 7 days and drawn letters for up to 30 days on our server. Cloudflare’s request log for up to 7 days.</li>
-  <li><b>Messages</b>: on our server until your friend’s board picks them up, and never more than 7 days.</li>
+  <li><b>Messages</b>: on our server until your friend’s board picks them up, and never more than 7 days. This is for board to board messages without an account. Account chats keep the last 500 items.</li>
+  <li><b>Accounts</b>: until you delete yours. A deleted account’s username is held for 90 days. An account that is never confirmed by email goes after 7 days. A phone’s sign-in ends after 90 days without use.</li>
+  <li><b>Reports</b>: the last 20 messages of the chat, kept with the report until either account is deleted.</li>
+  <li><b>Control from away</b>: a command’s fingerprint and your board’s answer for 10 minutes.</li>
   <li><b>Remote support</b>: until you turn it off or the hour ends.</li>
   <li><b>Browser storage</b>: on your device, as described above.</li>
   <li><b>Hosting logs</b>: kept by GitHub under its own privacy statement.</li>
 </ul>
 
 <h2>Your choices</h2>
-<p>To see, correct or delete what you’ve sent us, or to leave the waitlist, email <span class="addr">support@mooboard.co</span> from the address you used. You can also reply to any email we send you. If someone added your email to the waitlist without asking you, tell us and we’ll remove it.</p>
+<p>To see, correct or delete what you’ve sent us, or to leave the waitlist, email <span class="addr">support@mooboard.co</span> from the address you used. You can also reply to any email we send you. To delete your account, use the app, the web app, or email support@mooboard.co. If someone added your email to the waitlist without asking you, tell us and we’ll remove it.</p>
 
 <h2>Children</h2>
-<p>mooboard.co isn’t meant for children under 13, and we don’t knowingly collect their details. If you think a child has sent us theirs, write to us and we’ll delete them.</p>
+<p>mooboard.co isn’t meant for children under 13, and accounts are for people 13 and older. We don’t knowingly collect details from children under 13. If you think a child has sent us theirs, write to us and we’ll delete them.</p>
 
 <h2>Changes</h2>
 <p>If we change this policy, we’ll post the new version on this page with a new effective date.</p>
